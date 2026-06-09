@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CalendarCheck, CircleDollarSign, TrendingUp, Wallet } from 'lucide-react'
 import type { 투입실적Row, 공사단가Row, 계획금액Row } from '@/types/database'
 import { formatEok } from '@/lib/format'
-import { calc투입금액 } from '../_lib/calc'
+import { calc합계 } from '../_lib/calc'
 
 export async function KpiCards() {
   const supabase = await createClient()
@@ -17,19 +17,10 @@ export async function KpiCards() {
   const monthStart = `${year}-${month}-01`
   const monthEnd = new Date(year, now.getMonth() + 1, 1).toISOString().slice(0, 10)
 
-  type 기성공급가Row = { 기성액_공급가: number | null }
-  type 준공Row = { 준공액_공급가: number | null }
-
-  const [투입실적결과, 단가결과, 이번달기성결과, 이번달준공결과, 계획금액결과] = await Promise.all([
+  const [투입실적결과, 단가결과, 공사이력결과, 계획금액결과] = await Promise.all([
     supabase.from('투입실적').select('*').gte('투입일', monthStart).lt('투입일', monthEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
-    supabase.from('기성').select('기성액_공급가').gte('기성일', monthStart).lt('기성일', monthEnd),
-    supabase
-      .from('수주')
-      .select('준공액_공급가')
-      .gte('준공일', monthStart)
-      .lt('준공일', monthEnd)
-      .not('준공액_공급가', 'is', null),
+    supabase.from('공사이력').select('성과금액').gte('작업일자', monthStart).lt('작업일자', monthEnd),
     supabase.from('계획금액').select('금액').eq('년월', 년월키).maybeSingle(),
   ])
 
@@ -37,23 +28,16 @@ export async function KpiCards() {
   const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적Row[]
 
   const 이번달투입금액 = 투입실적목록.reduce(
-    (sum, row) => sum + calc투입금액(row, 단가목록),
-    0,
-  )
-
-  const 이번달기성합계 = ((이번달기성결과.data ?? []) as 기성공급가Row[]).reduce(
-    (sum, r) => sum + (r.기성액_공급가 ?? 0),
-    0,
-  )
-
-  const 이번달준공합계 = ((이번달준공결과.data ?? []) as 준공Row[]).reduce(
-    (sum, r) => sum + (r.준공액_공급가 ?? 0),
+    (sum, row) => sum + calc합계(row, 단가목록),
     0,
   )
 
   const 계획금액 = (계획금액결과.data as Pick<계획금액Row, '금액'> | null)?.금액 ?? null
 
-  const 이번달성과금액 = 이번달기성합계 + 이번달준공합계
+  const 이번달성과금액 = ((공사이력결과.data ?? []) as { 성과금액: number }[]).reduce(
+    (sum, r) => sum + (r.성과금액 ?? 0),
+    0,
+  )
   const 이번달손익금액 = 이번달성과금액 - 이번달투입금액
 
   const cards = [

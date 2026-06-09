@@ -29,9 +29,9 @@ export default async function DashboardLayout({
   const displayName = profile?.이름 || profile?.이메일 || user.email || '사용자'
 
   return (
-    <div className="flex h-full" style={{ backgroundColor: '#f1f4fb' }}>
+    <div className="flex min-h-screen" style={{ backgroundColor: '#f1f4fb' }}>
       <Sidebar userName={displayName} />
-      <main className="flex-1 min-w-0 overflow-y-auto pb-16 md:pb-0">
+      <main className="flex-1 min-w-0 pb-16 md:pb-0">
         {children}
       </main>
       <MobileTabBar />

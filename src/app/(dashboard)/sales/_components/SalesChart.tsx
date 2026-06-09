@@ -56,7 +56,6 @@ export function SalesChart({ data }: { data: SalesChartRow[] }) {
           }}
           cursor={{ fill: '#f8fafc' }}
         />
-        <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} iconType="square" iconSize={10} />
         <Bar dataKey="성과금액" name="성과금액" fill="#3d5af1" radius={[3, 3, 0, 0]} maxBarSize={24} />
         <Bar dataKey="투입금액" name="투입금액" fill="#f59e0b" radius={[3, 3, 0, 0]} maxBarSize={24} />
         <Bar dataKey="손익금액" name="손익금액" fill="#22c55e" radius={[3, 3, 0, 0]} maxBarSize={24}>

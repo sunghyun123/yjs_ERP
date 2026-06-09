@@ -19,6 +19,8 @@ export type ChartRow = {
 }
 
 export function ProfitChart({ data }: { data: ChartRow[] }) {
+  // @ts-ignore
+  // @ts-ignore
   return (
     <ResponsiveContainer width="100%" height={280}>
       <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
@@ -50,6 +52,11 @@ export function ProfitChart({ data }: { data: ChartRow[] }) {
           cursor={{ fill: '#f8fafc' }}
         />
         <Legend
+          payload={[
+            { value: '성과금액', type: 'square', color: '#3d5af1', id: '성과금액' },
+            { value: '투입금액', type: 'square', color: '#f59e0b', id: '투입금액' },
+            { value: '손익금액', type: 'square', color: '#22c55e', id: '손익금액' },
+          ]}
           wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
           iconType="square"
           iconSize={10}

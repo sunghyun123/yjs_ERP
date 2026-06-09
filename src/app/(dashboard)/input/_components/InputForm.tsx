@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
-  Search, Copy, RefreshCw, Save, Loader2,
+  Search, RefreshCw, Save, Loader2,
   CheckCircle2, AlertCircle, X,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -221,21 +221,6 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
     set드롭다운(false)
   }
 
-  // ── 전날 복사 ─────────────────────────────────────────────────────────────
-  async function 전날복사() {
-    if (!선택수주) { showToast(false, '공사를 먼저 선택하세요'); return }
-    const d = new Date(투입일)
-    d.setDate(d.getDate() - 1)
-    const 전날 = d.toISOString().slice(0, 10)
-    const supabase = createClient()
-    const { data: raw } = await supabase
-      .from('투입실적').select()
-      .eq('수주_id', 선택수주.id).eq('투입일', 전날).single()
-    if (!raw) { showToast(false, `${전날} 실적이 없습니다`); return }
-    fillRow(raw as 투입실적Row)
-    showToast(true, `${전날} 실적을 복사했습니다`)
-  }
-
   // ── 초기화 ───────────────────────────────────────────────────────────────
   function 초기화() {
     reset({ 수주_id: 수주id, 투입일, ...인원기본값 })
@@ -297,223 +282,225 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
         </div>
       )}
 
-      <div className="max-w-2xl space-y-4">
+      {/* 2단 레이아웃: lg 이상에서 좌(입력) / 우(계산+버튼) 분리 */}
+      <div className="flex flex-col lg:flex-row lg:items-start gap-5">
 
-        {/* 공사 선택 + 날짜 */}
-        <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
+        {/* ── 좌측: 입력 영역 ── */}
+        <div className="flex-1 min-w-0 space-y-4">
 
-          {/* 공사 자동완성 */}
-          <div className="space-y-1.5">
-            <Label>공사 선택</Label>
-            <div ref={드롭다운Ref} className="relative">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={검색어}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  onFocus={() => 검색결과.length > 0 && set드롭다운(true)}
-                  placeholder="지중No 또는 공사명으로 검색..."
-                  className={cn(
-                    'w-full pl-9 pr-9 h-10 rounded-lg border text-sm outline-none transition-colors',
-                    'border-gray-200 bg-white focus:border-[#3d5af1] focus:ring-2 focus:ring-[#3d5af1]/20',
-                    errors.수주_id && 'border-red-400',
+          {/* 공사 선택 + 날짜 */}
+          <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
+
+            {/* 공사 자동완성 */}
+            <div className="space-y-1.5">
+              <Label>공사 선택</Label>
+              <div ref={드롭다운Ref} className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={검색어}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    onFocus={() => 검색결과.length > 0 && set드롭다운(true)}
+                    placeholder="지중No 또는 공사명으로 검색..."
+                    className={cn(
+                      'w-full pl-9 pr-9 h-10 rounded-lg border text-sm outline-none transition-colors',
+                      'border-gray-200 bg-white focus:border-[#3d5af1] focus:ring-2 focus:ring-[#3d5af1]/20',
+                      errors.수주_id && 'border-red-400',
+                    )}
+                  />
+                  {실적로딩 && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 animate-spin" />
                   )}
-                />
-                {실적로딩 && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 animate-spin" />
+                </div>
+                {드롭다운 && 검색결과.length > 0 && (
+                  <div className="absolute top-full mt-1 w-full z-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+                    {검색결과.map((order) => (
+                      <button
+                        key={order.id}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); handleSelect(order) }}
+                        className="w-full px-3 py-2.5 text-left hover:bg-blue-50 transition-colors flex items-baseline gap-2"
+                      >
+                        <span className="font-mono text-xs text-gray-400 shrink-0">{order.지중no}</span>
+                        <span className="text-sm text-gray-800 truncate">{order.공사명}</span>
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
-              {드롭다운 && 검색결과.length > 0 && (
-                <div className="absolute top-full mt-1 w-full z-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto">
-                  {검색결과.map((order) => (
-                    <button
-                      key={order.id}
-                      type="button"
-                      onMouseDown={(e) => { e.preventDefault(); handleSelect(order) }}
-                      className="w-full px-3 py-2.5 text-left hover:bg-blue-50 transition-colors flex items-baseline gap-2"
-                    >
-                      <span className="font-mono text-xs text-gray-400 shrink-0">{order.지중no}</span>
-                      <span className="text-sm text-gray-800 truncate">{order.공사명}</span>
-                    </button>
-                  ))}
-                </div>
+              {선택수주 && (
+                <p className="text-xs text-[#3d5af1] font-medium">
+                  ✓ {선택수주.지중no} — {선택수주.공사명}
+                </p>
+              )}
+              {errors.수주_id && (
+                <p className="text-xs text-red-500">{errors.수주_id.message}</p>
               )}
             </div>
-            {선택수주 && (
-              <p className="text-xs text-[#3d5af1] font-medium">
-                ✓ {선택수주.지중no} — {선택수주.공사명}
-              </p>
-            )}
-            {errors.수주_id && (
-              <p className="text-xs text-red-500">{errors.수주_id.message}</p>
-            )}
-          </div>
 
-          {/* 투입일 */}
-          <div className="space-y-1.5">
-            <Label htmlFor="투입일">투입일</Label>
-            <div className="flex items-center gap-2">
+            {/* 투입일 */}
+            <div className="space-y-1.5">
+              <Label htmlFor="투입일">투입일</Label>
               <Input
                 id="투입일"
                 type="date"
                 className="w-44 h-10"
                 {...register('투입일')}
               />
-              {기존Id !== null && (
-                <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded-md border border-amber-200">
-                  기존 실적 수정 중
-                </span>
-              )}
             </div>
           </div>
+
+          {/* 직종별 입력 그리드 */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100">
+              <p className="text-sm font-semibold text-gray-700">직종별 투입 인원</p>
+              <p className="text-xs text-gray-400 mt-0.5">Tab 키로 주간→야간→다음 직종 순서로 이동</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 w-32">직종</th>
+                    <th className="text-center px-3 py-2.5 text-xs font-semibold text-blue-600 w-28">주간</th>
+                    <th className="text-center px-3 py-2.5 text-xs font-semibold text-indigo-600 w-28">야간</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {직종행.map(({ label, 주, 야 }) => {
+                    const 주값 = n(values[주 as keyof FormValues])
+                    const 야값 = n(values[야 as keyof FormValues])
+                    const isEmpty = 주값 === 0 && 야값 === 0
+                    return (
+                      <tr
+                        key={label}
+                        className={cn(
+                          'hover:bg-slate-50/60 transition-colors',
+                          isEmpty && 'opacity-35',
+                        )}
+                      >
+                        <td className="px-4 py-2 font-medium text-gray-700 text-sm">{label}</td>
+                        <td className="px-3 py-1.5">
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            min="0"
+                            max="99"
+                            className={cn(
+                              'w-20 h-9 text-center rounded-md border text-sm tabular-nums outline-none transition-colors',
+                              'border-gray-200 bg-white focus:border-[#3d5af1] focus:ring-2 focus:ring-[#3d5af1]/20',
+                              주값 > 0 && 'border-blue-300 bg-blue-50/60 font-semibold text-blue-700',
+                            )}
+                            {...register(주 as keyof FormValues, numOpts)}
+                          />
+                        </td>
+                        <td className="px-3 py-1.5">
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            min="0"
+                            max="99"
+                            className={cn(
+                              'w-20 h-9 text-center rounded-md border text-sm tabular-nums outline-none transition-colors',
+                              'border-gray-200 bg-white focus:border-[#3d5af1] focus:ring-2 focus:ring-[#3d5af1]/20',
+                              야값 > 0 && 'border-indigo-300 bg-indigo-50/60 font-semibold text-indigo-700',
+                            )}
+                            {...register(야 as keyof FormValues, numOpts)}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 외주 금액 */}
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <p className="text-sm font-semibold text-gray-700 mb-3">외주 금액</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="외주1" className="text-xs text-gray-600">외주1 (원)</Label>
+                <Input
+                  id="외주1"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  step="1000"
+                  className="h-10 text-right tabular-nums"
+                  {...register('외주1', numOpts)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="외주2" className="text-xs text-gray-600">외주2 (원)</Label>
+                <Input
+                  id="외주2"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  step="1000"
+                  className="h-10 text-right tabular-nums"
+                  {...register('외주2', numOpts)}
+                />
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        {/* 직종별 입력 그리드 */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-700">직종별 투입 인원</p>
-            <p className="text-xs text-gray-400 mt-0.5">Tab 키로 주간→야간→다음 직종 순서로 이동</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 w-32">직종</th>
-                  <th className="text-center px-3 py-2.5 text-xs font-semibold text-blue-600 w-28">주간</th>
-                  <th className="text-center px-3 py-2.5 text-xs font-semibold text-indigo-600 w-28">야간</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {직종행.map(({ label, 주, 야 }) => {
-                  const 주값 = n(values[주 as keyof FormValues])
-                  const 야값 = n(values[야 as keyof FormValues])
-                  const isEmpty = 주값 === 0 && 야값 === 0
-                  return (
-                    <tr
-                      key={label}
-                      className={cn(
-                        'hover:bg-slate-50/60 transition-colors',
-                        isEmpty && 'opacity-35',
-                      )}
-                    >
-                      <td className="px-4 py-2 font-medium text-gray-700 text-sm">{label}</td>
-                      <td className="px-3 py-1.5">
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          step="0.01"
-                          min="0"
-                          max="99"
-                          className={cn(
-                            'w-20 h-9 text-center rounded-md border text-sm tabular-nums outline-none transition-colors',
-                            'border-gray-200 bg-white focus:border-[#3d5af1] focus:ring-2 focus:ring-[#3d5af1]/20',
-                            주값 > 0 && 'border-blue-300 bg-blue-50/60 font-semibold text-blue-700',
-                          )}
-                          {...register(주 as keyof FormValues, numOpts)}
-                        />
-                      </td>
-                      <td className="px-3 py-1.5">
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          step="0.01"
-                          min="0"
-                          max="99"
-                          className={cn(
-                            'w-20 h-9 text-center rounded-md border text-sm tabular-nums outline-none transition-colors',
-                            'border-gray-200 bg-white focus:border-[#3d5af1] focus:ring-2 focus:ring-[#3d5af1]/20',
-                            야값 > 0 && 'border-indigo-300 bg-indigo-50/60 font-semibold text-indigo-700',
-                          )}
-                          {...register(야 as keyof FormValues, numOpts)}
-                        />
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* ── 우측: 실시간 계산 + 버튼 (lg 이상에서 sticky) ── */}
+        <div className="w-full lg:w-64 lg:shrink-0 lg:sticky lg:top-6 space-y-3 pb-6">
 
-        {/* 외주 금액 */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <p className="text-sm font-semibold text-gray-700 mb-3">외주 금액</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="외주1" className="text-xs text-gray-600">외주1 (원)</Label>
-              <Input
-                id="외주1"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                step="1000"
-                className="h-10 text-right tabular-nums"
-                {...register('외주1', numOpts)}
-              />
+          {/* 실시간 계산 패널 */}
+          <div className="rounded-xl p-5 text-white" style={{ backgroundColor: '#1e2d5a' }}>
+            <p className="text-xs font-medium mb-4" style={{ color: '#a8b8e0' }}>
+              실시간 계산
+            </p>
+            <div className="space-y-3">
+              <div>
+                <p className="text-[11px] mb-0.5" style={{ color: '#a8b8e0' }}>투입금액</p>
+                <p className="text-sm font-bold tabular-nums">{formatKRW(투입금액)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] mb-0.5" style={{ color: '#a8b8e0' }}>일반관리비 (6%)</p>
+                <p className="text-sm font-bold tabular-nums">{formatKRW(일반관리비)}</p>
+              </div>
+              <div className="pt-3 border-t border-white/20">
+                <p className="text-[11px] mb-1 text-white/70">합계</p>
+                <p className="text-2xl font-bold tabular-nums leading-tight">{formatKRW(합계)}</p>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="외주2" className="text-xs text-gray-600">외주2 (원)</Label>
-              <Input
-                id="외주2"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                step="1000"
-                className="h-10 text-right tabular-nums"
-                {...register('외주2', numOpts)}
-              />
-            </div>
+            <p className="text-[10px] mt-4" style={{ color: '#6b80b8' }}>{투입일} 기준 단가</p>
           </div>
-        </div>
 
-        {/* 실시간 합계 */}
-        <div className="rounded-xl p-4 text-white" style={{ backgroundColor: '#1e2d5a' }}>
-          <p className="text-xs font-medium mb-3" style={{ color: '#a8b8e0' }}>
-            실시간 계산 ({투입일} 기준 단가)
-          </p>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-lg p-3 bg-white/10">
-              <p className="text-[11px] mb-1" style={{ color: '#a8b8e0' }}>투입금액</p>
-              <p className="text-sm font-bold tabular-nums leading-tight">
-                {formatKRW(투입금액)}
-              </p>
-            </div>
-            <div className="rounded-lg p-3 bg-white/10">
-              <p className="text-[11px] mb-1" style={{ color: '#a8b8e0' }}>일반관리비 (6%)</p>
-              <p className="text-sm font-bold tabular-nums leading-tight">
-                {formatKRW(일반관리비)}
-              </p>
-            </div>
-            <div className="rounded-lg p-3 border border-white/25 bg-white/15">
-              <p className="text-[11px] mb-1 text-white/80">합계</p>
-              <p className="text-sm font-bold tabular-nums leading-tight">
-                {formatKRW(합계)}
-              </p>
-            </div>
+          {/* 기존 실적 수정 중 표시 */}
+          {기존Id !== null && (
+            <p className="text-xs text-amber-600 font-medium text-center px-3 py-2 bg-amber-50 rounded-lg border border-amber-200">
+              기존 실적 수정 중
+            </p>
+          )}
+
+          {/* 저장 / 초기화 버튼 */}
+          <div className="space-y-2">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full gap-2 text-white hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: '#1e2d5a' }}
+            >
+              {isSubmitting
+                ? <><Loader2 className="size-4 animate-spin" />저장 중...</>
+                : <><Save className="size-4" />{기존Id !== null ? '수정 저장' : '저장'}</>}
+            </Button>
+            <Button type="button" variant="outline" onClick={초기화} className="w-full gap-2">
+              <RefreshCw className="size-4" />
+              초기화
+            </Button>
           </div>
-        </div>
 
-        {/* 버튼 */}
-        <div className="flex flex-wrap gap-2 pb-6">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="gap-2 text-white hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: '#1e2d5a' }}
-          >
-            {isSubmitting
-              ? <><Loader2 className="size-4 animate-spin" />저장 중...</>
-              : <><Save className="size-4" />{기존Id !== null ? '수정 저장' : '저장'}</>}
-          </Button>
-          <Button type="button" variant="outline" onClick={전날복사} className="gap-2">
-            <Copy className="size-4" />
-            전날 복사
-          </Button>
-          <Button type="button" variant="outline" onClick={초기화} className="gap-2">
-            <RefreshCw className="size-4" />
-            초기화
-          </Button>
         </div>
 
       </div>

@@ -27,6 +27,13 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,10 +52,14 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  Plus,
+  Pencil,
+  X as XIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
-import type { 수주행 } from '../_types'
+import type { 수주행, 거래처목록항목 } from '../_types'
+import { OrderForm } from './OrderForm'
 
 // ── 정렬 가능한 헤더 버튼 ──────────────────────────────────────────────────
 function SortHeader({
@@ -82,7 +93,7 @@ function SortHeader({
   )
 }
 
-// ── 컬럼 정의 (모듈 레벨 — 매 렌더마다 재생성 방지) ──────────────────────
+// ── 컬럼 정의 ─────────────────────────────────────────────────────────────
 const ch = createColumnHelper<수주행>()
 
 const columns = [
@@ -176,7 +187,7 @@ const columns = [
   }),
 ]
 
-// ── 수주금액 계산 헬퍼 ──────────────────────────────────────────────────────
+// ── 수주금액 계산 헬퍼 ─────────────────────────────────────────────────────
 function calc수주금액(row: 수주행) {
   const 공급가 = row.수주금액_공급가 ?? 0
   const 부가세 = 공급가 * 0.1
@@ -198,15 +209,21 @@ function OrderDetail({ row }: { row: 수주행 }) {
   const 정렬기성 = [...row.기성].sort((a, b) => a.차수 - b.차수)
 
   const 기본정보행: [string, string][] = [
+    ['원청사', row.원청사?.거래처명 ?? '—'],
     ['공사번호', row.공사번호 ?? '—'],
     ['공사구분', row.공사구분 ?? '—'],
     ['공사종류', row.공사종류 ?? '—'],
     ['공사현장', row.공사현장 ?? '—'],
     ['작업구분', row.작업구분 ?? '—'],
     ['시공상태', row.시공상태 ?? '—'],
+    ['정산상태', row.정산상태 ?? '—'],
+    ['공사담당', row.공사담당 ?? '—'],
+    ['감독자', row.감독자 ?? '—'],
     ['착공일', row.착공일 ?? '—'],
     ['준공일', row.준공일 ?? '—'],
     ['준공여부', row.준공여부 ? '준공완료' : '진행중'],
+    ['포장여부', row.포장여부 ? '포장' : '미포장'],
+    ['자재청구', row.자재청구여부 ? '청구' : '미청구'],
     ['참고사항', row.참고사항 ?? '—'],
   ]
 
@@ -293,15 +310,9 @@ function OrderDetail({ row }: { row: 수주행 }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="pb-1.5 text-left text-xs font-medium text-gray-500">
-                    차수
-                  </th>
-                  <th className="pb-1.5 text-left text-xs font-medium text-gray-500">
-                    기성일
-                  </th>
-                  <th className="pb-1.5 text-right text-xs font-medium text-gray-500">
-                    기성액 (공급가)
-                  </th>
+                  <th className="pb-1.5 text-left text-xs font-medium text-gray-500">차수</th>
+                  <th className="pb-1.5 text-left text-xs font-medium text-gray-500">기성일</th>
+                  <th className="pb-1.5 text-right text-xs font-medium text-gray-500">기성액 (공급가)</th>
                 </tr>
               </thead>
               <tbody>
@@ -333,7 +344,7 @@ function OrderDetail({ row }: { row: 수주행 }) {
   )
 }
 
-// ── 필터 토글 버튼 ──────────────────────────────────────────────────────────
+// ── 필터 타입 ─────────────────────────────────────────────────────────────
 type 준공필터타입 = 'all' | 'active' | 'done'
 const 준공필터옵션: { value: 준공필터타입; label: string }[] = [
   { value: 'all', label: '전체' },
@@ -342,12 +353,24 @@ const 준공필터옵션: { value: 준공필터타입; label: string }[] = [
 ]
 const 공사구분옵션 = ['전체', '단가', '민수']
 
+// ── 폼 Sheet 상태 타입 ────────────────────────────────────────────────────
+type FormState =
+  | { mode: 'new' }
+  | { mode: 'edit'; row: 수주행 }
+
 // ── 메인 컴포넌트 ───────────────────────────────────────────────────────────
-export function OrdersTable({ data }: { data: 수주행[] }) {
+export function OrdersTable({
+  data,
+  거래처목록,
+}: {
+  data: 수주행[]
+  거래처목록: 거래처목록항목[]
+}) {
   const [준공필터, set준공필터] = useState<준공필터타입>('all')
   const [공사구분필터, set공사구분필터] = useState('전체')
   const [검색어, set검색어] = useState('')
-  const [selectedRow, setSelectedRow] = useState<수주행 | null>(null)
+  const [detailRow, setDetailRow] = useState<수주행 | null>(null)
+  const [formState, setFormState] = useState<FormState | null>(null)
   const [sorting, setSorting] = useState<SortingState>([])
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -454,9 +477,19 @@ export function OrdersTable({ data }: { data: 수주행[] }) {
         </div>
 
         {/* 건수 */}
-        <span className="ml-auto text-sm text-gray-500 tabular-nums shrink-0">
+        <span className="text-sm text-gray-500 tabular-nums shrink-0">
           {total.toLocaleString('ko-KR')}건
         </span>
+
+        {/* 새 수주 버튼 */}
+        <Button
+          size="sm"
+          className="ml-auto h-8 bg-[#1e2d5a] hover:bg-[#2d45a8] shrink-0"
+          onClick={() => setFormState({ mode: 'new' })}
+        >
+          <Plus className="size-3.5 mr-1" />
+          새 수주
+        </Button>
       </div>
 
       {/* 테이블 */}
@@ -496,7 +529,7 @@ export function OrdersTable({ data }: { data: 수주행[] }) {
                 <TableRow
                   key={row.id}
                   className="cursor-pointer hover:bg-blue-50/50 border-b border-gray-100 transition-colors"
-                  onClick={() => setSelectedRow(row.original)}
+                  onClick={() => setDetailRow(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="px-3 py-2.5 text-sm">
@@ -545,11 +578,11 @@ export function OrdersTable({ data }: { data: 수주행[] }) {
         </div>
       </div>
 
-      {/* 상세 슬라이드오버 */}
+      {/* 상세 조회 Sheet */}
       <Sheet
-        open={selectedRow !== null}
+        open={detailRow !== null}
         onOpenChange={(open) => {
-          if (!open) setSelectedRow(null)
+          if (!open) setDetailRow(null)
         }}
       >
         <SheetContent
@@ -557,21 +590,73 @@ export function OrdersTable({ data }: { data: 수주행[] }) {
           className="flex flex-col p-0 sm:max-w-[480px]"
         >
           <SheetHeader className="px-5 pt-5 pb-3 border-b border-gray-100 shrink-0">
-            <div className="flex items-start gap-2 pr-8">
-              <span className="font-mono text-xs text-gray-400 mt-0.5 shrink-0">
-                {selectedRow?.지중no}
-              </span>
-              <SheetTitle className="text-base font-semibold text-left leading-snug">
-                {selectedRow?.공사명}
-              </SheetTitle>
+            <div className="flex items-start justify-between gap-2 pr-8">
+              <div className="flex items-start gap-2 min-w-0">
+                <span className="font-mono text-xs text-gray-400 mt-0.5 shrink-0">
+                  {detailRow?.지중no}
+                </span>
+                <SheetTitle className="text-base font-semibold text-left leading-snug">
+                  {detailRow?.공사명}
+                </SheetTitle>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 h-7 text-xs px-2.5"
+                onClick={() => {
+                  const row = detailRow!
+                  setDetailRow(null)
+                  setFormState({ mode: 'edit', row })
+                }}
+              >
+                <Pencil className="size-3 mr-1" />
+                수정
+              </Button>
             </div>
             <SheetDescription className="text-left">
-              {selectedRow?.발주자?.거래처명 ?? '발주자 미등록'}
+              {detailRow?.발주자?.거래처명 ?? '발주자 미등록'}
             </SheetDescription>
           </SheetHeader>
-          {selectedRow && <OrderDetail row={selectedRow} />}
+          {detailRow && <OrderDetail row={detailRow} />}
         </SheetContent>
       </Sheet>
+
+      {/* 등록 · 수정 폼 Dialog */}
+      <Dialog open={formState !== null} onOpenChange={(open) => !open && setFormState(null)}>
+        <DialogContent
+          className="sm:max-w-[900px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden"
+          showCloseButton={false}
+        >
+          <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b shrink-0">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-base font-semibold">
+                {formState?.mode === 'new' ? '새 수주 등록' : '수주 수정'}
+              </DialogTitle>
+              <DialogDescription className="mt-0.5">
+                {formState?.mode === 'new'
+                  ? '새로운 수주 정보를 입력하세요'
+                  : formState?.mode === 'edit'
+                    ? `${formState.row.지중no} · ${formState.row.공사명}`
+                    : ''}
+              </DialogDescription>
+            </div>
+            <DialogClose asChild>
+              <Button variant="ghost" size="icon-sm" className="shrink-0">
+                <XIcon className="size-4" />
+                <span className="sr-only">닫기</span>
+              </Button>
+            </DialogClose>
+          </div>
+          {formState && (
+            <OrderForm
+              mode={formState.mode}
+              row={formState.mode === 'edit' ? formState.row : undefined}
+              거래처목록={거래처목록}
+              onSuccess={() => setFormState(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

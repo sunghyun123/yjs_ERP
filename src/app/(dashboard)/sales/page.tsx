@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CircleDollarSign, TrendingUp, Wallet } from 'lucide-react'
 import type { 투입실적Row, 공사단가Row } from '@/types/database'
-import { calc투입금액 } from '../_lib/calc'
+import { calc합계 } from '../_lib/calc'
 import { formatEok } from '@/lib/format'
 import { YearSelector } from './_components/YearSelector'
 import { SalesChart } from './_components/SalesChart'
@@ -19,20 +19,10 @@ export default async function SalesPage({
 
   const supabase = await createClient()
 
-  type 기성행 = {
-    기성액_공급가: number | null
-    기성일: string | null
-    수주: { 보험료율: number | null; 하도전용율: number | null } | null
-  }
-
-  const [투입실적결과, 단가결과, 기성결과] = await Promise.all([
+  const [투입실적결과, 단가결과, 공사이력결과] = await Promise.all([
     supabase.from('투입실적').select('*').gte('투입일', yearStart).lt('투입일', yearEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
-    supabase
-      .from('기성')
-      .select('기성액_공급가, 기성일, 수주!수주_id(보험료율, 하도전용율)')
-      .gte('기성일', yearStart)
-      .lt('기성일', yearEnd),
+    supabase.from('공사이력').select('작업일자, 성과금액').gte('작업일자', yearStart).lt('작업일자', yearEnd),
   ])
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
@@ -43,17 +33,13 @@ export default async function SalesPage({
 
   for (const row of 투입실적목록) {
     const m = parseInt(row.투입일.slice(5, 7), 10) - 1
-    monthly[m].투입 += calc투입금액(row, 단가목록)
+    monthly[m].투입 += calc합계(row, 단가목록)
   }
 
-  for (const row of (기성결과.data ?? []) as 기성행[]) {
-    if (!row.기성일) continue
-    const m = parseInt(row.기성일.slice(5, 7), 10) - 1
-    const 기성액 = row.기성액_공급가 ?? 0
-    const 수주 = row.수주 as { 보험료율: number | null; 하도전용율: number | null } | null
-    const 보험료율 = 수주?.보험료율 ?? 0
-    const 하도전용율 = 수주?.하도전용율 ?? 1
-    monthly[m].성과 += 기성액 * (1 - 보험료율) * 하도전용율
+  for (const row of (공사이력결과.data ?? []) as { 작업일자: string; 성과금액: number }[]) {
+    if (!row.작업일자) continue
+    const m = parseInt(row.작업일자.slice(5, 7), 10) - 1
+    monthly[m].성과 += row.성과금액 ?? 0
   }
 
   // 연간 합계
@@ -116,7 +102,7 @@ export default async function SalesPage({
             매출손익 현황
           </h1>
           <p className="text-sm mt-0.5" style={{ color: '#64748b' }}>
-            기성일·투입일 기준 월별 집계
+            공사이력·투입일 기준 월별 집계
           </p>
         </div>
         <YearSelector currentYear={year} />
