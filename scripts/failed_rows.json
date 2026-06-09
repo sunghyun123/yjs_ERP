@@ -1,0 +1,2074 @@
+[
+  {
+    "지중no": "CG26-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "CG26-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "CG26-003",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "CG26-004",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "CG26-005",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "CG26-006",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "CG26-007",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "CG26-008",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-003",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-004",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-005",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-006",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-007",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-008",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-009",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-010",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-011",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-012",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-013",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-014",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-015",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-016",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-017",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-018",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-019",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-020",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-021",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-022",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-023",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-024",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-025",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-026",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-027",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-028",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-029",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-030",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-031",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-032",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-033",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-034",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-035",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-036",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-037",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-038",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-039",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-040",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-041",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-042",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-043",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-044",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-045",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-046",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-047",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG25-048",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-003",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-004",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-005",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-006",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-007",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-008",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-009",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-010",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-011",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-012",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-013",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-014",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-015",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-016",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-017",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-018",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-019",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-020",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-021",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-022",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-023",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-024",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-025",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-026",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-027",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JG26-028",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-003",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-005",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-006",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-007",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-009",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-010",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-011",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-012",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-013",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-014",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-015",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-016",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-017",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-018",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-019",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-020",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-021",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-022",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-023",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-024",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-025",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-026",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-027",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-028",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-029",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-030",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-031",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-032",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-033",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-034",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-035",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-036",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-037",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-038",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-039",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-040",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-041",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-042",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-043",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-044",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-045",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-046",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-047",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-048",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-049",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-050",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-051",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-052",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-053",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-054",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-055",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-056",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-057",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-058",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-059",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-060",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-061",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-062",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-063",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-064",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-065",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-066",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-067",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-068",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-069",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-070",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-071",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-072",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-073",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-074",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-075",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-076",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-077",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-078",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-079",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-080",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-081",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-082",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-083",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-084",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-085",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-086",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-087",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-088",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-089",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-090",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-091",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-092",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-093",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-094",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-095",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-096",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-097",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-098",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-099",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-100",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-101",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-102",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-103",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-104",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-105",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-106",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-107",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-108",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-109",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-110",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-111",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-112",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-113",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-114",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-115",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-116",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-117",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-118",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-119",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-120",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-121",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-122",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-123",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-124",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-125",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-126",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-127",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-128",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-129",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-130",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-131",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-132",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-133",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-134",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-135",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-136",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-137",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-138",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-139",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-140",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-141",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-142",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-143",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-144",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-145",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-146",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-147",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-148",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-149",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-150",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-151",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-152",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-153",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-154",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-155",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-156",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-157",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-158",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-159",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-160",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-161",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-162",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-163",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-164",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-165",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-166",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-167",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-168",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-169",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-170",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-171",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-172",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-173",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-174",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-175",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-176",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-177",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-178",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-179",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-180",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-181",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-182",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-183",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-184",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-185",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-186",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-187",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-188",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-189",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-190",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-191",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-192",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-193",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-194",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-195",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-196",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-197",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-198",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-199",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-200",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-201",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-202",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-203",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-204",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-205",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-206",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-207",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-208",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-209",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-210",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-211",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-212",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-213",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-214",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-215",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-216",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-217",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-218",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-219",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-220",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-221",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-222",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-223",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-224",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-225",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-226",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-227",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-228",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-229",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-230",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-231",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-232",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-233",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-234",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-235",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-236",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-237",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-238",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-239",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-240",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-241",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-242",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-243",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-244",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-245",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-246",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-247",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-248",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-249",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-250",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-251",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-252",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-253",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-254",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-255",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-256",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-257",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-258",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-259",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-260",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY25-261",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-003",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-004",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-005",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-006",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-007",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-008",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-009",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-010",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-011",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-012",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-013",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-014",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-015",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-016",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-017",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-018",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-019",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-021",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-022",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-023",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-024",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-025",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-026",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-027",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-028",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-029",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-030",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-031",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-032",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-033",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-035",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-036",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-037",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-038",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-039",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-040",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-041",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-042",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-043",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-044",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-045",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-046",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-047",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-048",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-049",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-050",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-051",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-052",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-053",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-054",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-055",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-056",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-057",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-058",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "JY26-059",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "MY25-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "MY25-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "MY25-003",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "MY25-004",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "MY26-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "MY26-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "MY26-004",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-003",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-004",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-005",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-006",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-007",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-008",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-009",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-010",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-011",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-012",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-013",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-014",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-015",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-016",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-017",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-018",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-019",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-020",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-021",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-022",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-023",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-024",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-025",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-026",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-027",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-028",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-029",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-030",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG25-28",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-003",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-004",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-005",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-006",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-007",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-008",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-009",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-010",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-011",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-012",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-013",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-014",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SG26-015",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-003",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-004",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-005",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-006",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-007",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-008",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-009",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-010",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-011",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-012",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-013",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-014",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-015",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-016",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-017",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-018",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-019",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-020",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-021",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-022",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-023",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-024",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-025",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-026",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-027",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-028",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-029",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-030",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-031",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-032",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-033",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-034",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-035",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-036",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-037",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY25-038",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-003",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-004",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-005",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-006",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-007",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-008",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-009",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-010",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-011",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-012",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-013",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-014",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-015",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-016",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-017",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-018",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "SY26-019",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "TY25-001",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "TY25-002",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "TY25-003",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "TY25-004",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "TY25-005",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "TY25-006",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "TY25-007",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  },
+  {
+    "지중no": "TY25-008",
+    "reason": "Could not find the '보험료율' column of '수주' in the schema cache"
+  }
+]
