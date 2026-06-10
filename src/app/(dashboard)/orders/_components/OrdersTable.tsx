@@ -96,97 +96,6 @@ function SortHeader({
 // ── 컬럼 정의 ─────────────────────────────────────────────────────────────
 const ch = createColumnHelper<수주행>()
 
-const columns = [
-  ch.accessor('지중no', {
-    header: ({ column }) => <SortHeader column={column}>지중No</SortHeader>,
-    enableSorting: true,
-    cell: ({ getValue }) => (
-      <span className="font-mono text-xs text-slate-500">{getValue()}</span>
-    ),
-  }),
-  ch.accessor('공사명', {
-    header: ({ column }) => <SortHeader column={column}>공사명</SortHeader>,
-    enableSorting: true,
-    size: 280,
-    cell: ({ getValue }) => (
-      <span className="font-medium">{getValue()}</span>
-    ),
-  }),
-  ch.accessor((row) => row.발주자?.거래처명 ?? '—', {
-    id: '발주자명',
-    header: '발주자',
-    enableSorting: false,
-    cell: ({ getValue }) => (
-      <span className="text-slate-500 text-sm">{getValue()}</span>
-    ),
-  }),
-  ch.accessor(
-    (row) => {
-      const 공급가 = row.수주금액_공급가 ?? 0
-      const 보험료율 = row.보험료율 ?? null
-      const 하도전용율 = row.하도전용율 ?? null
-      if (보험료율 === null && 하도전용율 === null) return 공급가
-      const 보험료제외 = 보험료율 !== null ? 공급가 * (1 - 보험료율) : 공급가
-      return 하도전용율 !== null ? 보험료제외 * 하도전용율 : 보험료제외
-    },
-    {
-      id: '수주금액_하도적용',
-      header: ({ column }) => (
-        <SortHeader column={column} className="w-full justify-end">
-          수주금액(하도적용)
-        </SortHeader>
-      ),
-      enableSorting: true,
-      cell: ({ getValue }) => (
-        <div className="text-right tabular-nums font-medium">
-          {formatKRW(getValue())}
-        </div>
-      ),
-    },
-  ),
-  ch.accessor(
-    (row) => row.기성.reduce((s, g) => s + (g.기성액_공급가 ?? 0), 0),
-    {
-      id: '누적기성액',
-      header: ({ column }) => (
-        <SortHeader column={column} className="w-full justify-end">
-          누적기성액
-        </SortHeader>
-      ),
-      enableSorting: true,
-      cell: ({ getValue }) => (
-        <div className="text-right tabular-nums">{formatKRW(getValue())}</div>
-      ),
-    },
-  ),
-  ch.accessor('달성율', {
-    header: ({ column }) => (
-      <SortHeader column={column} className="w-full justify-end">
-        달성율
-      </SortHeader>
-    ),
-    enableSorting: true,
-    cell: ({ getValue }) => {
-      const v = getValue()
-      return (
-        <div className="text-right tabular-nums">
-          {v !== null ? `${v.toFixed(1)}%` : '—'}
-        </div>
-      )
-    },
-  }),
-  ch.accessor('준공여부', {
-    header: '준공여부',
-    enableSorting: false,
-    cell: ({ getValue }) =>
-      getValue() ? (
-        <Badge variant="secondary">준공완료</Badge>
-      ) : (
-        <Badge variant="outline">진행중</Badge>
-      ),
-  }),
-]
-
 // ── 수주금액 계산 헬퍼 ─────────────────────────────────────────────────────
 function calc수주금액(row: 수주행) {
   const 공급가 = row.수주금액_공급가 ?? 0
@@ -395,6 +304,117 @@ export function OrdersTable({
       return true
     })
   }, [data, 준공필터, 공사구분필터, 검색어])
+
+  const columns = useMemo(() => [
+    ch.accessor('지중no', {
+      header: ({ column }) => <SortHeader column={column}>지중No</SortHeader>,
+      enableSorting: true,
+      cell: ({ getValue }) => (
+        <span className="font-mono text-xs text-slate-500">{getValue()}</span>
+      ),
+    }),
+    ch.accessor('공사명', {
+      header: ({ column }) => <SortHeader column={column}>공사명</SortHeader>,
+      enableSorting: true,
+      size: 280,
+      cell: ({ getValue }) => (
+        <span className="font-medium">{getValue()}</span>
+      ),
+    }),
+    ch.accessor((row) => row.발주자?.거래처명 ?? '—', {
+      id: '발주자명',
+      header: '발주자',
+      enableSorting: false,
+      cell: ({ getValue }) => (
+        <span className="text-slate-500 text-sm">{getValue()}</span>
+      ),
+    }),
+    ch.accessor(
+      (row) => {
+        const 공급가 = row.수주금액_공급가 ?? 0
+        const 보험료율 = row.보험료율 ?? null
+        const 하도전용율 = row.하도전용율 ?? null
+        if (보험료율 === null && 하도전용율 === null) return 공급가
+        const 보험료제외 = 보험료율 !== null ? 공급가 * (1 - 보험료율) : 공급가
+        return 하도전용율 !== null ? 보험료제외 * 하도전용율 : 보험료제외
+      },
+      {
+        id: '수주금액_하도적용',
+        header: ({ column }) => (
+          <SortHeader column={column} className="w-full justify-end">
+            수주금액(하도적용)
+          </SortHeader>
+        ),
+        enableSorting: true,
+        cell: ({ getValue }) => (
+          <div className="text-right tabular-nums font-medium">
+            {formatKRW(getValue())}
+          </div>
+        ),
+      },
+    ),
+    ch.accessor(
+      (row) => row.기성.reduce((s, g) => s + (g.기성액_공급가 ?? 0), 0),
+      {
+        id: '누적기성액',
+        header: ({ column }) => (
+          <SortHeader column={column} className="w-full justify-end">
+            누적기성액
+          </SortHeader>
+        ),
+        enableSorting: true,
+        cell: ({ getValue }) => (
+          <div className="text-right tabular-nums">{formatKRW(getValue())}</div>
+        ),
+      },
+    ),
+    ch.accessor('달성율', {
+      header: ({ column }) => (
+        <SortHeader column={column} className="w-full justify-end">
+          달성율
+        </SortHeader>
+      ),
+      enableSorting: true,
+      cell: ({ getValue }) => {
+        const v = getValue()
+        return (
+          <div className="text-right tabular-nums">
+            {v !== null ? `${v.toFixed(1)}%` : '—'}
+          </div>
+        )
+      },
+    }),
+    ch.accessor('준공여부', {
+      header: '준공여부',
+      enableSorting: false,
+      cell: ({ getValue }) =>
+        getValue() ? (
+          <Badge variant="secondary">준공완료</Badge>
+        ) : (
+          <Badge variant="outline">진행중</Badge>
+        ),
+    }),
+    ch.display({
+      id: 'actions',
+      size: 60,
+      header: () => null,
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-blue-600 border border-blue-200 bg-white hover:bg-blue-50 hover:border-blue-400 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation()
+              setFormState({ mode: 'edit', row: row.original })
+            }}
+          >
+            <Pencil className="size-3" />
+            수정
+          </button>
+        </div>
+      ),
+    }),
+  ], [setFormState])
 
   const table = useReactTable({
     data: filteredData,

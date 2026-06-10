@@ -35,6 +35,11 @@ export async function ProfitChartSection() {
     monthly[m].성과 += row.성과금액 ?? 0
   }
 
+  // 연간 합계
+  const 총성과백만 = Math.round(monthly.reduce((s, m) => s + m.성과, 0) / 1_000_000)
+  const 총투입백만 = Math.round(monthly.reduce((s, m) => s + m.투입, 0) / 1_000_000)
+  const 총손익백만 = 총성과백만 - 총투입백만
+
   // 단위: 백만원
   const chartData = monthly.map(({ 성과, 투입 }, i) => ({
     month: `${i + 1}월`,
@@ -46,10 +51,21 @@ export async function ProfitChartSection() {
   return (
     <Card className="bg-white shadow-sm border-0">
       <CardHeader className="px-5 pt-5 pb-0">
-        <CardTitle className="text-sm font-medium text-gray-600">
-          {year}년 월별 매출손익 현황
-          <span className="ml-2 text-xs font-normal text-gray-400">(단위: 백만원)</span>
-        </CardTitle>
+        <div className="flex items-center justify-between gap-4">
+          <CardTitle className="text-sm font-medium text-gray-600">
+            {year}년 월별 매출손익 현황
+            <span className="ml-2 text-xs font-normal text-gray-400">(단위: 백만원)</span>
+          </CardTitle>
+          <div className="flex items-center gap-3 text-xs text-gray-500 shrink-0">
+            <span>성과 <span className="font-medium text-gray-700">{총성과백만.toLocaleString('ko-KR')}백만</span></span>
+            <span>투입 <span className="font-medium text-gray-700">{총투입백만.toLocaleString('ko-KR')}백만</span></span>
+            <span>손익{' '}
+              <span className="font-medium" style={{ color: 총손익백만 >= 0 ? '#22c55e' : '#ef4444' }}>
+                {총손익백만 >= 0 ? '+' : ''}{총손익백만.toLocaleString('ko-KR')}백만
+              </span>
+            </span>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="px-5 pt-4 pb-5">
         <ProfitChart data={chartData} />

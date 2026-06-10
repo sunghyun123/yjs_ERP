@@ -130,10 +130,21 @@ export default async function SalesPage({
       {/* 월별 막대차트 */}
       <Card className="bg-white shadow-sm border-0">
         <CardHeader className="px-5 pt-5 pb-0">
-          <CardTitle className="text-sm font-medium text-gray-600">
-            {year}년 월별 매출손익
-            <span className="ml-2 text-xs font-normal text-gray-400">(Y축: 억/만원, 툴팁: 원 단위)</span>
-          </CardTitle>
+          <div className="flex items-center justify-between gap-4">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              {year}년 월별 매출손익
+              <span className="ml-2 text-xs font-normal text-gray-400">(Y축: 억/만원, 툴팁: 원 단위)</span>
+            </CardTitle>
+            <div className="flex items-center gap-3 text-xs text-gray-500 shrink-0">
+              <span>성과 <span className="font-medium text-gray-700">{Math.round(총성과 / 1_000_000).toLocaleString('ko-KR')}백만</span></span>
+              <span>투입 <span className="font-medium text-gray-700">{Math.round(총투입 / 1_000_000).toLocaleString('ko-KR')}백만</span></span>
+              <span>손익{' '}
+                <span className="font-medium" style={{ color: 총손익 >= 0 ? '#22c55e' : '#ef4444' }}>
+                  {총손익 >= 0 ? '+' : ''}{Math.round(총손익 / 1_000_000).toLocaleString('ko-KR')}백만
+                </span>
+              </span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="px-5 pt-4 pb-5">
           <SalesChart data={chartData} />
