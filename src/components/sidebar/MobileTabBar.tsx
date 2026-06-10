@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 const tabs = [
   { href: '/', label: '홈', icon: LayoutDashboard },
   { href: '/orders', label: '수주', icon: ClipboardList },
-  { href: '/input', label: '투입입력', icon: PenLine },
+  { href: '/input', label: '투입실적', icon: PenLine },
   { href: '/progress', label: '공사이력', icon: Activity },
   { href: '/sales', label: '매출손익', icon: TrendingUp },
 ] as const

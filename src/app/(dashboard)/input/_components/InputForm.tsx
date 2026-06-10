@@ -93,6 +93,8 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
   const [드롭다운, set드롭다운] = useState(false)
   const [실적로딩, set실적로딩] = useState(false)
   const [기존Id, set기존Id] = useState<number | null>(null)
+  const [최근투입일, set최근투입일] = useState<string | null>(null)
+  const [최근투입로딩, set최근투입로딩] = useState(false)
   const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null)
 
   const 검색타이머 = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -214,11 +216,23 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
     }, 250)
   }
 
-  function handleSelect(order: 수주검색결과) {
+  async function handleSelect(order: 수주검색결과) {
     set선택수주(order)
     set검색어(`${order.지중no}  ${order.공사명}`)
     setValue('수주_id', order.id)
     set드롭다운(false)
+    set최근투입일(null)
+    set최근투입로딩(true)
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('투입실적')
+      .select('투입일')
+      .eq('수주_id', order.id)
+      .order('투입일', { ascending: false })
+      .limit(1)
+      .single()
+    set최근투입로딩(false)
+    set최근투입일((data as { 투입일: string } | null)?.투입일 ?? null)
   }
 
   // ── 초기화 ───────────────────────────────────────────────────────────────
@@ -330,9 +344,18 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
                 )}
               </div>
               {선택수주 && (
-                <p className="text-xs text-[#3d5af1] font-medium">
-                  ✓ {선택수주.지중no} — {선택수주.공사명}
-                </p>
+                <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                  <p className="text-xs text-[#3d5af1] font-medium truncate">
+                    ✓ {선택수주.지중no} — {선택수주.공사명}
+                  </p>
+                  <p className="text-xs text-gray-500 shrink-0 ml-3">
+                    {최근투입로딩
+                      ? '...'
+                      : 최근투입일
+                        ? <span>마지막 투입 <span className="font-semibold text-gray-700">{최근투입일}</span></span>
+                        : '투입 기록 없음'}
+                  </p>
+                </div>
               )}
               {errors.수주_id && (
                 <p className="text-xs text-red-500">{errors.수주_id.message}</p>
