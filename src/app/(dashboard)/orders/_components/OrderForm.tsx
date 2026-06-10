@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   Save, Loader2, Trash2, CheckCircle2, AlertCircle, AlertTriangle,
-  Search, ChevronDown, X as XIcon,
+  Search, ChevronDown, X as XIcon, Plus,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,7 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
-import type { 수주행, 거래처목록항목 } from '../_types'
+import type { 수주행, 거래처목록항목, 기성항목 } from '../_types'
 
 // ── 옵션 목록 ──────────────────────────────────────────────────────────────
 const 공사구분옵션 = ['총가', '단가', '민수', '관급']
@@ -267,6 +267,16 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
   const [준공액Local, set준공액Local] = useState<number | null>(mode === 'edit' ? (row?.준공액_공급가 ?? null) : null)
   const [준공저장중, set준공저장중] = useState(false)
 
+  // 기성 탭 상태
+  const [기성목록, set기성목록] = useState<기성항목[]>(
+    (row?.기성 ?? []).slice().sort((a, b) => a.차수 - b.차수)
+  )
+  const [기성폼모드, set기성폼모드] = useState<'none' | 'add' | number>('none')
+  const [기성폼값, set기성폼값] = useState<{ 기성일: string; 기성액_공급가: number | null }>({
+    기성일: '', 기성액_공급가: null,
+  })
+  const [기성처리중, set기성처리중] = useState(false)
+
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -396,6 +406,67 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
     set준공저장중(false)
     if (error) { showToast(false, '저장에 실패했습니다.'); return }
     showToast(true, '준공 정보가 저장되었습니다.')
+    router.refresh()
+  }
+
+  const 기성누계공급가 = 기성목록.reduce((sum, g) => sum + (g.기성액_공급가 ?? 0), 0)
+  const 다음차수 = 기성목록.length > 0 ? Math.max(...기성목록.map((g) => g.차수)) + 1 : 1
+
+  const handle기성추가시작 = () => {
+    set기성폼모드('add')
+    set기성폼값({ 기성일: '', 기성액_공급가: null })
+  }
+
+  const handle기성수정시작 = (g: 기성항목) => {
+    set기성폼모드(g.id)
+    set기성폼값({ 기성일: g.기성일 ?? '', 기성액_공급가: g.기성액_공급가 })
+  }
+
+  const handle기성저장 = async () => {
+    if (!row) return
+    set기성처리중(true)
+    const supabase = createClient()
+
+    if (기성폼모드 === 'add') {
+      const { data, error } = await (supabase.from('기성') as any)
+        .insert({
+          수주_id: row.id,
+          차수: 다음차수,
+          기성일: 기성폼값.기성일 || null,
+          기성액_공급가: 기성폼값.기성액_공급가 ?? null,
+        })
+        .select('id, 차수, 기성일, 기성액_공급가')
+        .single()
+      set기성처리중(false)
+      if (error) { showToast(false, '저장에 실패했습니다.'); return }
+      set기성목록((prev) => [...prev, data as 기성항목].sort((a, b) => a.차수 - b.차수))
+    } else {
+      const editId = 기성폼모드 as number
+      const { error } = await (supabase.from('기성') as any)
+        .update({ 기성일: 기성폼값.기성일 || null, 기성액_공급가: 기성폼값.기성액_공급가 ?? null })
+        .eq('id', editId)
+      set기성처리중(false)
+      if (error) { showToast(false, '저장에 실패했습니다.'); return }
+      set기성목록((prev) =>
+        prev.map((g) =>
+          g.id === editId ? { ...g, 기성일: 기성폼값.기성일 || null, 기성액_공급가: 기성폼값.기성액_공급가 } : g
+        )
+      )
+    }
+    set기성폼모드('none')
+    showToast(true, 기성폼모드 === 'add' ? '기성이 등록되었습니다.' : '수정되었습니다.')
+    router.refresh()
+  }
+
+  const handle기성삭제 = async (id: number) => {
+    if (!window.confirm('이 기성 항목을 삭제하시겠습니까?')) return
+    set기성처리중(true)
+    const supabase = createClient()
+    const { error } = await (supabase.from('기성') as any).delete().eq('id', id)
+    set기성처리중(false)
+    if (error) { showToast(false, '삭제에 실패했습니다.'); return }
+    set기성목록((prev) => prev.filter((g) => g.id !== id))
+    showToast(true, '삭제되었습니다.')
     router.refresh()
   }
 
@@ -840,6 +911,148 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
               준공 저장
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* 기성 탭 */}
+      {mode === 'edit' && activeTab === '기성' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          {기성목록.length > 0 ? (
+            <table className="w-full border-collapse text-sm mb-4">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-3 py-2 text-left border border-gray-200 text-gray-500 font-medium w-14">차수</th>
+                  <th className="px-3 py-2 text-left border border-gray-200 text-gray-500 font-medium">기성일</th>
+                  <th className="px-3 py-2 text-right border border-gray-200 text-gray-500 font-medium">공급가</th>
+                  <th className="px-3 py-2 text-right border border-gray-200 text-gray-500 font-medium">부가세</th>
+                  <th className="px-3 py-2 text-right border border-gray-200 text-[#1e2d5a] font-semibold">합계</th>
+                  <th className="px-3 py-2 border border-gray-200 w-20"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {기성목록.map((g) => (
+                  <tr key={g.id}>
+                    <td className="px-3 py-2 border border-gray-200 font-medium text-gray-500">{g.차수}차</td>
+                    <td className="px-3 py-2 border border-gray-200">{g.기성일 ?? '—'}</td>
+                    <td className="px-3 py-2 text-right border border-gray-200">{formatKRW(g.기성액_공급가 ?? 0)}</td>
+                    <td className="px-3 py-2 text-right border border-gray-200 text-gray-400">
+                      {formatKRW((g.기성액_공급가 ?? 0) * 0.1)}
+                    </td>
+                    <td className="px-3 py-2 text-right border border-gray-200 font-semibold text-[#1e2d5a]">
+                      {formatKRW((g.기성액_공급가 ?? 0) * 1.1)}
+                    </td>
+                    <td className="px-3 py-2 border border-gray-200 text-center space-x-2">
+                      <button
+                        type="button"
+                        className="text-[#3d5af1] text-xs hover:underline"
+                        onClick={() => handle기성수정시작(g)}
+                      >
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        className="text-red-500 text-xs hover:underline"
+                        onClick={() => handle기성삭제(g.id)}
+                        disabled={기성처리중}
+                      >
+                        삭제
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                <tr className="bg-blue-50">
+                  <td colSpan={2} className="px-3 py-2 border border-blue-200 font-bold text-[#1e2d5a]">
+                    누계
+                  </td>
+                  <td className="px-3 py-2 text-right border border-blue-200 font-bold">
+                    {formatKRW(기성누계공급가)}
+                  </td>
+                  <td className="px-3 py-2 text-right border border-blue-200 font-bold text-gray-500">
+                    {formatKRW(기성누계공급가 * 0.1)}
+                  </td>
+                  <td className="px-3 py-2 text-right border border-blue-200 font-bold text-[#1e2d5a]">
+                    {formatKRW(기성누계공급가 * 1.1)}
+                  </td>
+                  <td className="border border-blue-200" />
+                </tr>
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-sm text-gray-400 mb-4">등록된 기성이 없습니다.</p>
+          )}
+
+          {기성폼모드 !== 'none' ? (
+            <div className="border border-blue-200 rounded-lg bg-blue-50 p-4">
+              <p className="text-sm font-semibold text-[#1e2d5a] mb-3">
+                {기성폼모드 === 'add'
+                  ? `${다음차수}차 기성 추가`
+                  : `${기성목록.find((g) => g.id === 기성폼모드)?.차수}차 기성 수정`}
+              </p>
+              <div className="flex gap-4 items-end flex-wrap">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">기성일</label>
+                  <Input
+                    type="date"
+                    className="h-9 text-sm w-36"
+                    value={기성폼값.기성일}
+                    onChange={(e) => set기성폼값((v) => ({ ...v, 기성일: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">기성액 (공급가)</label>
+                  <MoneyInput
+                    value={기성폼값.기성액_공급가}
+                    onChange={(v) => set기성폼값((prev) => ({ ...prev, 기성액_공급가: v }))}
+                    className="h-9 text-sm w-44"
+                  />
+                </div>
+                {기성폼값.기성액_공급가 != null && (
+                  <>
+                    <div className="bg-blue-100 rounded-lg px-3 py-2 text-sm">
+                      <div className="text-[10px] text-gray-500 mb-0.5">부가세</div>
+                      <div className="font-semibold text-[#1e2d5a]">{formatKRW(기성폼값.기성액_공급가 * 0.1)}</div>
+                    </div>
+                    <div className="bg-[#1e2d5a] rounded-lg px-3 py-2 text-sm">
+                      <div className="text-[10px] text-blue-300 mb-0.5">합계</div>
+                      <div className="font-bold text-white">{formatKRW(기성폼값.기성액_공급가 * 1.1)}</div>
+                    </div>
+                  </>
+                )}
+                <div className="flex gap-2 ml-auto">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-9 bg-[#3d5af1] hover:bg-[#2d45a8]"
+                    onClick={handle기성저장}
+                    disabled={기성처리중}
+                  >
+                    {기성처리중 ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <Save className="size-3.5 mr-1.5" />}
+                    저장
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-9"
+                    onClick={() => set기성폼모드('none')}
+                  >
+                    취소
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-[#3d5af1] text-[#3d5af1] hover:bg-blue-50"
+              onClick={handle기성추가시작}
+            >
+              <Plus className="size-4 mr-1.5" />
+              기성 추가
+            </Button>
+          )}
         </div>
       )}
     </div>
