@@ -1,6 +1,6 @@
 # 영전사 ERP 개발 진행 기록
 
-> 최종 업데이트: 2026-06-10 (수주대장 UX 개선)
+> 최종 업데이트: 2026-06-10 (공사이력 페이지 + 수주 Dialog 탭 구조)
 
 ---
 
@@ -27,6 +27,10 @@
 | 17 | SearchableSelect 3종 버그 완전 수정 — ①선택 불가(Radix modal `pointer-events:none` + `DismissableLayerBranch`) ②스크롤 시 닫힘(`dropRef` 내부 스크롤 제외) ③마우스 휠 차단(`react-remove-scroll` bubble listener `stopPropagation`) | ✅ |
 | 18 | 수주금액 계산 패널 UX 개선 — 패널 너비 확장(208→288px), 하도적용 히어로 카드(브랜드 네이비·18px bold), 줄바꿈 방지(`whitespace-nowrap`), 필수 표시 주황색 별표(수주금액 추가) | ✅ |
 | 19 | 수주대장 UX 개선 ① 행 우측 항상-표시 "수정" 버튼 (상세 Sheet 불필요) ② 삭제 확인 UI를 오른쪽 버튼 패널로 이동(스크롤 없이 보임) ③ 수정 폼의 진행 상태(시공상태·정산상태·준공완료)를 우측 패널 상단으로 이동 | ✅ |
+| 20 | 수주 Dialog 탭 구조 도입 — [기본정보][기성][준공] 3탭, 기성 CRUD (차수·기성일·기성액, 인라인 폼), 준공 탭 별도 저장 (수주 테이블 직접 UPDATE) | ✅ |
+| 21 | 공사이력 페이지 (`/progress`) — 입력 탭(공사 검색 드롭다운·달성율 역산·마지막 기록 표시) + 현황 탭(날짜 범위 필터·지중No/공사명 검색·수정·삭제) | ✅ |
+| 22 | 공사이력 현황 UI 투입실적 패턴 통일 — 필터 바 카드화, 날짜 raw input + `~` 구분자, 플로팅 토스트, 테이블 rounded card | ✅ |
+| 23 | 투입실적 메뉴 이름 변경 (`투입실적 입력` → `투입실적`) + 입력 탭 공사 선택 시 마지막 투입일 표시 | ✅ |
 
 ---
 
@@ -34,10 +38,8 @@
 
 | 순서 | 기능 | 경로 |
 |------|------|------|
-| 1 | 공사이력 조회·등록·수정·삭제 | `/orders` Sheet 내 탭 |
-| 2 | 거래처 관리 | `/admin/clients` |
-| 3 | 공사단가 관리 | `/admin/rates` |
-| 4 | 기성 등록 | `/orders` Sheet 내 탭 |
+| 1 | 거래처 관리 | `/admin/clients` |
+| 2 | 공사단가 관리 | `/admin/rates` |
 
 ---
 
@@ -105,8 +107,9 @@ src/
         ├── layout.tsx                # 인증 보호 레이아웃
         ├── _lib/calc.ts              # calc투입금액, calc합계
         ├── _components/             # KpiCards, ProfitChart, ActiveProjects
-        ├── orders/                  # 수주대장 (OrdersTable, OrderForm)
-        ├── input/                   # 투입실적 입력 + 현황 탭 (InputForm, HistoryTable)
+        ├── orders/                  # 수주대장 (OrdersTable, OrderForm — 기본정보/기성/준공 탭)
+        ├── input/                   # 투입실적 (InputForm, HistoryTable)
+        ├── progress/                # 공사이력 (ProgressInputForm, ProgressHistoryTable)
         └── sales/                   # 매출손익 현황
 ```
 
