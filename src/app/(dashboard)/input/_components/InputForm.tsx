@@ -389,7 +389,7 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
                     <th className="text-center px-3 py-2.5 text-xs font-semibold text-indigo-600 w-28">야간</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-100">
                   {직종행.map(({ label, 주, 야 }) => {
                     const 주값 = n(values[주 as keyof FormValues])
                     const 야값 = n(values[야 as keyof FormValues])
@@ -398,7 +398,7 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
                       <tr
                         key={label}
                         className={cn(
-                          'hover:bg-slate-50/60 transition-colors',
+                          'even:bg-blue-50/40 hover:bg-blue-100/50 transition-colors',
                           isEmpty && 'opacity-35',
                         )}
                       >
