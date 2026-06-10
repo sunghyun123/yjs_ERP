@@ -17,7 +17,7 @@ export default async function 수주대장Page() {
         공사담당, 감독자, 정산상태, 포장여부, 자재청구여부,
         발주자:거래처!발주자_id(거래처명),
         원청사:거래처!원청사_id(거래처명),
-        기성(차수, 기성일, 기성액_공급가)
+        기성(id, 차수, 기성일, 기성액_공급가)
       `)
       .order('지중no', { ascending: true }),
     supabase

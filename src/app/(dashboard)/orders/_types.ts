@@ -1,6 +1,6 @@
 import type { 수주Row, 거래처Row, 기성Row } from '@/types/database'
 
-export type 기성항목 = Pick<기성Row, '차수' | '기성일' | '기성액_공급가'>
+export type 기성항목 = Pick<기성Row, 'id' | '차수' | '기성일' | '기성액_공급가'>
 
 export type 발주자정보 = Pick<거래처Row, '거래처명'>
 
