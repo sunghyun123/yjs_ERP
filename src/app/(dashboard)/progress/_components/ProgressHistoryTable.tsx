@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Save, Trash2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Loader2, Save, Trash2, CheckCircle2, AlertCircle, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import type { 공사이력행 } from '../_types'
@@ -33,6 +33,8 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
   const [dateTo, setDateTo]     = useState(initTo)
   const [rows, setRows]         = useState<공사이력행[]>([])
   const [loading, setLoading]   = useState(false)
+
+  const [searchQuery, setSearchQuery] = useState('')
 
   const [editRow, setEditRow]       = useState<공사이력행 | null>(null)
   const [editDate, setEditDate]     = useState('')
@@ -92,7 +94,17 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
     fetchData()
   }
 
-  const total = rows.reduce((sum, r) => sum + (r.성과금액 ?? 0), 0)
+  const filteredRows = searchQuery.trim()
+    ? rows.filter((r) => {
+        const q = searchQuery.trim().toLowerCase()
+        return (
+          r.수주?.지중no?.toLowerCase().includes(q) ||
+          r.수주?.공사명?.toLowerCase().includes(q)
+        )
+      })
+    : rows
+
+  const total = filteredRows.reduce((sum, r) => sum + (r.성과금액 ?? 0), 0)
 
   return (
     <div>
@@ -106,7 +118,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
         </div>
       )}
 
-      <div className="flex gap-3 mb-4 items-end">
+      <div className="flex gap-3 mb-4 items-end flex-wrap">
         <div>
           <Label className="text-xs text-gray-500 mb-1 block">시작일</Label>
           <Input type="date" className="h-9 text-sm w-36" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
@@ -118,6 +130,15 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
         <Button size="sm" variant="outline" className="h-9" onClick={fetchData} disabled={loading}>
           {loading ? <Loader2 className="size-4 animate-spin" /> : '조회'}
         </Button>
+        <div className="relative ml-auto">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-gray-400 pointer-events-none" />
+          <Input
+            className="h-9 text-sm pl-8 w-56"
+            placeholder="지중No 또는 공사명 검색..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -131,14 +152,14 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {filteredRows.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">
                   {loading ? '불러오는 중...' : '조회 결과가 없습니다.'}
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
+              filteredRows.map((row) => (
                 <tr key={row.id} className="hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
                   <td className="px-4 py-2.5">
                     <span className="font-mono text-xs text-gray-400 mr-2">{row.수주?.지중no}</span>
@@ -161,11 +182,11 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
               ))
             )}
           </tbody>
-          {rows.length > 0 && (
+          {filteredRows.length > 0 && (
             <tfoot>
               <tr className="bg-gray-50">
                 <td colSpan={2} className="px-4 py-2.5 text-sm font-bold text-gray-600">
-                  합계 ({rows.length}건)
+                  합계 ({filteredRows.length}건){searchQuery.trim() && rows.length !== filteredRows.length && <span className="font-normal text-gray-400 ml-1">/ 전체 {rows.length}건</span>}
                 </td>
                 <td className="px-4 py-2.5 text-right font-bold text-[#1e2d5a]">
                   {formatKRW(total)}
