@@ -51,9 +51,6 @@ const schema = z.object({
   자재청구여부:    z.boolean().optional(),
   참고사항:        z.string().optional(),
   시공상태:        z.string().nullable().optional(),
-  준공여부:        z.boolean().optional(),
-  준공일:          z.string().nullable().optional(),
-  준공액_공급가:   z.number().nullable().optional(),
   정산상태:        z.string().nullable().optional(),
 })
 
@@ -262,6 +259,14 @@ function Field({ label, required, children, error }: {
 // ── 메인 컴포넌트 ───────────────────────────────────────────────────────────
 export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState<'info' | '기성' | '준공'>('info')
+
+  // 준공 탭 전용 로컬 상태 (useForm에서 분리)
+  const [준공여부Local, set준공여부Local] = useState(mode === 'edit' ? (row?.준공여부 ?? false) : false)
+  const [준공일Local, set준공일Local] = useState(mode === 'edit' ? (row?.준공일 ?? '') : '')
+  const [준공액Local, set준공액Local] = useState<number | null>(mode === 'edit' ? (row?.준공액_공급가 ?? null) : null)
+  const [준공저장중, set준공저장중] = useState(false)
+
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -294,14 +299,11 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
           자재청구여부:    row.자재청구여부,
           참고사항:        row.참고사항 ?? '',
           시공상태:        row.시공상태 ?? '',
-          준공여부:        row.준공여부,
-          준공일:          row.준공일 ?? '',
-          준공액_공급가:   row.준공액_공급가 ?? null,
           정산상태:        row.정산상태 ?? '',
         }
       : {
           지중no: '', 공사명: '',
-          포장여부: false, 자재청구여부: false, 준공여부: false,
+          포장여부: false, 자재청구여부: false,
         }
 
   const { register, handleSubmit, watch, setValue, control, formState: { errors } } =
@@ -311,7 +313,6 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
   const 공급가raw    = watch('수주금액_공급가')
   const 보험료율pct  = watch('보험료율') ?? null
   const 하도전용율pct = watch('하도전용율') ?? null
-  const 준공여부val  = watch('준공여부')
 
   const 공급가 = typeof 공급가raw === 'number' ? 공급가raw : 0
   const 부가세 = 공급가 * 0.1
@@ -354,9 +355,6 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
       참고사항:        values.참고사항?.trim() || null,
       ...(mode === 'edit' ? {
         시공상태:      values.시공상태 || null,
-        준공여부:      values.준공여부 ?? false,
-        준공일:        values.준공여부 ? values.준공일 || null : null,
-        준공액_공급가: values.준공여부 ? (values.준공액_공급가 ?? null) : null,
         정산상태:      values.정산상태 || null,
       } : {}),
     }
@@ -383,6 +381,24 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
     setTimeout(onSuccess, 1200)
   }
 
+  // 준공 저장 핸들러
+  const handleJunGongSave = async () => {
+    if (!row) return
+    set준공저장중(true)
+    const supabase = createClient()
+    const { error } = await (supabase.from('수주') as any)
+      .update({
+        준공여부: 준공여부Local,
+        준공일: 준공여부Local ? 준공일Local || null : null,
+        준공액_공급가: 준공여부Local ? 준공액Local : null,
+      })
+      .eq('id', row.id)
+    set준공저장중(false)
+    if (error) { showToast(false, '저장에 실패했습니다.'); return }
+    showToast(true, '준공 정보가 저장되었습니다.')
+    router.refresh()
+  }
+
   // 삭제
   const handleDelete = async () => {
     if (!row) return
@@ -403,7 +419,7 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
   }
 
   return (
-    <div className="flex flex-1 overflow-hidden relative">
+    <div className="flex flex-1 flex-col overflow-hidden relative">
       {/* Toast */}
       {toast && (
         <div className={cn(
@@ -415,339 +431,417 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
         </div>
       )}
 
-      {/* 좌측: 스크롤 폼 */}
-      <form
-        id="order-form"
-        onSubmit={handleSubmit(onSubmit)}
-        className="flex-1 overflow-y-auto px-6 py-5 space-y-5 min-w-0"
-      >
-        {/* ── 필수 정보 ─────────────────────────────────────────────────── */}
-        <Section title="필수 정보">
-          <Field label="지중No" required error={errors.지중no?.message}>
-            <Input
-              className={cn('h-9 text-sm font-mono', errors.지중no && 'border-red-400')}
-              placeholder="CG26-001"
-              {...register('지중no')}
-            />
-          </Field>
-          <Field label="공사명" required error={errors.공사명?.message}>
-            <Textarea
-              className={cn('text-sm min-h-[60px] resize-none', errors.공사명 && 'border-red-400')}
-              placeholder="5R구역 배수로공사 진성간12 지장이설"
-              {...register('공사명')}
-            />
-          </Field>
-          <Field label="수주금액(공급가)">
-            <Controller
-              name="수주금액_공급가"
-              control={control}
-              render={({ field }) => (
-                <MoneyInput
-                  value={field.value ?? null}
-                  onChange={field.onChange}
-                  className="h-9 text-sm"
-                  placeholder="0"
+      {/* 탭 바 — 수정 모드에서만 */}
+      {mode === 'edit' && (
+        <div className="flex border-b border-gray-100 shrink-0 bg-white">
+          <button
+            type="button"
+            onClick={() => setActiveTab('info')}
+            className={cn(
+              'px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
+              activeTab === 'info' ? 'text-[#3d5af1] border-[#3d5af1]' : 'text-gray-500 border-transparent hover:text-gray-700',
+            )}
+          >
+            기본정보
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('기성')}
+            className={cn(
+              'px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
+              activeTab === '기성' ? 'text-[#3d5af1] border-[#3d5af1]' : 'text-gray-500 border-transparent hover:text-gray-700',
+            )}
+          >
+            기성{(row?.기성?.length ?? 0) > 0 && (
+              <span className="ml-1.5 bg-[#3d5af1] text-white text-[10px] rounded-full px-1.5 py-0.5">
+                {row?.기성?.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('준공')}
+            className={cn(
+              'px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
+              activeTab === '준공' ? 'text-[#22c55e] border-[#22c55e]' : 'text-gray-500 border-transparent hover:text-gray-700',
+            )}
+          >
+            준공{준공여부Local && (
+              <span className="ml-1.5 bg-[#22c55e] text-white text-[10px] rounded-full px-1.5 py-0.5">완료</span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* 기본정보 탭 */}
+      {activeTab === 'info' && (
+        <div className="flex flex-1 overflow-hidden">
+          {/* 좌측: 스크롤 폼 */}
+          <form
+            id="order-form"
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex-1 overflow-y-auto px-6 py-5 space-y-5 min-w-0"
+          >
+            {/* ── 필수 정보 ─────────────────────────────────────────────────── */}
+            <Section title="필수 정보">
+              <Field label="지중No" required error={errors.지중no?.message}>
+                <Input
+                  className={cn('h-9 text-sm font-mono', errors.지중no && 'border-red-400')}
+                  placeholder="CG26-001"
+                  {...register('지중no')}
                 />
-              )}
-            />
-          </Field>
-        </Section>
+              </Field>
+              <Field label="공사명" required error={errors.공사명?.message}>
+                <Textarea
+                  className={cn('text-sm min-h-[60px] resize-none', errors.공사명 && 'border-red-400')}
+                  placeholder="5R구역 배수로공사 진성간12 지장이설"
+                  {...register('공사명')}
+                />
+              </Field>
+              <Field label="수주금액(공급가)">
+                <Controller
+                  name="수주금액_공급가"
+                  control={control}
+                  render={({ field }) => (
+                    <MoneyInput
+                      value={field.value ?? null}
+                      onChange={field.onChange}
+                      className="h-9 text-sm"
+                      placeholder="0"
+                    />
+                  )}
+                />
+              </Field>
+            </Section>
 
-        <Separator />
-
-        {/* ── 계약 정보 ─────────────────────────────────────────────────── */}
-        <Section title="계약 정보">
-          {/* 공사구분 · 공사종류 · 공사현장 — 3열 */}
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="공사구분">
-              <Controller
-                name="공사구분"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value || '__none__'} onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="선택" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">—</SelectItem>
-                      {공사구분옵션.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
-            <Field label="공사종류">
-              <Controller
-                name="공사종류"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value || '__none__'} onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="선택" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">—</SelectItem>
-                      {공사종류옵션.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
-            <Field label="공사현장">
-              <Input className="h-9 text-sm" placeholder="광명" {...register('공사현장')} />
-            </Field>
-          </div>
-
-          <Field label="공사번호">
-            <Input className="h-9 text-sm" placeholder="8474-2025-3315" {...register('공사번호')} />
-          </Field>
-
-          {/* 발주자 · 원청사 — 2열 */}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="발주자">
-              <Controller
-                name="발주자_id"
-                control={control}
-                render={({ field }) => (
-                  <SearchableSelect
-                    options={거래처목록}
-                    value={field.value ?? null}
-                    onChange={field.onChange}
-                  />
-                )}
-              />
-            </Field>
-            <Field label="원청사">
-              <Controller
-                name="원청사_id"
-                control={control}
-                render={({ field }) => (
-                  <SearchableSelect
-                    options={거래처목록}
-                    value={field.value ?? null}
-                    onChange={(id) => { field.onChange(id); handleClientChange(id) }}
-                    placeholder="선택 시 요율 자동 적용"
-                  />
-                )}
-              />
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="보험료율 (%)">
-              <Input
-                type="number" step="0.01" min="0" max="100"
-                className="h-9 text-sm" placeholder="7.5"
-                {...register('보험료율', nullNum)}
-              />
-            </Field>
-            <Field label="하도전용율 (%)">
-              <Input
-                type="number" step="0.01" min="0" max="100"
-                className="h-9 text-sm" placeholder="85"
-                {...register('하도전용율', nullNum)}
-              />
-            </Field>
-          </div>
-        </Section>
-
-        <Separator />
-
-        {/* ── 담당자 ────────────────────────────────────────────────────── */}
-        <Section title="담당자">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="공사담당">
-              <Input className="h-9 text-sm" {...register('공사담당')} />
-            </Field>
-            <Field label="감독자">
-              <Input className="h-9 text-sm" {...register('감독자')} />
-            </Field>
-          </div>
-        </Section>
-
-        <Separator />
-
-        {/* ── 기타 ──────────────────────────────────────────────────────── */}
-        <Section title="기타">
-          <div className="flex items-center gap-6">
-            <Controller
-              name="포장여부"
-              control={control}
-              render={({ field }) => (
-                <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                  <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
-                  포장여부
-                </label>
-              )}
-            />
-            <Controller
-              name="자재청구여부"
-              control={control}
-              render={({ field }) => (
-                <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                  <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
-                  자재청구여부
-                </label>
-              )}
-            />
-          </div>
-          <Field label="참고사항">
-            <Textarea className="text-sm min-h-[64px] resize-none" {...register('참고사항')} />
-          </Field>
-        </Section>
-
-        {/* ── 진행 상태 (수정 모드만) ───────────────────────────────────── */}
-        {mode === 'edit' && (
-          <>
             <Separator />
-            <Section title="진행 상태">
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="시공상태">
+
+            {/* ── 계약 정보 ─────────────────────────────────────────────────── */}
+            <Section title="계약 정보">
+              {/* 공사구분 · 공사종류 · 공사현장 — 3열 */}
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="공사구분">
                   <Controller
-                    name="시공상태"
+                    name="공사구분"
                     control={control}
                     render={({ field }) => (
                       <Select value={field.value || '__none__'} onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}>
                         <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="선택" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none__">—</SelectItem>
-                          {시공상태옵션.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                          {공사구분옵션.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     )}
                   />
                 </Field>
-                <Field label="정산상태">
+                <Field label="공사종류">
                   <Controller
-                    name="정산상태"
+                    name="공사종류"
                     control={control}
                     render={({ field }) => (
                       <Select value={field.value || '__none__'} onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}>
                         <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="선택" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none__">—</SelectItem>
-                          {정산상태옵션.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                          {공사종류옵션.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                    )}
+                  />
+                </Field>
+                <Field label="공사현장">
+                  <Input className="h-9 text-sm" placeholder="광명" {...register('공사현장')} />
+                </Field>
+              </div>
+
+              <Field label="공사번호">
+                <Input className="h-9 text-sm" placeholder="8474-2025-3315" {...register('공사번호')} />
+              </Field>
+
+              {/* 발주자 · 원청사 — 2열 */}
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="발주자">
+                  <Controller
+                    name="발주자_id"
+                    control={control}
+                    render={({ field }) => (
+                      <SearchableSelect
+                        options={거래처목록}
+                        value={field.value ?? null}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                </Field>
+                <Field label="원청사">
+                  <Controller
+                    name="원청사_id"
+                    control={control}
+                    render={({ field }) => (
+                      <SearchableSelect
+                        options={거래처목록}
+                        value={field.value ?? null}
+                        onChange={(id) => { field.onChange(id); handleClientChange(id) }}
+                        placeholder="선택 시 요율 자동 적용"
+                      />
                     )}
                   />
                 </Field>
               </div>
-              <Controller
-                name="준공여부"
-                control={control}
-                render={({ field }) => (
-                  <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                    <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
-                    준공완료
-                  </label>
-                )}
-              />
-              {준공여부val && (
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="준공일">
-                    <Input type="date" className="h-9 text-sm" {...register('준공일')} />
-                  </Field>
-                  <Field label="준공액(공급가)">
-                    <Controller
-                      name="준공액_공급가"
-                      control={control}
-                      render={({ field }) => (
-                        <MoneyInput
-                          value={field.value ?? null}
-                          onChange={field.onChange}
-                          className="h-9 text-sm"
-                        />
-                      )}
-                    />
-                  </Field>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="보험료율 (%)">
+                  <Input
+                    type="number" step="0.01" min="0" max="100"
+                    className="h-9 text-sm" placeholder="7.5"
+                    {...register('보험료율', nullNum)}
+                  />
+                </Field>
+                <Field label="하도전용율 (%)">
+                  <Input
+                    type="number" step="0.01" min="0" max="100"
+                    className="h-9 text-sm" placeholder="85"
+                    {...register('하도전용율', nullNum)}
+                  />
+                </Field>
+              </div>
+            </Section>
+
+            <Separator />
+
+            {/* ── 담당자 ────────────────────────────────────────────────────── */}
+            <Section title="담당자">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="공사담당">
+                  <Input className="h-9 text-sm" {...register('공사담당')} />
+                </Field>
+                <Field label="감독자">
+                  <Input className="h-9 text-sm" {...register('감독자')} />
+                </Field>
+              </div>
+            </Section>
+
+            <Separator />
+
+            {/* ── 기타 ──────────────────────────────────────────────────────── */}
+            <Section title="기타">
+              <div className="flex items-center gap-6">
+                <Controller
+                  name="포장여부"
+                  control={control}
+                  render={({ field }) => (
+                    <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                      <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
+                      포장여부
+                    </label>
+                  )}
+                />
+                <Controller
+                  name="자재청구여부"
+                  control={control}
+                  render={({ field }) => (
+                    <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                      <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
+                      자재청구여부
+                    </label>
+                  )}
+                />
+              </div>
+              <Field label="참고사항">
+                <Textarea className="text-sm min-h-[64px] resize-none" {...register('참고사항')} />
+              </Field>
+            </Section>
+
+            {/* ── 진행 상태 (수정 모드만) ───────────────────────────────────── */}
+            {mode === 'edit' && (
+              <>
+                <Separator />
+                <Section title="진행 상태">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="시공상태">
+                      <Controller
+                        name="시공상태"
+                        control={control}
+                        render={({ field }) => (
+                          <Select value={field.value || '__none__'} onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}>
+                            <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="선택" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">—</SelectItem>
+                              {시공상태옵션.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </Field>
+                    <Field label="정산상태">
+                      <Controller
+                        name="정산상태"
+                        control={control}
+                        render={({ field }) => (
+                          <Select value={field.value || '__none__'} onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}>
+                            <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="선택" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">—</SelectItem>
+                              {정산상태옵션.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </Field>
+                  </div>
+                </Section>
+              </>
+            )}
+
+            {/* 삭제 확인 */}
+            {deleteConfirm && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
+                <p className="text-sm text-red-700 font-medium flex items-center gap-1.5">
+                  <AlertTriangle className="size-4" />
+                  정말 삭제하시겠습니까?
+                </p>
+                <p className="text-xs text-red-600">연결된 투입실적·공사이력이 없는 경우에만 삭제됩니다.</p>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    type="button" size="sm" variant="destructive"
+                    onClick={handleDelete} disabled={deleting} className="h-7 text-xs"
+                  >
+                    {deleting ? <Loader2 className="size-3 animate-spin" /> : '삭제 확인'}
+                  </Button>
+                  <Button
+                    type="button" size="sm" variant="outline"
+                    onClick={() => setDeleteConfirm(false)} className="h-7 text-xs"
+                  >
+                    취소
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="h-2" />
+          </form>
+
+          {/* 우측: 실시간 계산 + 버튼 */}
+          <div className="w-52 shrink-0 border-l border-gray-100 flex flex-col bg-gray-50/40">
+            <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+
+              {/* 수주금액 계산 */}
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">수주금액 계산</p>
+                <CalcRow label="공급가" value={공급가} strong />
+                <CalcRow label="부가세 (10%)" value={부가세} />
+                <CalcRow label="합계 (VAT포함)" value={합계} strong />
+              </div>
+
+              {(보험료율pct !== null || 하도전용율pct !== null) && (
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">적용금액</p>
+                  {보험료제외 !== null && (
+                    <CalcRow label={`보험료제외 (${보험료율pct?.toFixed(1)}%)`} value={보험료제외} />
+                  )}
+                  {하도적용 !== null && (
+                    <CalcRow label={`하도적용 (${하도전용율pct?.toFixed(1)}%)`} value={하도적용} strong highlight />
+                  )}
                 </div>
               )}
-            </Section>
-          </>
-        )}
 
-        {/* 삭제 확인 */}
-        {deleteConfirm && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
-            <p className="text-sm text-red-700 font-medium flex items-center gap-1.5">
-              <AlertTriangle className="size-4" />
-              정말 삭제하시겠습니까?
-            </p>
-            <p className="text-xs text-red-600">연결된 투입실적·공사이력이 없는 경우에만 삭제됩니다.</p>
-            <div className="flex gap-2 pt-1">
-              <Button
-                type="button" size="sm" variant="destructive"
-                onClick={handleDelete} disabled={deleting} className="h-7 text-xs"
-              >
-                {deleting ? <Loader2 className="size-3 animate-spin" /> : '삭제 확인'}
-              </Button>
-              <Button
-                type="button" size="sm" variant="outline"
-                onClick={() => setDeleteConfirm(false)} className="h-7 text-xs"
-              >
-                취소
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <div className="h-2" />
-      </form>
-
-      {/* 우측: 실시간 계산 + 버튼 */}
-      <div className="w-52 shrink-0 border-l border-gray-100 flex flex-col bg-gray-50/40">
-        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
-
-          {/* 수주금액 계산 */}
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">수주금액 계산</p>
-            <CalcRow label="공급가" value={공급가} strong />
-            <CalcRow label="부가세 (10%)" value={부가세} />
-            <CalcRow label="합계 (VAT포함)" value={합계} strong />
-          </div>
-
-          {(보험료율pct !== null || 하도전용율pct !== null) && (
-            <div className="space-y-1">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">적용금액</p>
-              {보험료제외 !== null && (
-                <CalcRow label={`보험료제외 (${보험료율pct?.toFixed(1)}%)`} value={보험료제외} />
-              )}
-              {하도적용 !== null && (
-                <CalcRow label={`하도적용 (${하도전용율pct?.toFixed(1)}%)`} value={하도적용} strong highlight />
+              {공급가 === 0 && (
+                <p className="text-[11px] text-gray-400 text-center pt-2">
+                  수주금액을 입력하면<br />자동으로 계산됩니다
+                </p>
               )}
             </div>
-          )}
 
-          {공급가 === 0 && (
-            <p className="text-[11px] text-gray-400 text-center pt-2">
-              수주금액을 입력하면<br />자동으로 계산됩니다
-            </p>
-          )}
+            {/* 버튼 */}
+            <div className="px-4 pb-5 pt-3 space-y-2 shrink-0 border-t border-gray-100">
+              <Button
+                type="submit"
+                form="order-form"
+                size="sm"
+                className="w-full h-9 text-sm bg-[#1e2d5a] hover:bg-[#2d45a8]"
+                disabled={saving}
+              >
+                {saving
+                  ? <Loader2 className="size-3.5 animate-spin mr-1.5" />
+                  : <Save className="size-3.5 mr-1.5" />}
+                {mode === 'new' ? '등록' : '저장'}
+              </Button>
+              {mode === 'edit' && !deleteConfirm && (
+                <Button
+                  type="button" size="sm" variant="outline"
+                  className="w-full h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={() => setDeleteConfirm(true)}
+                >
+                  <Trash2 className="size-3.5 mr-1.5" />
+                  삭제
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
+      )}
 
-        {/* 버튼 */}
-        <div className="px-4 pb-5 pt-3 space-y-2 shrink-0 border-t border-gray-100">
-          <Button
-            type="submit"
-            form="order-form"
-            size="sm"
-            className="w-full h-9 text-sm bg-[#1e2d5a] hover:bg-[#2d45a8]"
-            disabled={saving}
-          >
-            {saving
-              ? <Loader2 className="size-3.5 animate-spin mr-1.5" />
-              : <Save className="size-3.5 mr-1.5" />}
-            {mode === 'new' ? '등록' : '저장'}
-          </Button>
-          {mode === 'edit' && !deleteConfirm && (
+      {/* 준공 탭 */}
+      {mode === 'edit' && activeTab === '준공' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-sm space-y-4">
+            <label className="flex items-center gap-2.5 text-sm cursor-pointer select-none">
+              <Checkbox
+                checked={준공여부Local}
+                onCheckedChange={(v) => {
+                  set준공여부Local(!!v)
+                  if (!v) { set준공일Local(''); set준공액Local(null) }
+                }}
+              />
+              <span className="font-medium">준공 완료</span>
+            </label>
+
+            {준공여부Local && (
+              <>
+                <Field label="준공일">
+                  <Input
+                    type="date"
+                    className="h-9 text-sm"
+                    value={준공일Local}
+                    onChange={(e) => set준공일Local(e.target.value)}
+                  />
+                </Field>
+                <Field label="준공액 (공급가)">
+                  <MoneyInput
+                    value={준공액Local}
+                    onChange={set준공액Local}
+                    className="h-9 text-sm"
+                  />
+                </Field>
+                {준공액Local != null && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-1.5">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>부가세 (10%)</span>
+                      <span>{formatKRW(준공액Local * 0.1)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-bold text-green-700">
+                      <span>준공 합계</span>
+                      <span>{formatKRW(준공액Local * 1.1)}</span>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
             <Button
-              type="button" size="sm" variant="outline"
-              className="w-full h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
-              onClick={() => setDeleteConfirm(true)}
+              type="button"
+              size="sm"
+              className="w-full h-9 text-sm bg-[#1e2d5a] hover:bg-[#2d45a8]"
+              onClick={handleJunGongSave}
+              disabled={준공저장중}
             >
-              <Trash2 className="size-3.5 mr-1.5" />
-              삭제
+              {준공저장중 ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <Save className="size-3.5 mr-1.5" />}
+              준공 저장
             </Button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
