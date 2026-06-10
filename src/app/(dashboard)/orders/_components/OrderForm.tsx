@@ -289,6 +289,20 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
     toastTimer.current = setTimeout(() => setToast(null), 3500)
   }
 
+  const [공정누계, set공정누계] = useState<number>(0)
+
+  useEffect(() => {
+    if (mode !== 'edit' || !row) return
+    const supabase = createClient()
+    ;(supabase.from('공사이력') as any)
+      .select('성과금액')
+      .eq('수주_id', row.id)
+      .then(({ data }: { data: { 성과금액: number | null }[] | null }) => {
+        const sum = (data ?? []).reduce((s, r) => s + (r.성과금액 ?? 0), 0)
+        set공정누계(sum)
+      })
+  }, [mode, row?.id])
+
   const defaultValues: FormValues =
     mode === 'edit' && row
       ? {
@@ -814,6 +828,26 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
                   {하도적용 !== null && (
                     <CalcRow label={`하도적용 (${하도전용율pct?.toFixed(1)}%)`} value={하도적용} strong highlight />
                   )}
+                </div>
+              )}
+
+              {mode === 'edit' && 하도적용 != null && 하도적용 > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">달성률</p>
+                  <div className="rounded-lg px-3 py-2 bg-amber-50 border border-amber-100">
+                    <p className="text-[10px] text-gray-400">공정 달성률</p>
+                    <p className="text-lg font-bold text-amber-600">
+                      {((공정누계 / 하도적용) * 100).toFixed(1)}%
+                    </p>
+                    <p className="text-[10px] text-gray-400">공사이력 누계</p>
+                  </div>
+                  <div className="rounded-lg px-3 py-2 bg-blue-50 border border-blue-100">
+                    <p className="text-[10px] text-gray-400">기성 달성률</p>
+                    <p className="text-lg font-bold text-[#1e2d5a]">
+                      {((기성누계공급가 / 하도적용) * 100).toFixed(1)}%
+                    </p>
+                    <p className="text-[10px] text-gray-400">기성 청구 누계</p>
+                  </div>
                 </div>
               )}
 

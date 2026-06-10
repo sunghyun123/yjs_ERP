@@ -285,7 +285,7 @@ export function ProgressInputForm({ 수주목록 }: Props) {
                   <span className="font-semibold text-green-700">{formatKRW(누계성과금액)}</span>
                 </div>
                 <div>
-                  <span className="text-gray-400 text-xs block">현재 달성율</span>
+                  <span className="text-gray-400 text-xs block">현재 공정 달성률</span>
                   <span className="font-semibold text-amber-600">
                     {현재달성율 != null ? `${현재달성율.toFixed(1)}%` : '—'}
                   </span>
@@ -331,7 +331,7 @@ export function ProgressInputForm({ 수주목록 }: Props) {
         <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">자동 계산</p>
 
         <div className="bg-white border border-gray-200 rounded-lg p-3">
-          <p className="text-[10px] text-gray-400 mb-1">이번 Δ달성율</p>
+          <p className="text-[10px] text-gray-400 mb-1">Δ공정 달성률</p>
           <p className="text-2xl font-bold text-amber-500">
             {delta달성율 != null ? `+${delta달성율.toFixed(2)}%` : '—'}
           </p>
@@ -349,7 +349,7 @@ export function ProgressInputForm({ 수주목록 }: Props) {
             <span className="text-white font-semibold">{formatKRW(저장후누계)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-blue-200 text-sm">달성율</span>
+            <span className="text-blue-200 text-sm">공정 달성률</span>
             <span className="text-amber-300 font-bold text-xl">
               {저장후달성율 != null ? `${저장후달성율.toFixed(1)}%` : '—'}
             </span>
