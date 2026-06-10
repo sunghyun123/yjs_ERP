@@ -146,7 +146,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-gray-400 pointer-events-none" />
           <Input
             className="h-8 pl-8 text-sm"
-            placeholder="공사명, 지중No 검색..."
+            placeholder="지중No 또는 공사명으로 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
