@@ -1,6 +1,7 @@
 'use client'
 
 import { createPortal } from 'react-dom'
+import { DismissableLayerBranch } from '@radix-ui/react-dismissable-layer'
 import { useRef, useState, useEffect, useDeferredValue } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
@@ -80,6 +81,7 @@ function SearchableSelect({
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const dropRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
 
   const selected = options.find((o) => o.id === value)
@@ -96,10 +98,12 @@ function SearchableSelect({
     setQuery('')
   }
 
-  // 스크롤 시 닫기
   useEffect(() => {
     if (!open) return
-    const close = () => setOpen(false)
+    const close = (e: Event) => {
+      if (dropRef.current?.contains(e.target as Node)) return
+      setOpen(false)
+    }
     document.addEventListener('scroll', close, { capture: true, passive: true })
     return () => document.removeEventListener('scroll', close, { capture: true })
   }, [open])
@@ -139,28 +143,33 @@ function SearchableSelect({
 
       {open && typeof document !== 'undefined' &&
         createPortal(
-          <div
-            style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
-            className="bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto"
-          >
-            {filtered.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-gray-400">검색 결과 없음</div>
-            ) : (
-              filtered.map((o) => (
-                <button
-                  key={o.id}
-                  type="button"
-                  onMouseDown={(e) => { e.preventDefault(); onChange(o.id); setOpen(false) }}
-                  className={cn(
-                    'w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 transition-colors',
-                    o.id === value && 'bg-blue-50 text-blue-700 font-medium',
-                  )}
-                >
-                  {o.거래처명}
-                </button>
-              ))
-            )}
-          </div>,
+          <DismissableLayerBranch>
+            <div
+              ref={dropRef}
+              style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 9999, pointerEvents: 'auto' }}
+              className="bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto"
+              onWheel={(e) => e.stopPropagation()}
+            >
+              {filtered.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-400">검색 결과 없음</div>
+              ) : (
+                filtered.map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => { onChange(o.id); setOpen(false) }}
+                    className={cn(
+                      'w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 transition-colors',
+                      o.id === value && 'bg-blue-50 text-blue-700 font-medium',
+                    )}
+                  >
+                    {o.거래처명}
+                  </button>
+                ))
+              )}
+            </div>
+          </DismissableLayerBranch>,
           document.body,
         )}
     </div>
@@ -216,7 +225,7 @@ function CalcRow({ label, value, strong, highlight }: {
 }) {
   return (
     <div className={cn('flex items-center justify-between rounded px-2 py-1', highlight && 'bg-blue-50')}>
-      <span className={cn('text-[11px] text-gray-500 shrink-0 mr-1', strong && 'font-semibold text-gray-700')}>
+      <span className={cn('text-[11px] text-gray-500 shrink-0 mr-1 whitespace-nowrap', strong && 'font-semibold text-gray-700')}>
         {label}
       </span>
       <span className={cn(
@@ -248,7 +257,7 @@ function Field({ label, required, children, error }: {
     <div>
       <Label className="text-xs text-gray-600">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-orange-400 ml-0.5">*</span>}
       </Label>
       <div className="mt-1">{children}</div>
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
@@ -583,7 +592,7 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
                   {...register('공사명')}
                 />
               </Field>
-              <Field label="수주금액(공급가)">
+              <Field label="수주금액(공급가)" required>
                 <Controller
                   name="수주금액_공급가"
                   control={control}
@@ -808,7 +817,7 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
           </form>
 
           {/* 우측: 실시간 계산 + 버튼 */}
-          <div className="w-52 shrink-0 border-l border-gray-100 flex flex-col bg-gray-50/40">
+          <div className="w-72 shrink-0 border-l border-gray-100 flex flex-col bg-gray-50/40">
             <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
 
               {/* 수주금액 계산 */}
@@ -826,7 +835,14 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
                     <CalcRow label={`보험료제외 (${보험료율pct?.toFixed(1)}%)`} value={보험료제외} />
                   )}
                   {하도적용 !== null && (
-                    <CalcRow label={`하도적용 (${하도전용율pct?.toFixed(1)}%)`} value={하도적용} strong highlight />
+                    <div className="bg-[#1e2d5a] rounded-xl px-3 py-2.5 mt-1">
+                      <p className="text-[10px] text-blue-300 mb-1 whitespace-nowrap">
+                        하도적용 ({하도전용율pct?.toFixed(1)}%)
+                      </p>
+                      <p className="text-[18px] font-bold text-white leading-tight whitespace-nowrap">
+                        {formatKRW(하도적용)}
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
