@@ -1,0 +1,196 @@
+<h2>기성 등록 UX — 3가지 접근법</h2>
+<p class="subtitle">현재 수주 수정 Dialog(900px)에서 기성 금액을 어떻게 입력할까?</p>
+
+<div class="options" style="flex-direction:column;gap:24px;">
+
+  <!-- Option A -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)" style="flex-direction:column;align-items:flex-start;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;width:100%;">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>Dialog 내 탭 분리</h3>
+        <p>Dialog 상단에 탭을 추가 — [기본정보] [기성 관리] 탭으로 분리</p>
+      </div>
+    </div>
+    <!-- Mockup -->
+    <div style="width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;font-size:12px;">
+      <!-- Dialog header + tabs -->
+      <div style="background:#1e2d5a;color:white;padding:10px 16px;font-size:13px;font-weight:600;">수주 수정 — CG26-001 강남구 전력구 지장이설</div>
+      <div style="display:flex;border-bottom:2px solid #e2e8f0;background:white;">
+        <div style="padding:8px 20px;color:#666;font-size:12px;border-bottom:2px solid transparent;margin-bottom:-2px;">기본정보</div>
+        <div style="padding:8px 20px;color:#3d5af1;font-weight:600;font-size:12px;border-bottom:2px solid #3d5af1;margin-bottom:-2px;">기성 관리 <span style="background:#ef4444;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;">3건</span></div>
+      </div>
+      <!-- 기성 탭 내용 -->
+      <div style="padding:16px;display:flex;gap:16px;">
+        <div style="flex:1;">
+          <!-- 기성 테이블 -->
+          <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <thead>
+              <tr style="background:#f1f5f9;">
+                <th style="padding:6px 8px;text-align:left;border:1px solid #e2e8f0;color:#64748b;">차수</th>
+                <th style="padding:6px 8px;text-align:left;border:1px solid #e2e8f0;color:#64748b;">기성일</th>
+                <th style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;color:#64748b;">공급가</th>
+                <th style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;color:#64748b;">부가세</th>
+                <th style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;color:#64748b;font-weight:700;">합계</th>
+                <th style="padding:6px 8px;border:1px solid #e2e8f0;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;">1차</td>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;">2025-08-15</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;">30,000,000</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;">3,000,000</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;font-weight:600;color:#1e2d5a;">33,000,000</td>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;"><span style="color:#3d5af1;cursor:pointer;">수정</span></td>
+              </tr>
+              <tr>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;">2차</td>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;">2025-10-20</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;">45,000,000</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;">4,500,000</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;font-weight:600;color:#1e2d5a;">49,500,000</td>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;"><span style="color:#3d5af1;cursor:pointer;">수정</span></td>
+              </tr>
+              <tr>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;">3차</td>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;">2026-01-10</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;">20,000,000</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;">2,000,000</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;font-weight:600;color:#1e2d5a;">22,000,000</td>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;"><span style="color:#3d5af1;cursor:pointer;">수정</span></td>
+              </tr>
+              <!-- 합계 행 -->
+              <tr style="background:#eff6ff;">
+                <td colspan="2" style="padding:6px 8px;border:1px solid #e2e8f0;font-weight:700;color:#1e2d5a;">누계</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;font-weight:700;">95,000,000</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;font-weight:700;">9,500,000</td>
+                <td style="padding:6px 8px;text-align:right;border:1px solid #e2e8f0;font-weight:700;color:#1e2d5a;">104,500,000</td>
+                <td style="border:1px solid #e2e8f0;"></td>
+              </tr>
+            </tbody>
+          </table>
+          <button style="margin-top:10px;padding:6px 14px;background:#3d5af1;color:white;border:none;border-radius:6px;font-size:11px;cursor:pointer;">+ 기성 추가</button>
+        </div>
+      </div>
+    </div>
+    <div class="pros-cons" style="width:100%;">
+      <div class="pros"><h4>장점</h4><ul><li>기성 목록 전체를 한눈에</li><li>메인 폼 전혀 안 건드림</li><li>공사이력 탭도 자연스럽게 추가 가능</li></ul></div>
+      <div class="cons"><h4>단점</h4><ul><li>탭 전환 한 번 더 필요</li><li>기본정보 수정과 기성 등록을 동시에 못 봄</li></ul></div>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)" style="flex-direction:column;align-items:flex-start;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;width:100%;">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>우측 패널 인라인 미니 리스트</h3>
+        <p>현재 우측 패널 하단에 기성 내역 섹션 추가 — 탭 전환 없이 한 화면에서 모두 처리</p>
+      </div>
+    </div>
+    <!-- Mockup -->
+    <div style="width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;font-size:12px;">
+      <div style="background:#1e2d5a;color:white;padding:10px 16px;font-size:13px;font-weight:600;">수주 수정</div>
+      <div style="display:flex;height:280px;">
+        <!-- Left form (축약) -->
+        <div style="flex:1;padding:12px;border-right:1px solid #e2e8f0;overflow:hidden;">
+          <div style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">필수 정보</div>
+          <div style="background:#f1f5f9;border-radius:4px;padding:6px 8px;margin-bottom:6px;color:#64748b;font-size:11px;">지중No: CG26-001</div>
+          <div style="background:#f1f5f9;border-radius:4px;padding:6px 8px;margin-bottom:6px;color:#64748b;font-size:11px;">공사명: 강남구 전력구 지장이설...</div>
+          <div style="background:#f1f5f9;border-radius:4px;padding:6px 8px;color:#64748b;font-size:11px;">수주금액: 120,000,000원</div>
+          <div style="margin-top:10px;color:#94a3b8;font-size:10px;text-align:center;">... (계약정보, 담당자 등) ...</div>
+        </div>
+        <!-- Right panel -->
+        <div style="width:200px;padding:12px;overflow-y:auto;background:#fafafa;">
+          <!-- 진행상태 -->
+          <div style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">진행 상태</div>
+          <div style="background:white;border:1px solid #e2e8f0;border-radius:4px;padding:5px 8px;margin-bottom:5px;font-size:11px;">시공상태: 시공중</div>
+          <div style="background:white;border:1px solid #e2e8f0;border-radius:4px;padding:5px 8px;margin-bottom:5px;font-size:11px;">정산상태: 3차기성</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;color:#64748b;">☑ 준공완료</div>
+          <hr style="margin:8px 0;border-color:#e2e8f0;" />
+          <!-- 기성 내역 (NEW) -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;">기성 내역</span>
+            <button style="background:#3d5af1;color:white;border:none;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer;">+</button>
+          </div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:3px;display:flex;justify-content:space-between;"><span>1차 · 25-08-15</span><span style="color:#1e2d5a;font-weight:600;">33,000,000</span></div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:3px;display:flex;justify-content:space-between;"><span>2차 · 25-10-20</span><span style="color:#1e2d5a;font-weight:600;">49,500,000</span></div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:6px;display:flex;justify-content:space-between;"><span>3차 · 26-01-10</span><span style="color:#1e2d5a;font-weight:600;">22,000,000</span></div>
+          <div style="background:#eff6ff;border-radius:4px;padding:4px 8px;display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:#1e2d5a;">
+            <span>누계</span><span>104,500,000</span>
+          </div>
+          <hr style="margin:8px 0;border-color:#e2e8f0;" />
+          <!-- 수주금액 계산 (축약) -->
+          <div style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">수주금액 계산</div>
+          <div style="font-size:10px;color:#64748b;">공급가: 120,000,000</div>
+          <div style="background:#1e2d5a;border-radius:6px;padding:6px;margin-top:4px;text-align:right;color:white;font-size:10px;font-weight:700;">하도적용 88,200,000</div>
+        </div>
+      </div>
+    </div>
+    <div class="pros-cons" style="width:100%;">
+      <div class="pros"><h4>장점</h4><ul><li>탭 전환 없이 한 화면에서 모두 처리</li><li>기성 누계를 수주금액과 같이 볼 수 있음</li></ul></div>
+      <div class="cons"><h4>단점</h4><ul><li>우측 패널이 이미 좁은데(288px) 더 복잡해짐</li><li>금액 입력은 결국 팝업/인라인 폼 필요</li><li>기성 건수 많으면 스크롤 길어짐</li></ul></div>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)" style="flex-direction:column;align-items:flex-start;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;width:100%;">
+      <div class="letter">C</div>
+      <div class="content">
+        <h3>정산상태 변경 시 슬라이딩 입력 패널</h3>
+        <p>정산상태 드롭다운에서 "N차기성" 선택하면 → 해당 차수 기성금액 입력 슬롯이 자동 펼쳐짐</p>
+      </div>
+    </div>
+    <!-- Mockup -->
+    <div style="width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;font-size:12px;">
+      <div style="background:#1e2d5a;color:white;padding:10px 16px;font-size:13px;font-weight:600;">수주 수정</div>
+      <div style="display:flex;height:260px;">
+        <div style="flex:1;padding:12px;border-right:1px solid #e2e8f0;overflow:hidden;">
+          <div style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">필수 정보</div>
+          <div style="background:#f1f5f9;border-radius:4px;padding:6px 8px;margin-bottom:6px;color:#64748b;font-size:11px;">지중No · 공사명 · 수주금액 ...</div>
+          <div style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;margin-top:12px;">계약 정보</div>
+          <div style="background:#f1f5f9;border-radius:4px;padding:6px 8px;color:#64748b;font-size:11px;">공사구분 · 발주자 · 원청사 ...</div>
+        </div>
+        <!-- Right panel -->
+        <div style="width:210px;padding:12px;overflow-y:auto;background:#fafafa;">
+          <div style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">진행 상태</div>
+          <div style="background:white;border:1px solid #e2e8f0;border-radius:4px;padding:5px 8px;margin-bottom:5px;font-size:11px;">시공상태: 시공중</div>
+          <!-- 정산상태 with highlight -->
+          <div style="background:white;border:2px solid #3d5af1;border-radius:4px;padding:5px 8px;margin-bottom:2px;font-size:11px;color:#3d5af1;font-weight:600;">정산상태: 3차기성 ▼</div>
+          <!-- 슬라이딩 패널 (펼쳐진 상태) -->
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px;margin-bottom:8px;margin-top:4px;">
+            <div style="color:#1e2d5a;font-size:10px;font-weight:700;margin-bottom:8px;">▼ 3차 기성금액 입력</div>
+            <div style="margin-bottom:6px;">
+              <div style="font-size:10px;color:#64748b;margin-bottom:2px;">기성일</div>
+              <div style="background:white;border:1px solid #e2e8f0;border-radius:4px;padding:4px 8px;font-size:11px;color:#94a3b8;">2026-01-10</div>
+            </div>
+            <div style="margin-bottom:8px;">
+              <div style="font-size:10px;color:#64748b;margin-bottom:2px;">기성액 (공급가)</div>
+              <div style="background:white;border:1px solid #3d5af1;border-radius:4px;padding:4px 8px;font-size:11px;">20,000,000</div>
+            </div>
+            <div style="background:#dbeafe;border-radius:4px;padding:4px 8px;display:flex;justify-content:space-between;font-size:10px;font-weight:600;color:#1e2d5a;">
+              <span>합계(VAT포함)</span><span>22,000,000</span>
+            </div>
+            <div style="margin-top:8px;font-size:10px;color:#94a3b8;border-top:1px solid #bfdbfe;padding-top:6px;">
+              <div style="display:flex;justify-content:space-between;"><span>1차 누계</span><span>33,000,000</span></div>
+              <div style="display:flex;justify-content:space-between;"><span>2차 누계</span><span>49,500,000</span></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;color:#64748b;">☐ 준공완료</div>
+          <hr style="margin:8px 0;border-color:#e2e8f0;" />
+          <div style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">수주금액 계산</div>
+          <div style="background:#1e2d5a;border-radius:6px;padding:6px;text-align:right;color:white;font-size:10px;font-weight:700;">하도적용 88,200,000</div>
+        </div>
+      </div>
+    </div>
+    <div class="pros-cons" style="width:100%;">
+      <div class="pros"><h4>장점</h4><ul><li>현재 차수에 집중된 입력 — 심플한 UX</li><li>정산상태와 기성금액이 함께 관리됨</li></ul></div>
+      <div class="cons"><h4>단점</h4><ul><li>이전 차수 내역 수정이 불편 (정산상태 바꿔야 접근)</li><li>기성 전체 히스토리를 보기 어려움</li><li>정산상태와 기성 차수를 억지로 연결 (실무에서 맞지 않을 수 있음)</li></ul></div>
+    </div>
+  </div>
+
+</div>
+
+<p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:16px;">클릭하여 선호하는 방식을 선택하세요 (복수 선택 가능)</p>

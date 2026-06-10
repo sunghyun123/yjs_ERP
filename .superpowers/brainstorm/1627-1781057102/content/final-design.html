@@ -1,0 +1,217 @@
+<h2>최종 설계 확인</h2>
+<p class="subtitle">공사이력 전용 페이지 + 수주 Dialog 3탭 구조</p>
+
+<div style="margin-top:24px;display:flex;flex-direction:column;gap:36px;">
+
+  <!-- ══ 공사이력 페이지 ══ -->
+  <div class="section">
+    <h3>/progress — 공사이력 페이지</h3>
+
+    <!-- 입력 탭 -->
+    <p class="subtitle" style="margin-bottom:10px;">탭 1: 입력 (기본 탭)</p>
+    <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;max-width:880px;margin-bottom:20px;">
+      <!-- 탭바 -->
+      <div style="display:flex;border-bottom:2px solid #e2e8f0;">
+        <div style="padding:10px 24px;color:#3d5af1;font-weight:600;font-size:13px;border-bottom:2px solid #3d5af1;margin-bottom:-2px;">공사이력 입력</div>
+        <div style="padding:10px 24px;color:#94a3b8;font-size:13px;border-bottom:2px solid transparent;margin-bottom:-2px;">공사이력 현황</div>
+      </div>
+      <div style="display:flex;min-height:340px;">
+        <!-- 좌측 폼 -->
+        <div style="flex:1;padding:20px 24px;border-right:1px solid #f1f5f9;">
+
+          <!-- 공사 검색 -->
+          <div style="margin-bottom:20px;">
+            <div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:6px;">공사 검색 (지중No / 공사명)</div>
+            <div style="background:white;border:2px solid #3d5af1;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#1e2d5a;display:flex;justify-content:space-between;align-items:center;">
+              <span>CG26-001 · 강남구 전력구 지장이설</span>
+              <span style="font-size:11px;color:#3d5af1;background:#eff6ff;padding:2px 8px;border-radius:4px;cursor:pointer;">변경</span>
+            </div>
+          </div>
+
+          <!-- 최근 기록 자동 로드 (핵심 기능) -->
+          <div style="background:#fafafa;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:20px;">
+            <div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">마지막 등록 기록 (자동 로드)</div>
+            <div style="display:flex;gap:24px;font-size:12px;">
+              <div><span style="color:#94a3b8;">작업일자</span><br/><span style="font-weight:600;color:#1e2d5a;">2026-01-15</span></div>
+              <div><span style="color:#94a3b8;">누계 성과금액</span><br/><span style="font-weight:600;color:#22c55e;">64,827,000</span></div>
+              <div><span style="color:#94a3b8;">현재 달성율</span><br/><span style="font-weight:600;color:#f59e0b;">73.5%</span></div>
+            </div>
+            <div style="margin-top:8px;font-size:11px;color:#94a3b8;">→ 오늘 입력 시 이 수치에서 이어집니다</div>
+          </div>
+
+          <!-- 새 기록 입력 -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div>
+              <div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:5px;">작업일자</div>
+              <div style="background:white;border:1px solid #e2e8f0;border-radius:7px;padding:8px 12px;font-size:13px;color:#1e2d5a;">2026-01-20</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:5px;">성과금액 (이번 증분)</div>
+              <div style="background:white;border:2px solid #f59e0b;border-radius:7px;padding:8px 12px;font-size:15px;font-weight:700;color:#1e2d5a;">5,733,000</div>
+            </div>
+          </div>
+
+          <button style="margin-top:20px;background:#f59e0b;color:white;border:none;border-radius:8px;padding:10px 0;font-size:13px;font-weight:700;cursor:pointer;width:100%;">저장</button>
+        </div>
+
+        <!-- 우측 계산 패널 -->
+        <div style="width:256px;padding:20px;background:#f8fafc;">
+          <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;">자동 계산</div>
+
+          <!-- Δ달성율 역산 -->
+          <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:10px;">
+            <div style="font-size:10px;color:#94a3b8;margin-bottom:6px;">이번 달성율 증분 (역산)</div>
+            <div style="font-size:22px;font-weight:700;color:#f59e0b;">+6.5%</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px;">5,733,000 ÷ 88,200,000 × 100</div>
+          </div>
+
+          <!-- 저장 후 누계 -->
+          <div style="background:#1e2d5a;border-radius:10px;padding:14px;margin-bottom:10px;">
+            <div style="font-size:10px;color:#93c5fd;margin-bottom:8px;">저장 후 누계</div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
+              <span style="color:#7c8db8;">성과금액</span>
+              <span style="color:white;font-weight:700;">70,560,000</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:14px;">
+              <span style="color:#93c5fd;">달성율</span>
+              <span style="color:#fbbf24;font-weight:700;font-size:18px;">80.0%</span>
+            </div>
+          </div>
+
+          <div style="font-size:11px;color:#64748b;background:white;border:1px solid #e2e8f0;border-radius:6px;padding:8px 10px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:#94a3b8;">하도적용금액</span><span>88,200,000</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:#94a3b8;">수주금액</span><span>120,000,000</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 현황 탭 -->
+    <p class="subtitle" style="margin-bottom:10px;">탭 2: 현황 (조회·수정·삭제)</p>
+    <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;max-width:880px;">
+      <div style="display:flex;border-bottom:2px solid #e2e8f0;">
+        <div style="padding:10px 24px;color:#94a3b8;font-size:13px;border-bottom:2px solid transparent;margin-bottom:-2px;">공사이력 입력</div>
+        <div style="padding:10px 24px;color:#3d5af1;font-weight:600;font-size:13px;border-bottom:2px solid #3d5af1;margin-bottom:-2px;">공사이력 현황</div>
+      </div>
+      <div style="padding:16px 20px;">
+        <!-- 필터 -->
+        <div style="display:flex;gap:12px;margin-bottom:14px;align-items:center;">
+          <div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px 12px;font-size:12px;color:#64748b;min-width:200px;">공사 전체 ▼</div>
+          <div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:6px 12px;font-size:12px;color:#64748b;">2026-01-01 ~ 2026-01-31</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:#f8fafc;">
+              <th style="padding:8px 12px;text-align:left;border:1px solid #e2e8f0;color:#64748b;font-weight:600;">공사명</th>
+              <th style="padding:8px 12px;text-align:left;border:1px solid #e2e8f0;color:#64748b;font-weight:600;">작업일자</th>
+              <th style="padding:8px 12px;text-align:right;border:1px solid #e2e8f0;color:#64748b;font-weight:600;">성과금액</th>
+              <th style="padding:8px 12px;text-align:right;border:1px solid #e2e8f0;color:#64748b;font-weight:600;">누계 달성율</th>
+              <th style="padding:8px 12px;border:1px solid #e2e8f0;width:80px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:7px 12px;border:1px solid #e2e8f0;color:#1e2d5a;font-weight:500;">강남구 전력구 지장이설</td>
+              <td style="padding:7px 12px;border:1px solid #e2e8f0;">2026-01-15</td>
+              <td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;font-weight:600;">7,497,000</td>
+              <td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;color:#f59e0b;font-weight:600;">73.5%</td>
+              <td style="padding:7px 12px;border:1px solid #e2e8f0;text-align:center;"><span style="color:#3d5af1;font-size:11px;cursor:pointer;margin-right:6px;">수정</span><span style="color:#ef4444;font-size:11px;cursor:pointer;">삭제</span></td>
+            </tr>
+            <tr>
+              <td style="padding:7px 12px;border:1px solid #e2e8f0;color:#1e2d5a;font-weight:500;">서초구 154kV 연결공사</td>
+              <td style="padding:7px 12px;border:1px solid #e2e8f0;">2026-01-12</td>
+              <td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;font-weight:600;">12,300,000</td>
+              <td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;color:#22c55e;font-weight:600;">92.0%</td>
+              <td style="padding:7px 12px;border:1px solid #e2e8f0;text-align:center;"><span style="color:#3d5af1;font-size:11px;cursor:pointer;margin-right:6px;">수정</span><span style="color:#ef4444;font-size:11px;cursor:pointer;">삭제</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 수주 Dialog 3탭 ══ -->
+  <div class="section">
+    <h3>수주 수정 Dialog — [기본정보] [기성] [준공] 3탭</h3>
+
+    <!-- 기성 탭 -->
+    <p class="subtitle" style="margin-bottom:10px;">기성 탭 (차수별 기성금액 관리)</p>
+    <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;max-width:780px;margin-bottom:20px;">
+      <div style="display:flex;border-bottom:2px solid #e2e8f0;">
+        <div style="padding:9px 20px;color:#94a3b8;font-size:13px;border-bottom:2px solid transparent;margin-bottom:-2px;">기본정보</div>
+        <div style="padding:9px 20px;color:#3d5af1;font-weight:600;font-size:13px;border-bottom:2px solid #3d5af1;margin-bottom:-2px;">기성 <span style="background:#3d5af1;color:white;border-radius:9px;padding:1px 7px;font-size:10px;margin-left:4px;">3</span></div>
+        <div style="padding:9px 20px;color:#94a3b8;font-size:13px;border-bottom:2px solid transparent;margin-bottom:-2px;">준공</div>
+      </div>
+      <div style="padding:18px 20px;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;">
+          <thead>
+            <tr style="background:#f8fafc;">
+              <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0;color:#64748b;font-weight:600;width:55px;">차수</th>
+              <th style="padding:7px 12px;text-align:left;border:1px solid #e2e8f0;color:#64748b;font-weight:600;">기성일</th>
+              <th style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;color:#64748b;font-weight:600;">공급가</th>
+              <th style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;color:#64748b;font-weight:600;">부가세</th>
+              <th style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;color:#1e2d5a;font-weight:700;">합계</th>
+              <th style="padding:7px 12px;border:1px solid #e2e8f0;width:80px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:7px 12px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;">1차</td><td style="padding:7px 12px;border:1px solid #e2e8f0;">2025-08-15</td><td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;">30,000,000</td><td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;color:#94a3b8;">3,000,000</td><td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;font-weight:700;color:#1e2d5a;">33,000,000</td><td style="padding:7px 12px;border:1px solid #e2e8f0;text-align:center;"><span style="color:#3d5af1;font-size:11px;cursor:pointer;margin-right:6px;">수정</span><span style="color:#ef4444;font-size:11px;cursor:pointer;">삭제</span></td></tr>
+            <tr><td style="padding:7px 12px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;">2차</td><td style="padding:7px 12px;border:1px solid #e2e8f0;">2025-10-20</td><td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;">45,000,000</td><td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;color:#94a3b8;">4,500,000</td><td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;font-weight:700;color:#1e2d5a;">49,500,000</td><td style="padding:7px 12px;border:1px solid #e2e8f0;text-align:center;"><span style="color:#3d5af1;font-size:11px;cursor:pointer;margin-right:6px;">수정</span><span style="color:#ef4444;font-size:11px;cursor:pointer;">삭제</span></td></tr>
+            <tr><td style="padding:7px 12px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;">3차</td><td style="padding:7px 12px;border:1px solid #e2e8f0;">2026-01-10</td><td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;">20,000,000</td><td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;color:#94a3b8;">2,000,000</td><td style="padding:7px 12px;text-align:right;border:1px solid #e2e8f0;font-weight:700;color:#1e2d5a;">22,000,000</td><td style="padding:7px 12px;border:1px solid #e2e8f0;text-align:center;"><span style="color:#3d5af1;font-size:11px;cursor:pointer;margin-right:6px;">수정</span><span style="color:#ef4444;font-size:11px;cursor:pointer;">삭제</span></td></tr>
+            <tr style="background:#eff6ff;"><td colspan="2" style="padding:7px 12px;border:1px solid #bfdbfe;font-weight:700;color:#1e2d5a;">누계</td><td style="padding:7px 12px;text-align:right;border:1px solid #bfdbfe;font-weight:700;">95,000,000</td><td style="padding:7px 12px;text-align:right;border:1px solid #bfdbfe;font-weight:700;color:#64748b;">9,500,000</td><td style="padding:7px 12px;text-align:right;border:1px solid #bfdbfe;font-weight:700;color:#1e2d5a;font-size:13px;">104,500,000</td><td style="border:1px solid #bfdbfe;"></td></tr>
+          </tbody>
+        </table>
+        <!-- 추가 폼 -->
+        <div style="border:1px solid #bfdbfe;border-radius:8px;background:#f0f7ff;padding:14px;">
+          <div style="font-size:12px;font-weight:700;color:#1e2d5a;margin-bottom:10px;">4차 기성 추가</div>
+          <div style="display:flex;gap:14px;align-items:flex-end;">
+            <div><div style="font-size:11px;color:#64748b;margin-bottom:4px;">기성일</div><div style="background:white;border:1px solid #e2e8f0;border-radius:6px;padding:6px 10px;font-size:12px;width:120px;color:#94a3b8;">날짜 선택</div></div>
+            <div><div style="font-size:11px;color:#64748b;margin-bottom:4px;">기성액 (공급가)</div><div style="background:white;border:2px solid #3d5af1;border-radius:6px;padding:6px 10px;font-size:12px;width:140px;">25,000,000</div></div>
+            <div style="background:#dbeafe;border-radius:6px;padding:7px 14px;font-size:12px;"><div style="color:#64748b;font-size:10px;">부가세</div><div style="font-weight:600;color:#1e2d5a;">2,500,000</div></div>
+            <div style="background:#1e2d5a;border-radius:6px;padding:7px 14px;font-size:12px;"><div style="color:#93c5fd;font-size:10px;">합계</div><div style="font-weight:700;color:white;">27,500,000</div></div>
+            <div style="display:flex;gap:8px;margin-left:auto;"><button style="background:#3d5af1;color:white;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">저장</button><button style="background:white;color:#64748b;border:1px solid #e2e8f0;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">취소</button></div>
+          </div>
+        </div>
+        <button style="margin-top:10px;padding:6px 14px;background:white;color:#3d5af1;border:1px solid #3d5af1;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">+ 기성 추가</button>
+      </div>
+    </div>
+
+    <!-- 준공 탭 -->
+    <p class="subtitle" style="margin-bottom:10px;">준공 탭 (기존 기본정보 우측 패널에서 분리)</p>
+    <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;max-width:780px;">
+      <div style="display:flex;border-bottom:2px solid #e2e8f0;">
+        <div style="padding:9px 20px;color:#94a3b8;font-size:13px;border-bottom:2px solid transparent;margin-bottom:-2px;">기본정보</div>
+        <div style="padding:9px 20px;color:#94a3b8;font-size:13px;border-bottom:2px solid transparent;margin-bottom:-2px;">기성 3</div>
+        <div style="padding:9px 20px;color:#22c55e;font-weight:600;font-size:13px;border-bottom:2px solid #22c55e;margin-bottom:-2px;">준공 <span style="background:#22c55e;color:white;border-radius:9px;padding:1px 7px;font-size:10px;margin-left:4px;">완료</span></div>
+      </div>
+      <div style="padding:20px;max-width:420px;">
+        <!-- 준공 완료 체크 -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">
+          <div style="width:18px;height:18px;background:#22c55e;border-radius:4px;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">✓</div>
+          <span style="font-size:14px;font-weight:600;color:#15803d;">준공 완료</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+          <div>
+            <div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:5px;">준공일</div>
+            <div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;padding:8px 12px;font-size:13px;color:#1e2d5a;">2026-03-15</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:5px;">준공액 (공급가)</div>
+            <div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;padding:8px 12px;font-size:13px;color:#1e2d5a;">25,000,000</div>
+          </div>
+        </div>
+        <!-- VAT 합계 -->
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:6px;"><span>부가세 (10%)</span><span>2,500,000</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#15803d;"><span>준공 합계</span><span>27,500,000</span></div>
+        </div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;">
+          미완료 시 체크박스 해제 → 준공일·준공액 자동 초기화
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:16px;">이 설계로 확정할까요?</p>
