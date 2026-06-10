@@ -395,8 +395,6 @@ export type 공사단가Row    = Database['public']['Tables']['공사단가']['R
 export type 수주Row        = Database['public']['Tables']['수주']['Row']
 export type 기성Row        = Database['public']['Tables']['기성']['Row']
 export type 공사이력Row    = Database['public']['Tables']['공사이력']['Row']
-export type 공사이력Insert = Database['public']['Tables']['공사이력']['Insert']
-export type 공사이력Update = Database['public']['Tables']['공사이력']['Update']
 export type 투입실적Row    = Database['public']['Tables']['투입실적']['Row']
 export type 시스템설정Row  = Database['public']['Tables']['시스템설정']['Row']
 export type 계획금액Row    = Database['public']['Tables']['계획금액']['Row']
@@ -407,10 +405,13 @@ export type 거래처Insert   = Database['public']['Tables']['거래처']['Inser
 export type 공사단가Insert = Database['public']['Tables']['공사단가']['Insert']
 export type 수주Insert     = Database['public']['Tables']['수주']['Insert']
 export type 기성Insert     = Database['public']['Tables']['기성']['Insert']
+export type 공사이력Insert = Database['public']['Tables']['공사이력']['Insert']
 export type 투입실적Insert = Database['public']['Tables']['투입실적']['Insert']
 
 // Update 타입 re-export
 export type 수주Update     = Database['public']['Tables']['수주']['Update']
+export type 기성Update     = Database['public']['Tables']['기성']['Update']
+export type 공사이력Update = Database['public']['Tables']['공사이력']['Update']
 export type 투입실적Update = Database['public']['Tables']['투입실적']['Update']
 
 // 투입구분 enum — 공사단가.투입구분, 투입실적 컬럼 매핑에 사용
