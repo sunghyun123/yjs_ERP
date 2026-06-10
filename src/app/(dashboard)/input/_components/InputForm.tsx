@@ -297,7 +297,7 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
       )}
 
       {/* 2단 레이아웃: lg 이상에서 좌(입력) / 우(계산+버튼) 분리 */}
-      <div className="flex flex-col lg:flex-row lg:items-start gap-5">
+      <div className="flex flex-col lg:flex-row lg:items-start gap-5 max-w-2xl mx-auto w-full">
 
         {/* ── 좌측: 입력 영역 ── */}
         <div className="flex-1 min-w-0 space-y-4">
