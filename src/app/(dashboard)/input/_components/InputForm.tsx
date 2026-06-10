@@ -403,7 +403,7 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
                         )}
                       >
                         <td className="px-4 py-2 font-medium text-gray-700 text-sm">{label}</td>
-                        <td className="px-3 py-1.5">
+                        <td className="px-3 py-1.5 text-center">
                           <input
                             type="number"
                             inputMode="decimal"
@@ -418,7 +418,7 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
                             {...register(주 as keyof FormValues, numOpts)}
                           />
                         </td>
-                        <td className="px-3 py-1.5">
+                        <td className="px-3 py-1.5 text-center">
                           <input
                             type="number"
                             inputMode="decimal"
