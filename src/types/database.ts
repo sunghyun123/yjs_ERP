@@ -223,6 +223,26 @@ export type Database = {
           생성일?: string
         }
       }
+      공사이력: {
+        Row: {
+          id: number
+          수주_id: number
+          작업일자: string
+          성과금액: number | null
+        }
+        Insert: {
+          id?: number
+          수주_id: number
+          작업일자: string
+          성과금액?: number | null
+        }
+        Update: {
+          id?: number
+          수주_id?: number
+          작업일자?: string
+          성과금액?: number | null
+        }
+      }
       투입실적: {
         Row: {
           id: number
@@ -374,6 +394,9 @@ export type 거래처Row      = Database['public']['Tables']['거래처']['Row']
 export type 공사단가Row    = Database['public']['Tables']['공사단가']['Row']
 export type 수주Row        = Database['public']['Tables']['수주']['Row']
 export type 기성Row        = Database['public']['Tables']['기성']['Row']
+export type 공사이력Row    = Database['public']['Tables']['공사이력']['Row']
+export type 공사이력Insert = Database['public']['Tables']['공사이력']['Insert']
+export type 공사이력Update = Database['public']['Tables']['공사이력']['Update']
 export type 투입실적Row    = Database['public']['Tables']['투입실적']['Row']
 export type 시스템설정Row  = Database['public']['Tables']['시스템설정']['Row']
 export type 계획금액Row    = Database['public']['Tables']['계획금액']['Row']
