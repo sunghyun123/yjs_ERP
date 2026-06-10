@@ -411,8 +411,8 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
                             min="0"
                             max="99"
                             className={cn(
-                              'w-20 h-9 text-center rounded-md border text-sm tabular-nums outline-none transition-colors',
-                              'border-gray-200 bg-white focus:border-[#3d5af1] focus:ring-2 focus:ring-[#3d5af1]/20',
+                              'w-[68px] h-10 text-center rounded-md border text-sm tabular-nums outline-none transition-colors',
+                              'border-gray-400 bg-white focus:border-[#3d5af1] focus:ring-2 focus:ring-[#3d5af1]/40',
                               주값 > 0 && 'border-blue-300 bg-blue-50/60 font-semibold text-blue-700',
                             )}
                             {...register(주 as keyof FormValues, numOpts)}
@@ -426,8 +426,8 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
                             min="0"
                             max="99"
                             className={cn(
-                              'w-20 h-9 text-center rounded-md border text-sm tabular-nums outline-none transition-colors',
-                              'border-gray-200 bg-white focus:border-[#3d5af1] focus:ring-2 focus:ring-[#3d5af1]/20',
+                              'w-[68px] h-10 text-center rounded-md border text-sm tabular-nums outline-none transition-colors',
+                              'border-gray-400 bg-white focus:border-[#3d5af1] focus:ring-2 focus:ring-[#3d5af1]/40',
                               야값 > 0 && 'border-indigo-300 bg-indigo-50/60 font-semibold text-indigo-700',
                             )}
                             {...register(야 as keyof FormValues, numOpts)}
