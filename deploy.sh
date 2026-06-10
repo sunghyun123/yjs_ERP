@@ -31,7 +31,7 @@ git pull origin main
 
 echo ""
 echo "[2/4] npm install"
-npm install --omit=dev
+npm install
 
 echo ""
 echo "[3/4] npm run build"
