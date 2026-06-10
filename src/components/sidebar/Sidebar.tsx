@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   ClipboardList,
   PenLine,
+  Activity,
   TrendingUp,
   Settings,
   ChevronDown,
@@ -24,6 +25,7 @@ const mainNav = [
   { href: '/', label: '홈', icon: LayoutDashboard },
   { href: '/orders', label: '수주대장', icon: ClipboardList },
   { href: '/input', label: '투입실적 입력', icon: PenLine },
+  { href: '/progress', label: '공사이력', icon: Activity },
   { href: '/sales', label: '매출손익 현황', icon: TrendingUp },
 ] as const
 
