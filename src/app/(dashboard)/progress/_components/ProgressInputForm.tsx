@@ -15,6 +15,7 @@ import type { 공사이력Row } from '@/types/database'
 
 type Props = {
   수주목록: 수주목록항목[]
+  공무담당자목록: { id: number; 이름: string }[]
   default수주Id?: number | null
   default날짜?: string | null
 }
@@ -168,12 +169,14 @@ function MoneyInput({
   )
 }
 
-export function ProgressInputForm({ 수주목록, default수주Id, default날짜 }: Props) {
+export function ProgressInputForm({ 수주목록, 공무담당자목록, default수주Id, default날짜 }: Props) {
   const [선택수주Id, set선택수주Id] = useState<number | null>(default수주Id ?? null)
   const [작업일자, set작업일자] = useState(() => default날짜 ?? new Date().toISOString().slice(0, 10))
   const [성과금액, set성과금액] = useState<number | null>(null)
   const [누계성과금액, set누계성과금액] = useState<number>(0)
   const [최근작업일자, set최근작업일자] = useState<string | null>(null)
+  const [작업내용, set작업내용] = useState('')
+  const [담당공무Id, set담당공무Id] = useState<number | null>(null)
   const [로딩중, set로딩중] = useState(false)
   const [저장중, set저장중] = useState(false)
   const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null)
@@ -203,16 +206,21 @@ export function ProgressInputForm({ 수주목록, default수주Id, default날짜
 
     set로딩중(true)
     const supabase = createClient()
-    const { data } = await (supabase.from('공사이력') as any)
-      .select('id, 작업일자, 성과금액')
-      .eq('수주_id', id)
-      .order('작업일자', { ascending: false }) as { data: Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[] | null }
+    const [이력결과, 수주결과] = await Promise.all([
+      (supabase.from('공사이력') as any)
+        .select('id, 작업일자, 성과금액')
+        .eq('수주_id', id)
+        .order('작업일자', { ascending: false }) as Promise<{ data: Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[] | null }>,
+      supabase.from('수주').select('공무담당자_id').eq('id', id).single(),
+    ])
     set로딩중(false)
 
-    const records = data ?? []
+    const records = 이력결과.data ?? []
     const 누계 = records.reduce((sum, r) => sum + (r.성과금액 ?? 0), 0)
     set누계성과금액(누계)
     if (records.length > 0) set최근작업일자(records[0].작업일자)
+    const 수주data = (수주결과 as any).data as { 공무담당자_id: number | null } | null
+    if (수주data?.공무담당자_id) set담당공무Id(수주data.공무담당자_id)
   }
 
   useEffect(() => {
@@ -243,6 +251,8 @@ export function ProgressInputForm({ 수주목록, default수주Id, default날짜
       수주_id: 선택수주Id,
       작업일자,
       성과금액,
+      작업내용: 작업내용 || null,
+      담당공무_id: 담당공무Id,
     })
     set저장중(false)
     if (error) {
@@ -255,6 +265,8 @@ export function ProgressInputForm({ 수주목록, default수주Id, default날짜
     set최근작업일자(작업일자)
     set성과금액(null)
     set작업일자(new Date().toISOString().slice(0, 10))
+    set작업내용('')
+    set담당공무Id(null)
   }
 
   return (
@@ -324,6 +336,35 @@ export function ProgressInputForm({ 수주목록, default수주Id, default날짜
               placeholder="0"
             />
           </div>
+        </div>
+
+        <div>
+          <Label className="text-xs text-gray-600 mb-1.5 block">
+            작업내용 <span className="text-gray-400">(선택)</span>
+          </Label>
+          <Input
+            type="text"
+            className="h-10 text-sm"
+            placeholder="이번 작업 내용을 간략히 입력..."
+            value={작업내용}
+            onChange={(e) => set작업내용(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <Label className="text-xs text-gray-600 mb-1.5 block">
+            담당 공무 <span className="text-gray-400">(선택)</span>
+          </Label>
+          <select
+            className="h-10 w-full rounded-lg border border-input bg-background text-sm px-3 outline-none focus:border-ring"
+            value={담당공무Id ?? ''}
+            onChange={(e) => set담당공무Id(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">선택 안함</option>
+            {공무담당자목록.map((g) => (
+              <option key={g.id} value={g.id}>{g.이름}</option>
+            ))}
+          </select>
         </div>
 
         <Button

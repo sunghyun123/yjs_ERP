@@ -35,6 +35,12 @@ export default async function Page({
     .order('지중no', { ascending: true })
   const 수주목록 = (수주raw ?? []) as 수주목록항목[]
 
+  const { data: 공무담당자raw } = await supabase
+    .from('공무담당자')
+    .select('id, 이름')
+    .order('이름')
+  const 공무담당자목록 = (공무담당자raw ?? []) as { id: number; 이름: string }[]
+
   const historyHref = `/progress?tab=history&date_from=${date_from}&date_to=${date_to}`
 
   return (
@@ -69,6 +75,7 @@ export default async function Page({
       ) : (
         <ProgressInputForm
           수주목록={수주목록}
+          공무담당자목록={공무담당자목록}
           default수주Id={params.수주_id && Number.isFinite(Number(params.수주_id)) ? Number(params.수주_id) : null}
           default날짜={params.날짜 && dateRe.test(params.날짜) ? params.날짜 : null}
         />
