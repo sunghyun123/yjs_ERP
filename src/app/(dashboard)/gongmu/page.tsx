@@ -23,13 +23,16 @@ export default async function GongmuPage({
 }) {
   const sp = await searchParams
   const now = new Date()
-  const monthStr = sp.month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const validMonth = /^\d{4}-\d{2}$/.test(sp.month ?? '') ? sp.month! : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const monthStr = validMonth
   const [calYearStr, calMonthStr] = monthStr.split('-')
   const calYear = Number(calYearStr)
   const calMonth = Number(calMonthStr)
 
   const { year: curYear, week: curWeek } = getCurrentWeek()
-  const weekNos = getWeeksInMonth(calYear, calMonth).map((w) => w.week)
+  const weekEntries = getWeeksInMonth(calYear, calMonth)
+  const weekNos = weekEntries.map((w) => w.week)
+  const isoYears = [...new Set(weekEntries.map((w) => w.isoYear))]
 
   // 금주 실적 KPI 카드 타이틀용 레이블 (현재 주차 기준)
   const curMonthWeeks = getWeeksInMonth(curYear, now.getMonth() + 1)
@@ -63,7 +66,7 @@ export default async function GongmuPage({
       .from('공무_주간보고')
       .select('공무_id, 구분, 금주실적')
       .in('공무_id', ids)
-      .eq('year', calYear)
+      .in('year', isoYears)
       .in('week_no', weekNos),
     supabase
       .from('공무_주간보고')
