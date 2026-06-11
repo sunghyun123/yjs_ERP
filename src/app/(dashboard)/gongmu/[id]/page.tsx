@@ -119,6 +119,8 @@ export default async function GongmuDetailPage({
         공무담당자목록={공무담당자Result.data ?? []}
         plans={planResult.data ?? []}
         month={month}
+        이름={공무.이름}
+        weekLabel={weekOptions.find((w) => w.week === selectedWeek)?.label ?? ''}
       />
     </div>
   )
