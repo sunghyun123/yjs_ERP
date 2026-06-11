@@ -18,8 +18,7 @@ export async function UnregisteredProjects() {
   const supabase = await createClient()
 
   // 미삭제 항목 전체
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: pending } = await (supabase as unknown as any)
+  const { data: pending } = await supabase
     .from('dashboard_공사')
     .select('id, 지중no, 공사명, 진행날짜')
     .eq('삭제됨', false)
@@ -41,8 +40,7 @@ export async function UnregisteredProjects() {
   const 지중nos = [...new Set((pending as { 지중no: string }[]).map((p) => p.지중no))]
 
   // 수주 매핑
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: 수주들Raw } = await (supabase as unknown as any)
+  const { data: 수주들Raw } = await supabase
     .from('수주')
     .select('id, 지중no')
     .in('지중no', 지중nos)

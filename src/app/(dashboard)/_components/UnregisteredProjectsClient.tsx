@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { deleteUnregisteredProject } from '../_actions/dashboard'
@@ -33,6 +33,14 @@ function StatusBadge({ has공사이력, has투입실적 }: { has공사이력: bo
 export function UnregisteredProjectsClient({ items }: { items: ProjectStatus[] }) {
   const [page, setPage] = useState(0)
   const [pending, startTransition] = useTransition()
+
+  // 페이지 overflow 방지: items가 줄었을 때 현재 page가 유효한지 확인
+  useEffect(() => {
+    const newTotalPages = Math.ceil(items.length / PAGE_SIZE)
+    if (page >= newTotalPages && newTotalPages > 0) {
+      setPage(newTotalPages - 1)
+    }
+  }, [items.length, page])
 
   const totalPages = Math.ceil(items.length / PAGE_SIZE)
   const pageItems = items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
