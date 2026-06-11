@@ -142,7 +142,8 @@ export function WeeklyReportForm({
   const [공무계획금액, set공무계획금액] = useState(plans.find((p) => p.구분 === '공무')?.월간계획금액 ?? 0)
 
   // 월간 현황 계산
-  const monthWeekNos = new Set(getWeeksInMonth(year, month).map((w) => w.week))
+  const calYear = month === 12 && week_no === 1 ? year - 1 : month === 1 && week_no >= 52 ? year + 1 : year
+  const monthWeekNos = new Set(getWeeksInMonth(calYear, month).map((w) => w.week))
   const 월간rows = allRows.filter((r) => monthWeekNos.has(r.week_no))
   const 공사누계 = 월간rows.filter((r) => r.구분 === '공사').reduce((s, r) => s + r.금주실적, 0)
   const 공무누계 = 월간rows.filter((r) => r.구분 === '공무').reduce((s, r) => s + r.금주실적, 0)
