@@ -86,7 +86,13 @@ function n(v: unknown): number {
 type 수주검색결과 = { id: number; 지중no: string; 공사명: string }
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
-export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] }) {
+type InputFormProps = {
+  단가목록: 공사단가Row[]
+  default수주Id?: number | null
+  default날짜?: string | null
+}
+
+export function InputForm({ 단가목록, default수주Id, default날짜 }: InputFormProps) {
   const [선택수주, set선택수주] = useState<수주검색결과 | null>(null)
   const [검색어, set검색어] = useState('')
   const [검색결과, set검색결과] = useState<수주검색결과[]>([])
@@ -110,7 +116,7 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { 수주_id: 0, 투입일: today(), ...인원기본값 },
+    defaultValues: { 수주_id: 0, 투입일: default날짜 ?? today(), ...인원기본값 },
   })
 
   const values = watch()
@@ -234,6 +240,20 @@ export function InputForm({ 단가목록 }: { 단가목록: 공사단가Row[] })
     set최근투입로딩(false)
     set최근투입일((data as { 투입일: string } | null)?.투입일 ?? null)
   }
+
+  // ── URL param 기본 선택 ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (default수주Id == null) return
+    const supabase = createClient()
+    supabase
+      .from('수주')
+      .select('id, 지중no, 공사명')
+      .eq('id', default수주Id)
+      .single()
+      .then(({ data: raw }) => {
+        if (raw) handleSelect(raw as 수주검색결과)
+      })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 초기화 ───────────────────────────────────────────────────────────────
   function 초기화() {

@@ -13,7 +13,11 @@ import { formatKRW } from '@/lib/format'
 import type { 수주목록항목 } from '../_types'
 import type { 공사이력Row } from '@/types/database'
 
-type Props = { 수주목록: 수주목록항목[] }
+type Props = {
+  수주목록: 수주목록항목[]
+  default수주Id?: number | null
+  default날짜?: string | null
+}
 
 function 공사SearchableSelect({
   options,
@@ -164,9 +168,9 @@ function MoneyInput({
   )
 }
 
-export function ProgressInputForm({ 수주목록 }: Props) {
-  const [선택수주Id, set선택수주Id] = useState<number | null>(null)
-  const [작업일자, set작업일자] = useState(() => new Date().toISOString().slice(0, 10))
+export function ProgressInputForm({ 수주목록, default수주Id, default날짜 }: Props) {
+  const [선택수주Id, set선택수주Id] = useState<number | null>(default수주Id ?? null)
+  const [작업일자, set작업일자] = useState(() => default날짜 ?? new Date().toISOString().slice(0, 10))
   const [성과금액, set성과금액] = useState<number | null>(null)
   const [누계성과금액, set누계성과금액] = useState<number>(0)
   const [최근작업일자, set최근작업일자] = useState<string | null>(null)
@@ -210,6 +214,12 @@ export function ProgressInputForm({ 수주목록 }: Props) {
     set누계성과금액(누계)
     if (records.length > 0) set최근작업일자(records[0].작업일자)
   }
+
+  useEffect(() => {
+    if (default수주Id != null) {
+      handle공사선택(default수주Id)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const delta달성율 = (성과금액 != null && 하도적용금액 != null && 하도적용금액 > 0)
     ? (성과금액 / 하도적용금액) * 100

@@ -11,7 +11,7 @@ export const metadata = { title: '투입실적 | 영전사 ERP' }
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; date_from?: string; date_to?: string }>
+  searchParams: Promise<{ tab?: string; date_from?: string; date_to?: string; 수주_id?: string; 날짜?: string }>
 }) {
   const params = await searchParams
   const tab = params.tab ?? 'input'
@@ -102,7 +102,11 @@ export default async function Page({
           date_to={date_to}
         />
       ) : (
-        <InputForm 단가목록={단가목록} />
+        <InputForm
+          단가목록={단가목록}
+          default수주Id={params.수주_id ? Number(params.수주_id) : null}
+          default날짜={params.날짜 ?? null}
+        />
       )}
     </div>
   )

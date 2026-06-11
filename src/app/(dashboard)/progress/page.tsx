@@ -10,7 +10,7 @@ export const metadata = { title: '공사이력 | 영전사 ERP' }
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; date_from?: string; date_to?: string }>
+  searchParams: Promise<{ tab?: string; date_from?: string; date_to?: string; 수주_id?: string; 날짜?: string }>
 }) {
   const params = await searchParams
   const tab = params.tab ?? 'input'
@@ -67,7 +67,11 @@ export default async function Page({
       {tab === 'history' ? (
         <ProgressHistoryTable date_from={date_from} date_to={date_to} />
       ) : (
-        <ProgressInputForm 수주목록={수주목록} />
+        <ProgressInputForm
+          수주목록={수주목록}
+          default수주Id={params.수주_id ? Number(params.수주_id) : null}
+          default날짜={params.날짜 ?? null}
+        />
       )}
     </div>
   )
