@@ -79,14 +79,21 @@ function TextAreaCell({ value, onChange, placeholder }: { value: string; onChang
   )
 }
 
-function 공사SearchCell({ value, onChange, 수주목록 }: { value: string; onChange: (지중no: string, 공사명: string) => void; 수주목록: 수주항목[] }) {
-  const [query, setQuery] = useState(value)
+function 공사통합Cell({ 지중no, 공사명, onChange, 수주목록 }: {
+  지중no: string
+  공사명: string
+  onChange: (지중no: string, 공사명: string) => void
+  수주목록: 수주항목[]
+}) {
+  const [query, setQuery] = useState(지중no)
   const [open, setOpen] = useState(false)
-  useEffect(() => { setQuery(value) }, [value])
+  useEffect(() => { setQuery(지중no) }, [지중no])
 
   const filtered = query
     ? 수주목록.filter((s) => s.지중no.includes(query) || s.공사명.includes(query)).slice(0, 8)
     : 수주목록.slice(0, 20)
+
+  const 공사명서브 = 공사명 && 공사명 !== 지중no ? 공사명 : null
 
   return (
     <div className="relative">
@@ -95,13 +102,16 @@ function 공사SearchCell({ value, onChange, 수주목록 }: { value: string; on
         className={cellCls('pr-6')}
         style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
         value={query}
-        placeholder="지중No 검색..."
-        onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
+        placeholder="지중No 또는 공사명..."
+        onChange={(e) => { setQuery(e.target.value); onChange(e.target.value, e.target.value); setOpen(true) }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
       />
+      {공사명서브 && (
+        <span className="block text-[10px] text-gray-400 truncate mt-0.5 px-1">{공사명서브}</span>
+      )}
       {open && filtered.length > 0 && (
-        <div className="absolute top-full left-0 z-50 bg-white border border-gray-200 rounded shadow-lg min-w-48 max-h-40 overflow-y-auto">
+        <div className="absolute top-full left-0 z-50 bg-white border border-gray-200 rounded shadow-lg min-w-56 max-h-44 overflow-y-auto">
           {filtered.map((s) => (
             <button
               key={s.id}
@@ -215,12 +225,11 @@ export function WeeklyReportForm({
           <span className="text-blue-300 font-normal text-xs">금주 실적: {sumLabel}원</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" style={{ minWidth: 860 }}>
+          <table className="w-full text-sm" style={{ minWidth: 800 }}>
             <colgroup>
-              <col style={{ width: 96 }} />
-              <col style={{ width: 190 }} />
-              <col style={{ width: '24%', minWidth: 200 }} />
-              <col style={{ width: '24%', minWidth: 200 }} />
+              <col style={{ width: 240 }} />
+              <col style={{ width: '26%', minWidth: 170 }} />
+              <col style={{ width: '26%', minWidth: 170 }} />
               <col style={{ width: 88 }} />
               <col style={{ width: 88 }} />
               <col style={{ width: 88 }} />
@@ -228,8 +237,7 @@ export function WeeklyReportForm({
             </colgroup>
             <thead>
               <tr>
-                <th className={th}>지중No</th>
-                <th className={th}>공사명</th>
+                <th className={th}>지중No / 공사명</th>
                 <th className={th}>금주 작업</th>
                 <th className={th}>차주 작업</th>
                 <th className={thR}>금주계획</th>
@@ -241,15 +249,13 @@ export function WeeklyReportForm({
             <tbody>
               {tableRows.map((r) => (
                 <tr key={r.idx}>
-                  <td className="px-1.5 py-1.5 border-b border-gray-50 align-middle">
-                    <공사SearchCell
-                      value={r.지중no}
+                  <td className="px-1.5 py-1.5 border-b border-gray-50 align-top">
+                    <공사통합Cell
+                      지중no={r.지중no}
+                      공사명={r.공사명}
                       onChange={(지중no, 공사명) => update(r.idx, { 지중no, 공사명 })}
                       수주목록={수주목록}
                     />
-                  </td>
-                  <td className="px-1.5 py-1.5 border-b border-gray-50 align-middle">
-                    <TextCell value={r.공사명} onChange={(v) => update(r.idx, { 공사명: v })} />
                   </td>
                   <td className="px-1.5 py-1.5 border-b border-gray-50 align-top">
                     <TextAreaCell
