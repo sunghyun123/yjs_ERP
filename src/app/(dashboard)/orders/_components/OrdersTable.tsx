@@ -58,7 +58,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
-import type { 수주행, 거래처목록항목 } from '../_types'
+import type { 수주행, 거래처목록항목, 공무담당자목록항목 } from '../_types'
 import { OrderForm } from './OrderForm'
 
 // ── 정렬 가능한 헤더 버튼 ──────────────────────────────────────────────────
@@ -271,9 +271,11 @@ type FormState =
 export function OrdersTable({
   data,
   거래처목록,
+  공무담당자목록,
 }: {
   data: 수주행[]
   거래처목록: 거래처목록항목[]
+  공무담당자목록: 공무담당자목록항목[]
 }) {
   const [준공필터, set준공필터] = useState<준공필터타입>('all')
   const [공사구분필터, set공사구분필터] = useState('전체')
@@ -672,6 +674,7 @@ export function OrdersTable({
               mode={formState.mode}
               row={formState.mode === 'edit' ? formState.row : undefined}
               거래처목록={거래처목록}
+              공무담당자목록={공무담당자목록}
               onSuccess={() => setFormState(null)}
             />
           )}

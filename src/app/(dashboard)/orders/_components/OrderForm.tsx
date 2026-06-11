@@ -23,7 +23,7 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
-import type { 수주행, 거래처목록항목, 기성항목 } from '../_types'
+import type { 수주행, 거래처목록항목, 기성항목, 공무담당자목록항목 } from '../_types'
 
 // ── 옵션 목록 ──────────────────────────────────────────────────────────────
 const 공사구분옵션 = ['총가', '단가', '민수', '관급']
@@ -48,6 +48,7 @@ const schema = z.object({
   하도전용율:      z.number().min(0).max(100).nullable().optional(),
   공사담당:        z.string().optional(),
   감독자:          z.string().optional(),
+  공무담당자_id:   z.number().int().nullable().optional(),
   포장여부:        z.boolean().optional(),
   자재청구여부:    z.boolean().optional(),
   참고사항:        z.string().optional(),
@@ -61,6 +62,7 @@ type Props = {
   mode: 'new' | 'edit'
   row?: 수주행
   거래처목록: 거래처목록항목[]
+  공무담당자목록: 공무담당자목록항목[]
   onSuccess: () => void
 }
 
@@ -266,7 +268,7 @@ function Field({ label, required, children, error }: {
 }
 
 // ── 메인 컴포넌트 ───────────────────────────────────────────────────────────
-export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
+export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, onSuccess }: Props) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'info' | '기성' | '준공'>('info')
 
@@ -281,8 +283,8 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
     (row?.기성 ?? []).slice().sort((a, b) => a.차수 - b.차수)
   )
   const [기성폼모드, set기성폼모드] = useState<'none' | 'add' | number>('none')
-  const [기성폼값, set기성폼값] = useState<{ 기성일: string; 기성액_공급가: number | null }>({
-    기성일: '', 기성액_공급가: null,
+  const [기성폼값, set기성폼값] = useState<{ 기성일: string; 기성액_공급가: number | null; 작업내용: string; 담당공무_id: number | null }>({
+    기성일: '', 기성액_공급가: null, 작업내용: '', 담당공무_id: null,
   })
   const [기성처리중, set기성처리중] = useState(false)
 
@@ -328,6 +330,7 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
           하도전용율:      row.하도전용율 != null ? row.하도전용율 * 100 : null,
           공사담당:        row.공사담당 ?? '',
           감독자:          row.감독자 ?? '',
+          공무담당자_id:   row.공무담당자_id ?? null,
           포장여부:        row.포장여부,
           자재청구여부:    row.자재청구여부,
           참고사항:        row.참고사항 ?? '',
@@ -383,6 +386,7 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
       하도전용율:      values.하도전용율 != null ? values.하도전용율 / 100 : null,
       공사담당:        values.공사담당?.trim() || null,
       감독자:          values.감독자?.trim() || null,
+      공무담당자_id:   values.공무담당자_id ?? null,
       포장여부:        values.포장여부 ?? false,
       자재청구여부:    values.자재청구여부 ?? false,
       참고사항:        values.참고사항?.trim() || null,
@@ -437,12 +441,12 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
 
   const handle기성추가시작 = () => {
     set기성폼모드('add')
-    set기성폼값({ 기성일: '', 기성액_공급가: null })
+    set기성폼값({ 기성일: '', 기성액_공급가: null, 작업내용: '', 담당공무_id: null })
   }
 
   const handle기성수정시작 = (g: 기성항목) => {
     set기성폼모드(g.id)
-    set기성폼값({ 기성일: g.기성일 ?? '', 기성액_공급가: g.기성액_공급가 })
+    set기성폼값({ 기성일: g.기성일 ?? '', 기성액_공급가: g.기성액_공급가, 작업내용: g.작업내용 ?? '', 담당공무_id: g.담당공무_id ?? null })
   }
 
   const handle기성저장 = async () => {
@@ -457,8 +461,10 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
           차수: 다음차수,
           기성일: 기성폼값.기성일 || null,
           기성액_공급가: 기성폼값.기성액_공급가 ?? null,
+          작업내용: 기성폼값.작업내용 || null,
+          담당공무_id: 기성폼값.담당공무_id ?? null,
         })
-        .select('id, 차수, 기성일, 기성액_공급가')
+        .select('id, 차수, 기성일, 기성액_공급가, 작업내용, 담당공무_id')
         .single()
       set기성처리중(false)
       if (error) { showToast(false, '저장에 실패했습니다.'); return }
@@ -466,13 +472,20 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
     } else {
       const editId = 기성폼모드 as number
       const { error } = await (supabase.from('기성') as any)
-        .update({ 기성일: 기성폼값.기성일 || null, 기성액_공급가: 기성폼값.기성액_공급가 ?? null })
+        .update({
+          기성일: 기성폼값.기성일 || null,
+          기성액_공급가: 기성폼값.기성액_공급가 ?? null,
+          작업내용: 기성폼값.작업내용 || null,
+          담당공무_id: 기성폼값.담당공무_id ?? null,
+        })
         .eq('id', editId)
       set기성처리중(false)
       if (error) { showToast(false, '저장에 실패했습니다.'); return }
       set기성목록((prev) =>
         prev.map((g) =>
-          g.id === editId ? { ...g, 기성일: 기성폼값.기성일 || null, 기성액_공급가: 기성폼값.기성액_공급가 } : g
+          g.id === editId
+            ? { ...g, 기성일: 기성폼값.기성일 || null, 기성액_공급가: 기성폼값.기성액_공급가, 작업내용: 기성폼값.작업내용 || null, 담당공무_id: 기성폼값.담당공무_id ?? null }
+            : g
         )
       )
     }
@@ -706,12 +719,30 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
 
             {/* ── 담당자 ────────────────────────────────────────────────────── */}
             <Section title="담당자">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <Field label="공사담당">
                   <Input className="h-9 text-sm" {...register('공사담당')} />
                 </Field>
                 <Field label="감독자">
                   <Input className="h-9 text-sm" {...register('감독자')} />
+                </Field>
+                <Field label="담당 공무">
+                  <Controller
+                    name="공무담당자_id"
+                    control={control}
+                    render={({ field }) => (
+                      <select
+                        className="h-9 w-full rounded-lg border border-input bg-background text-sm px-3 outline-none"
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                      >
+                        <option value="">선택 안함</option>
+                        {공무담당자목록.map((g) => (
+                          <option key={g.id} value={g.id}>{g.이름}</option>
+                        ))}
+                      </select>
+                    )}
+                  />
                 </Field>
               </div>
             </Section>
@@ -973,6 +1004,8 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
                 <tr className="bg-gray-50">
                   <th className="px-3 py-2 text-left border border-gray-200 text-gray-500 font-medium w-14">차수</th>
                   <th className="px-3 py-2 text-left border border-gray-200 text-gray-500 font-medium">기성일</th>
+                  <th className="px-3 py-2 text-left border border-gray-200 text-gray-500 font-medium">작업내용</th>
+                  <th className="px-3 py-2 text-left border border-gray-200 text-gray-500 font-medium">담당공무</th>
                   <th className="px-3 py-2 text-right border border-gray-200 text-gray-500 font-medium">공급가</th>
                   <th className="px-3 py-2 text-right border border-gray-200 text-gray-500 font-medium">부가세</th>
                   <th className="px-3 py-2 text-right border border-gray-200 text-[#1e2d5a] font-semibold">합계</th>
@@ -984,6 +1017,12 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
                   <tr key={g.id}>
                     <td className="px-3 py-2 border border-gray-200 font-medium text-gray-500">{g.차수}차</td>
                     <td className="px-3 py-2 border border-gray-200">{g.기성일 ?? '—'}</td>
+                    <td className="px-3 py-2 border border-gray-200 text-gray-600">{g.작업내용 ?? '—'}</td>
+                    <td className="px-3 py-2 border border-gray-200 text-gray-600">
+                      {g.담당공무_id != null
+                        ? (공무담당자목록.find((x) => x.id === g.담당공무_id)?.이름 ?? '—')
+                        : '—'}
+                    </td>
                     <td className="px-3 py-2 text-right border border-gray-200">{formatKRW(g.기성액_공급가 ?? 0)}</td>
                     <td className="px-3 py-2 text-right border border-gray-200 text-gray-400">
                       {formatKRW((g.기성액_공급가 ?? 0) * 0.1)}
@@ -1011,7 +1050,7 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
                   </tr>
                 ))}
                 <tr className="bg-blue-50">
-                  <td colSpan={2} className="px-3 py-2 border border-blue-200 font-bold text-[#1e2d5a]">
+                  <td colSpan={4} className="px-3 py-2 border border-blue-200 font-bold text-[#1e2d5a]">
                     누계
                   </td>
                   <td className="px-3 py-2 text-right border border-blue-200 font-bold">
@@ -1055,6 +1094,28 @@ export function OrderForm({ mode, row, 거래처목록, onSuccess }: Props) {
                     onChange={(v) => set기성폼값((prev) => ({ ...prev, 기성액_공급가: v }))}
                     className="h-9 text-sm w-44"
                   />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">작업내용</label>
+                  <Input
+                    className="h-9 text-sm w-44"
+                    value={기성폼값.작업내용}
+                    onChange={(e) => set기성폼값((v) => ({ ...v, 작업내용: e.target.value }))}
+                    placeholder="작업내용 입력"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">담당 공무</label>
+                  <select
+                    className="h-9 rounded-lg border border-input bg-background text-sm px-3 outline-none w-32"
+                    value={기성폼값.담당공무_id ?? ''}
+                    onChange={(e) => set기성폼값((v) => ({ ...v, 담당공무_id: e.target.value ? Number(e.target.value) : null }))}
+                  >
+                    <option value="">선택 안함</option>
+                    {공무담당자목록.map((g) => (
+                      <option key={g.id} value={g.id}>{g.이름}</option>
+                    ))}
+                  </select>
                 </div>
                 {기성폼값.기성액_공급가 != null && (
                   <>

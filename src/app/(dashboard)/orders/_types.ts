@@ -1,6 +1,8 @@
 import type { 수주Row, 거래처Row, 기성Row } from '@/types/database'
 
-export type 기성항목 = Pick<기성Row, 'id' | '차수' | '기성일' | '기성액_공급가'>
+export type 공무담당자목록항목 = { id: number; 이름: string }
+
+export type 기성항목 = Pick<기성Row, 'id' | '차수' | '기성일' | '기성액_공급가' | '작업내용' | '담당공무_id'>
 
 export type 발주자정보 = Pick<거래처Row, '거래처명'>
 
@@ -33,6 +35,7 @@ export type 수주행 = Pick<
   | '정산상태'
   | '포장여부'
   | '자재청구여부'
+  | '공무담당자_id'
 > & {
   발주자: 발주자정보 | null
   원청사: 발주자정보 | null
