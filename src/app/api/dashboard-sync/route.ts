@@ -4,8 +4,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { dashboard_공사Insert } from '@/types/database'
 
 export async function POST(req: NextRequest) {
+  const apiKey = process.env.DASHBOARD_API_KEY
+  if (!apiKey) {
+    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
+  }
+
   const auth = req.headers.get('authorization') ?? ''
-  if (auth !== `Bearer ${process.env.DASHBOARD_API_KEY}`) {
+  if (auth !== `Bearer ${apiKey}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
