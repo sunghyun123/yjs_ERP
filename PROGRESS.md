@@ -1,6 +1,6 @@
 # 영전사 ERP 개발 진행 기록
 
-> 최종 업데이트: 2026-06-11 (홈 화면 KPI 개선 + ERP 미입력 공사 섹션 + 대시보드 연동 API)
+> 최종 업데이트: 2026-06-11 (공무 보고서 재설계 + 버그 수정 + 검색/금액 UX 개선)
 
 ---
 
@@ -37,6 +37,11 @@
 | 27 | ERP 미입력 공사 섹션 (`dashboard_공사` 테이블) — 외부 대시보드에서 공사 목록 수신 후 공사이력·투입실적 미입력 건 표시, ✕ 소프트 삭제, 10건 페이지네이션 | ✅ |
 | 28 | `POST /api/dashboard-sync` — Bearer 인증, 중복 무시(upsert), 서비스 롤 admin 클라이언트 | ✅ |
 | 29 | 이력/실적 빠른 입력 — 미입력 공사 행에서 "이력 입력"·"실적 입력" 버튼 클릭 시 해당 공사·날짜 사전 선택된 채로 `/progress`·`/input` 이동 | ✅ |
+| 30 | 공무 보고서 (`/gongmu`) 재설계 — 3단계→2단계 네비게이션, KPI 3카드+담당자 그리드, 월 이동, ISO year 경계 버그 수정 | ✅ |
+| 31 | 공무 주간보고서 — 월간현황 통합카드(계획금액 수정+달성률 바), textarea 작업란, MonthlySummary/total 페이지 삭제 | ✅ |
+| 32 | 공무 보고서 버그 수정 — ①월 이동 시 계획금액 초기화 안 됨(WeeklyReportForm key remount) ②이력초안/기성초안 자동가져오기 제거 ③공무파트에 지중No+공사명 검색 추가 | ✅ |
+| 33 | 공사검색 드롭다운 UX 개선 — 지중No·공사명 통합 셀(공사명 메인+지중No 서브), 포커스 시 목록 표시, createPortal+position:fixed로 overflow 잘림 해결 | ✅ |
+| 34 | 금액 입력란 천단위 쉼표 포맷 — 포커스 시 숫자·블러 시 1,000,000,000 형식 (금주계획/실적/차주계획 + 월간계획 입력란) | ✅ |
 
 ---
 
@@ -78,6 +83,26 @@ const user = raw as Pick<사용자Row, '이름'> | null
 
 ### 스크롤 레이아웃
 - `html/body`에 `h-full` + `overflow-y-auto` 조합 금지 → `min-h-screen` + 자연 window 스크롤 사용
+
+### Table 내 드롭다운 — overflow 클리핑 해결 패턴
+
+`overflow-x-auto` 컨테이너 내부의 `position: absolute` 드롭다운은 컨테이너에 잘린다.
+
+**해결**: `createPortal(dropdown, document.body)` + `position: fixed` + `getBoundingClientRect()`로 위치 지정.
+
+```tsx
+const rect = inputRef.current?.getBoundingClientRect()
+createPortal(
+  <div style={{ position: 'fixed', top: rect.bottom + 2, left: rect.left, zIndex: 9999 }}>
+    {items}
+  </div>,
+  document.body
+)
+```
+
+항목 클릭 시 input blur 방지: `onMouseDown={e => e.preventDefault()}`.
+
+---
 
 ### SearchableSelect — Radix Dialog 내 portal dropdown 3종 버그 패턴
 
