@@ -9,6 +9,7 @@ import {
   PenLine,
   Activity,
   TrendingUp,
+  FileText,
   Settings,
   ChevronDown,
   ChevronRight,
@@ -27,6 +28,7 @@ const mainNav = [
   { href: '/input', label: '투입실적', icon: PenLine },
   { href: '/progress', label: '공사이력', icon: Activity },
   { href: '/sales', label: '매출손익 현황', icon: TrendingUp },
+  { href: '/gongmu', label: '공무 보고서', icon: FileText },
 ] as const
 
 const adminNav = [

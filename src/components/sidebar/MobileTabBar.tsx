@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ClipboardList, PenLine, Activity, TrendingUp } from 'lucide-react'
+import { LayoutDashboard, ClipboardList, PenLine, Activity, TrendingUp, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
@@ -11,6 +11,7 @@ const tabs = [
   { href: '/input', label: '투입실적', icon: PenLine },
   { href: '/progress', label: '공사이력', icon: Activity },
   { href: '/sales', label: '매출손익', icon: TrendingUp },
+  { href: '/gongmu', label: '공무 보고서', icon: FileText },
 ] as const
 
 export function MobileTabBar() {
