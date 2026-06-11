@@ -69,8 +69,8 @@ export default async function Page({
       ) : (
         <ProgressInputForm
           수주목록={수주목록}
-          default수주Id={params.수주_id ? Number(params.수주_id) : null}
-          default날짜={params.날짜 ?? null}
+          default수주Id={params.수주_id && Number.isFinite(Number(params.수주_id)) ? Number(params.수주_id) : null}
+          default날짜={params.날짜 && dateRe.test(params.날짜) ? params.날짜 : null}
         />
       )}
     </div>
