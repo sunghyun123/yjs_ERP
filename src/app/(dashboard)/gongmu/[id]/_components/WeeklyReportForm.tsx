@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useRef, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { save주간보고, upsert월간계획 } from '../../_lib/actions'
 import { exportWeeklyReport } from '../../_lib/excel'
@@ -87,6 +88,9 @@ function 공사통합Cell({ 지중no, 공사명, onChange, 수주목록 }: {
 }) {
   const [query, setQuery] = useState(공사명)
   const [open, setOpen] = useState(false)
+  const [dropRect, setDropRect] = useState<DOMRect | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => { setQuery(공사명) }, [공사명])
 
   const filtered = query
@@ -95,47 +99,65 @@ function 공사통합Cell({ 지중no, 공사명, onChange, 수주목록 }: {
 
   const 지중no서브 = 지중no && 지중no !== 공사명 ? 지중no : null
 
+  const handleFocus = () => {
+    setDropRect(inputRef.current?.getBoundingClientRect() ?? null)
+    setOpen(true)
+  }
+
+  const dropdown = open && filtered.length > 0 && dropRect && createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        top: dropRect.bottom + 2,
+        left: dropRect.left,
+        width: Math.max(dropRect.width, 288),
+        zIndex: 9999,
+      }}
+      className="bg-white border border-gray-200 rounded shadow-lg max-h-64 overflow-y-auto"
+    >
+      {filtered.map((s) => (
+        <button
+          key={s.id}
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { onChange(s.지중no, s.공사명); setQuery(s.공사명); setOpen(false) }}
+          className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-gray-50 last:border-0"
+        >
+          <div className="font-medium text-gray-800 truncate">{s.공사명}</div>
+          <div className="font-mono text-gray-400 mt-0.5">{s.지중no}</div>
+        </button>
+      ))}
+      {query && (
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { onChange(query, query); setOpen(false) }}
+          className="w-full text-left px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-50 border-t"
+        >
+          &quot;{query}&quot; 직접 입력
+        </button>
+      )}
+    </div>,
+    document.body,
+  )
+
   return (
-    <div className="relative">
+    <div>
       <input
+        ref={inputRef}
         type="text"
         className={cellCls('pr-6')}
         style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
         value={query}
         placeholder="공사명 또는 지중No..."
         onChange={(e) => { setQuery(e.target.value); onChange(e.target.value, e.target.value); setOpen(true) }}
-        onFocus={() => setOpen(true)}
+        onFocus={handleFocus}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
       />
       {지중no서브 && (
         <span className="block text-[10px] text-gray-400 truncate mt-0.5 px-1">{지중no서브}</span>
       )}
-      {open && filtered.length > 0 && (
-        <div className="absolute top-full left-0 z-50 bg-white border border-gray-200 rounded shadow-lg w-72 max-h-64 overflow-y-auto">
-          {filtered.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { onChange(s.지중no, s.공사명); setQuery(s.공사명); setOpen(false) }}
-              className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-gray-50 last:border-0"
-            >
-              <div className="font-medium text-gray-800 truncate">{s.공사명}</div>
-              <div className="font-mono text-gray-400 mt-0.5">{s.지중no}</div>
-            </button>
-          ))}
-          {query && (
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { onChange(query, query); setOpen(false) }}
-              className="w-full text-left px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-50 border-t"
-            >
-              &quot;{query}&quot; 직접 입력
-            </button>
-          )}
-        </div>
-      )}
+      {dropdown}
     </div>
   )
 }
