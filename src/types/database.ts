@@ -381,6 +381,32 @@ export type Database = {
           생성일?: string
         }
       }
+      dashboard_공사: {
+        Row: {
+          id: number
+          지중no: string
+          공사명: string
+          진행날짜: string
+          등록일: string
+          삭제됨: boolean
+        }
+        Insert: {
+          id?: number
+          지중no: string
+          공사명: string
+          진행날짜: string
+          등록일?: string
+          삭제됨?: boolean
+        }
+        Update: {
+          id?: number
+          지중no?: string
+          공사명?: string
+          진행날짜?: string
+          등록일?: string
+          삭제됨?: boolean
+        }
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -398,6 +424,7 @@ export type 공사이력Row    = Database['public']['Tables']['공사이력']['R
 export type 투입실적Row    = Database['public']['Tables']['투입실적']['Row']
 export type 시스템설정Row  = Database['public']['Tables']['시스템설정']['Row']
 export type 계획금액Row    = Database['public']['Tables']['계획금액']['Row']
+export type dashboard_공사Row = Database['public']['Tables']['dashboard_공사']['Row']
 
 // Insert 타입 re-export
 export type 사용자Insert   = Database['public']['Tables']['사용자']['Insert']
@@ -407,6 +434,7 @@ export type 수주Insert     = Database['public']['Tables']['수주']['Insert']
 export type 기성Insert     = Database['public']['Tables']['기성']['Insert']
 export type 공사이력Insert = Database['public']['Tables']['공사이력']['Insert']
 export type 투입실적Insert = Database['public']['Tables']['투입실적']['Insert']
+export type dashboard_공사Insert = Database['public']['Tables']['dashboard_공사']['Insert']
 
 // Update 타입 re-export
 export type 수주Update     = Database['public']['Tables']['수주']['Update']
