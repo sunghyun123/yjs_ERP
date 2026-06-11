@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { save주간보고, upsert월간계획 } from '../../_lib/actions'
 import type { 공무_주간보고Row, 공무_월간계획Row } from '@/types/database'
@@ -62,6 +62,9 @@ function TextCell({ value, onChange, placeholder }: { value: string; onChange: (
 function 공사SearchCell({ value, onChange, 수주목록 }: { value: string; onChange: (지중no: string, 공사명: string) => void; 수주목록: 수주항목[] }) {
   const [query, setQuery] = useState(value)
   const [open, setOpen] = useState(false)
+  useEffect(() => {
+    setQuery(value)
+  }, [value])
   const filtered = query
     ? 수주목록.filter((s) => s.지중no.includes(query) || s.공사명.includes(query)).slice(0, 8)
     : []
