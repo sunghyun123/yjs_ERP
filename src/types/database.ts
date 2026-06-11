@@ -159,6 +159,7 @@ export type Database = {
           생성일?: string
           수정자?: string | null
           수정일?: string | null
+          공무담당자_id?: number | null
         }
         Update: {
           id?: number
@@ -193,6 +194,7 @@ export type Database = {
           생성일?: string
           수정자?: string | null
           수정일?: string | null
+          공무담당자_id?: number | null
         }
       }
       기성: {
@@ -215,6 +217,8 @@ export type Database = {
           기성액_공급가?: number | null
           생성자?: string | null
           생성일?: string
+          작업내용?: string | null
+          담당공무_id?: number | null
         }
         Update: {
           id?: number
@@ -224,6 +228,8 @@ export type Database = {
           기성액_공급가?: number | null
           생성자?: string | null
           생성일?: string
+          작업내용?: string | null
+          담당공무_id?: number | null
         }
       }
       공사이력: {
@@ -240,12 +246,16 @@ export type Database = {
           수주_id: number
           작업일자: string
           성과금액?: number | null
+          작업내용?: string | null
+          담당공무_id?: number | null
         }
         Update: {
           id?: number
           수주_id?: number
           작업일자?: string
           성과금액?: number | null
+          작업내용?: string | null
+          담당공무_id?: number | null
         }
       }
       투입실적: {
