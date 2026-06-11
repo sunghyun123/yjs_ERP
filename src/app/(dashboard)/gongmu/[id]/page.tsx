@@ -61,42 +61,8 @@ export default async function GongmuDetailPage({
   ])
 
   const weekRows = (weekRowsResult.data ?? []) as 공무_주간보고Row[]
-  const savedErp이력Ids = new Set(weekRows.map((r) => r.erp_공사이력_id).filter(Boolean))
-  const savedErp기성Ids = new Set(weekRows.map((r) => r.erp_기성_id).filter(Boolean))
 
   const weekStart = weekOptions.find((w) => w.week === selectedWeek)
-  let weekDates: { startFull: string; endFull: string } | null = null
-  if (weekStart) {
-    const startMM = weekStart.label.match(/\((\d{2})-/)![1]
-    const startDD = weekStart.label.match(/\((\d{2})-(\d{2})~/)![2]
-    const endMM = weekStart.label.match(/~(\d{2})-/)![1]
-    const endDD = weekStart.label.match(/~(\d{2})-(\d{2})\)/)![2]
-    const startYear = Number(startMM) > Number(endMM) ? selectedYear - 1 : selectedYear
-    weekDates = {
-      startFull: `${startYear}-${startMM}-${startDD}`,
-      endFull: `${selectedYear}-${endMM}-${endDD}`,
-    }
-  }
-
-  const [이력초안Result, 기성초안Result] = weekDates
-    ? await Promise.all([
-        supabase.from('공사이력')
-          .select('id, 수주_id, 작업일자, 성과금액, 작업내용')
-          .eq('담당공무_id', 공무_id)
-          .gte('작업일자', weekDates.startFull)
-          .lte('작업일자', weekDates.endFull),
-        supabase.from('기성')
-          .select('id, 수주_id, 기성일, 기성액_공급가, 작업내용')
-          .eq('담당공무_id', 공무_id)
-          .gte('기성일', weekDates.startFull)
-          .lte('기성일', weekDates.endFull),
-      ])
-    : [{ data: [] }, { data: [] }]
-
-  const 이력초안 = ((이력초안Result.data ?? []) as { id: number; 수주_id: number | null; 작업일자: string; 성과금액: number | null; 작업내용: string | null }[])
-    .filter((r) => !savedErp이력Ids.has(r.id))
-  const 기성초안 = ((기성초안Result.data ?? []) as { id: number; 수주_id: number | null; 기성일: string | null; 기성액_공급가: number | null; 작업내용: string | null }[])
-    .filter((r) => !savedErp기성Ids.has(r.id))
 
   const monthStr = `${calYear}-${String(calMonth).padStart(2, '0')}`
   const prevMonth = shiftMonth(calYear, calMonth, -1)
@@ -159,12 +125,12 @@ export default async function GongmuDetailPage({
       </div>
 
       <WeeklyReportForm
+        key={`${calYear}-${calMonth}-${selectedYear}-${selectedWeek}`}
         공무_id={공무_id}
+        calYear={calYear}
         year={selectedYear}
         week_no={selectedWeek}
         savedRows={weekRows}
-        이력초안={이력초안}
-        기성초안={기성초안}
         수주목록={수주Result.data ?? []}
         공무담당자목록={공무담당자Result.data ?? []}
         plans={planResult.data ?? []}

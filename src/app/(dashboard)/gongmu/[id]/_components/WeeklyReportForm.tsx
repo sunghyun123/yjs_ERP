@@ -20,41 +20,35 @@ type 보고행 = {
   차주계획: number
   구분: '공사' | '공무'
   비고: string
-  isDraft?: boolean
   erp_공사이력_id?: number | null
   erp_기성_id?: number | null
 }
 
 type Props = {
   공무_id: number
+  calYear: number
   year: number
   week_no: number
   savedRows: 공무_주간보고Row[]
-  이력초안: { id: number; 수주_id: number | null; 성과금액: number | null; 작업내용: string | null }[]
-  기성초안: { id: number; 수주_id: number | null; 기성액_공급가: number | null; 작업내용: string | null }[]
   수주목록: 수주항목[]
   공무담당자목록: { id: number; 이름: string }[]
   plans: Pick<공무_월간계획Row, '구분' | '월간계획금액'>[]
   month: number
   이름: string
   weekLabel: string
-  /** 해당 연도 전체 주간보고 집계 (월간 현황 카드 표시용, optional) */
   allRows?: Pick<공무_주간보고Row, 'week_no' | 'year' | '금주실적' | '구분'>[]
 }
 
-// ── 편집 셀 공통 스타일 ──────────────────────────────────────
-function cellCls(isDraft: boolean, extra = '') {
-  const base = isDraft
-    ? 'w-full rounded-md border border-blue-200 bg-blue-100/60 px-2 py-1 text-sm text-[#1e2d5a] outline-none focus:border-blue-400 focus:bg-blue-100'
-    : 'w-full rounded-md border border-blue-100 bg-blue-50/60 px-2 py-1 text-sm text-[#1e2d5a] outline-none focus:border-blue-400 focus:bg-blue-50'
+function cellCls(extra = '') {
+  const base = 'w-full rounded-md border border-blue-100 bg-blue-50/60 px-2 py-1 text-sm text-[#1e2d5a] outline-none focus:border-blue-400 focus:bg-blue-50'
   return extra ? `${base} ${extra}` : base
 }
 
-function NumberCell({ value, onChange, isDraft }: { value: number; onChange: (v: number) => void; isDraft: boolean }) {
+function NumberCell({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
     <input
       type="number"
-      className={cellCls(isDraft, 'text-right')}
+      className={cellCls('text-right')}
       value={value === 0 ? '' : value}
       placeholder="0"
       onChange={(e) => onChange(Number(e.target.value) || 0)}
@@ -62,11 +56,11 @@ function NumberCell({ value, onChange, isDraft }: { value: number; onChange: (v:
   )
 }
 
-function TextCell({ value, onChange, placeholder, isDraft }: { value: string; onChange: (v: string) => void; placeholder?: string; isDraft: boolean }) {
+function TextCell({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <input
       type="text"
-      className={cellCls(isDraft)}
+      className={cellCls()}
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
@@ -74,10 +68,10 @@ function TextCell({ value, onChange, placeholder, isDraft }: { value: string; on
   )
 }
 
-function TextAreaCell({ value, onChange, placeholder, isDraft }: { value: string; onChange: (v: string) => void; placeholder?: string; isDraft: boolean }) {
+function TextAreaCell({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <textarea
-      className={cellCls(isDraft, 'resize-vertical min-h-[66px] leading-relaxed font-sans py-1.5')}
+      className={cellCls('resize-vertical min-h-[66px] leading-relaxed font-sans py-1.5')}
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
@@ -85,19 +79,20 @@ function TextAreaCell({ value, onChange, placeholder, isDraft }: { value: string
   )
 }
 
-function 공사SearchCell({ value, onChange, 수주목록, isDraft }: { value: string; onChange: (지중no: string, 공사명: string) => void; 수주목록: 수주항목[]; isDraft: boolean }) {
+function 공사SearchCell({ value, onChange, 수주목록 }: { value: string; onChange: (지중no: string, 공사명: string) => void; 수주목록: 수주항목[] }) {
   const [query, setQuery] = useState(value)
   const [open, setOpen] = useState(false)
   useEffect(() => { setQuery(value) }, [value])
+
   const filtered = query
     ? 수주목록.filter((s) => s.지중no.includes(query) || s.공사명.includes(query)).slice(0, 8)
-    : []
+    : 수주목록.slice(0, 20)
 
   return (
     <div className="relative">
       <input
         type="text"
-        className={cellCls(isDraft, 'pr-6')}
+        className={cellCls('pr-6')}
         style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
         value={query}
         placeholder="지중No 검색..."
@@ -118,14 +113,16 @@ function 공사SearchCell({ value, onChange, 수주목록, isDraft }: { value: s
               <span className="font-mono text-gray-400 mr-1">{s.지중no}</span>{s.공사명}
             </button>
           ))}
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => { onChange(query, query); setOpen(false) }}
-            className="w-full text-left px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-50 border-t"
-          >
-            &quot;{query}&quot; 직접 입력
-          </button>
+          {query && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onChange(query, query); setOpen(false) }}
+              className="w-full text-left px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-50 border-t"
+            >
+              &quot;{query}&quot; 직접 입력
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -133,7 +130,7 @@ function 공사SearchCell({ value, onChange, 수주목록, isDraft }: { value: s
 }
 
 export function WeeklyReportForm({
-  공무_id, year, week_no, savedRows, 이력초안, 기성초안,
+  공무_id, calYear, year, week_no, savedRows,
   수주목록, 공무담당자목록: _공무담당자목록,
   plans, month, 이름, weekLabel, allRows = [],
 }: Props) {
@@ -141,8 +138,6 @@ export function WeeklyReportForm({
   const [공사계획금액, set공사계획금액] = useState(plans.find((p) => p.구분 === '공사')?.월간계획금액 ?? 0)
   const [공무계획금액, set공무계획금액] = useState(plans.find((p) => p.구분 === '공무')?.월간계획금액 ?? 0)
 
-  // 월간 현황 계산
-  const calYear = month === 12 && week_no === 1 ? year - 1 : month === 1 && week_no >= 52 ? year + 1 : year
   const validMonthPairs = new Set(getWeeksInMonth(calYear, month).map((w) => `${w.isoYear}-${w.week}`))
   const 월간rows = allRows.filter((r) => validMonthPairs.has(`${r.year}-${r.week_no}`))
   const 공사누계 = 월간rows.filter((r) => r.구분 === '공사').reduce((s, r) => s + r.금주실적, 0)
@@ -158,8 +153,8 @@ export function WeeklyReportForm({
 
   const weekShort = weekLabel.match(/^\d+주차/)?.[0] ?? weekLabel
 
-  const initRows = (): 보고행[] => {
-    const saved: 보고행[] = savedRows.map((r) => ({
+  const [rows, setRows] = useState<보고행[]>(() =>
+    savedRows.map((r) => ({
       id: r.id,
       지중no: r.지중no ?? '',
       공사명: r.공사명,
@@ -173,39 +168,8 @@ export function WeeklyReportForm({
       erp_공사이력_id: r.erp_공사이력_id,
       erp_기성_id: r.erp_기성_id,
     }))
-    const drafts공사: 보고행[] = 이력초안.map((d) => {
-      const 수주 = 수주목록.find((s) => s.id === d.수주_id)
-      return {
-        지중no: 수주?.지중no ?? '',
-        공사명: 수주?.공사명 ?? '',
-        금주작업: d.작업내용 ?? '',
-        차주작업: '',
-        금주계획: 0,
-        금주실적: d.성과금액 ?? 0,
-        차주계획: 0,
-        구분: '공사',
-        비고: '',
-        isDraft: true,
-        erp_공사이력_id: d.id,
-      }
-    })
-    const drafts공무: 보고행[] = 기성초안.map((d) => ({
-      지중no: '',
-      공사명: '',
-      금주작업: d.작업내용 ?? '',
-      차주작업: '',
-      금주계획: 0,
-      금주실적: d.기성액_공급가 ?? 0,
-      차주계획: 0,
-      구분: '공무',
-      비고: '',
-      isDraft: true,
-      erp_기성_id: d.id,
-    }))
-    return [...saved, ...drafts공사, ...drafts공무]
-  }
+  )
 
-  const [rows, setRows] = useState<보고행[]>(initRows)
   const update = (i: number, patch: Partial<보고행>) =>
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)))
   const addRow = (구분: '공사' | '공무') =>
@@ -251,15 +215,10 @@ export function WeeklyReportForm({
           <span className="text-blue-300 font-normal text-xs">금주 실적: {sumLabel}원</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" style={{ minWidth: 구분 === '공사' ? 860 : 720 }}>
+          <table className="w-full text-sm" style={{ minWidth: 860 }}>
             <colgroup>
-              {구분 === '공사' && (
-                <>
-                  <col style={{ width: 96 }} />
-                  <col style={{ width: 190 }} />
-                </>
-              )}
-              {구분 === '공무' && <col style={{ width: 36 }} />}
+              <col style={{ width: 96 }} />
+              <col style={{ width: 190 }} />
               <col style={{ width: '24%', minWidth: 200 }} />
               <col style={{ width: '24%', minWidth: 200 }} />
               <col style={{ width: 88 }} />
@@ -269,8 +228,8 @@ export function WeeklyReportForm({
             </colgroup>
             <thead>
               <tr>
-                {구분 === '공사' && <th className={th}>지중No</th>}
-                <th className={th}>{구분 === '공사' ? '공사명' : '#'}</th>
+                <th className={th}>지중No</th>
+                <th className={th}>공사명</th>
                 <th className={th}>금주 작업</th>
                 <th className={th}>차주 작업</th>
                 <th className={thR}>금주계획</th>
@@ -280,30 +239,23 @@ export function WeeklyReportForm({
               </tr>
             </thead>
             <tbody>
-              {tableRows.map((r, rowIdx) => (
-                <tr key={r.idx} className={r.isDraft ? 'bg-blue-50' : ''}>
-                  {구분 === '공사' && (
-                    <td className="px-1.5 py-1.5 border-b border-gray-50 align-middle">
-                      <공사SearchCell
-                        value={r.지중no}
-                        onChange={(지중no, 공사명) => update(r.idx, { 지중no, 공사명 })}
-                        수주목록={수주목록}
-                        isDraft={r.isDraft ?? false}
-                      />
-                    </td>
-                  )}
+              {tableRows.map((r) => (
+                <tr key={r.idx}>
                   <td className="px-1.5 py-1.5 border-b border-gray-50 align-middle">
-                    {구분 === '공사'
-                      ? <TextCell value={r.공사명} onChange={(v) => update(r.idx, { 공사명: v })} isDraft={r.isDraft ?? false} />
-                      : <span className="text-gray-400 px-1 text-sm">{rowIdx + 1}</span>
-                    }
+                    <공사SearchCell
+                      value={r.지중no}
+                      onChange={(지중no, 공사명) => update(r.idx, { 지중no, 공사명 })}
+                      수주목록={수주목록}
+                    />
+                  </td>
+                  <td className="px-1.5 py-1.5 border-b border-gray-50 align-middle">
+                    <TextCell value={r.공사명} onChange={(v) => update(r.idx, { 공사명: v })} />
                   </td>
                   <td className="px-1.5 py-1.5 border-b border-gray-50 align-top">
                     <TextAreaCell
                       value={r.금주작업}
                       onChange={(v) => update(r.idx, { 금주작업: v })}
                       placeholder="작업 내용..."
-                      isDraft={r.isDraft ?? false}
                     />
                   </td>
                   <td className="px-1.5 py-1.5 border-b border-gray-50 align-top">
@@ -311,17 +263,16 @@ export function WeeklyReportForm({
                       value={r.차주작업}
                       onChange={(v) => update(r.idx, { 차주작업: v })}
                       placeholder="차주 계획..."
-                      isDraft={r.isDraft ?? false}
                     />
                   </td>
                   <td className="px-1.5 py-1.5 border-b border-gray-50 align-middle">
-                    <NumberCell value={r.금주계획} onChange={(v) => update(r.idx, { 금주계획: v })} isDraft={r.isDraft ?? false} />
+                    <NumberCell value={r.금주계획} onChange={(v) => update(r.idx, { 금주계획: v })} />
                   </td>
                   <td className="px-1.5 py-1.5 border-b border-gray-50 align-middle">
-                    <NumberCell value={r.금주실적} onChange={(v) => update(r.idx, { 금주실적: v })} isDraft={r.isDraft ?? false} />
+                    <NumberCell value={r.금주실적} onChange={(v) => update(r.idx, { 금주실적: v })} />
                   </td>
                   <td className="px-1.5 py-1.5 border-b border-gray-50 align-middle">
-                    <NumberCell value={r.차주계획} onChange={(v) => update(r.idx, { 차주계획: v })} isDraft={r.isDraft ?? false} />
+                    <NumberCell value={r.차주계획} onChange={(v) => update(r.idx, { 차주계획: v })} />
                   </td>
                   <td className="px-1.5 py-1.5 border-b border-gray-50 align-middle text-center">
                     <button type="button" onClick={() => removeRow(r.idx)} className="text-gray-300 hover:text-red-400 px-1 text-base leading-none">×</button>
@@ -348,7 +299,7 @@ export function WeeklyReportForm({
       <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
         <div className="flex items-center justify-between mb-4">
           <span className="text-[11px] font-bold tracking-widest text-gray-400 uppercase">
-            {year}년 {month}월 월간 현황
+            {calYear}년 {month}월 월간 현황
           </span>
           <span className="text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg px-3 py-1">
             계획 수정 가능
@@ -421,40 +372,35 @@ export function WeeklyReportForm({
       {renderTable('공사')}
       {renderTable('공무')}
 
-      <div className="flex justify-between items-center mt-2">
-        {(이력초안.length > 0 || 기성초안.length > 0) ? (
-          <p className="text-xs text-blue-500">✦ 파란 배경 행은 ERP에서 불러온 초안입니다.</p>
-        ) : <span />}
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-blue-400 text-blue-600"
-            onClick={() =>
-              exportWeeklyReport(이름, year, week_no, weekLabel, rows.map((r) => ({
-                지중no: r.지중no || null,
-                공사명: r.공사명,
-                금주작업: r.금주작업 || null,
-                차주작업: r.차주작업 || null,
-                금주계획: r.금주계획,
-                금주실적: r.금주실적,
-                차주계획: r.차주계획,
-                구분: r.구분,
-                비고: r.비고 || null,
-              })))
-            }
-          >
-            ↓ 엑셀 내보내기
-          </Button>
-          <Button
-            size="sm"
-            className="bg-[#1e2d5a] hover:bg-[#2d45a8] text-white"
-            onClick={handleSave}
-            disabled={pending}
-          >
-            {pending ? '저장 중...' : '저장'}
-          </Button>
-        </div>
+      <div className="flex justify-end items-center mt-2 gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-blue-400 text-blue-600"
+          onClick={() =>
+            exportWeeklyReport(이름, year, week_no, weekLabel, rows.map((r) => ({
+              지중no: r.지중no || null,
+              공사명: r.공사명,
+              금주작업: r.금주작업 || null,
+              차주작업: r.차주작업 || null,
+              금주계획: r.금주계획,
+              금주실적: r.금주실적,
+              차주계획: r.차주계획,
+              구분: r.구분,
+              비고: r.비고 || null,
+            })))
+          }
+        >
+          ↓ 엑셀 내보내기
+        </Button>
+        <Button
+          size="sm"
+          className="bg-[#1e2d5a] hover:bg-[#2d45a8] text-white"
+          onClick={handleSave}
+          disabled={pending}
+        >
+          {pending ? '저장 중...' : '저장'}
+        </Button>
       </div>
     </div>
   )
