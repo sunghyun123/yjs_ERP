@@ -441,6 +441,7 @@ export type 수주Update     = Database['public']['Tables']['수주']['Update']
 export type 기성Update     = Database['public']['Tables']['기성']['Update']
 export type 공사이력Update = Database['public']['Tables']['공사이력']['Update']
 export type 투입실적Update = Database['public']['Tables']['투입실적']['Update']
+export type dashboard_공사Update = Database['public']['Tables']['dashboard_공사']['Update']
 
 // 투입구분 enum — 공사단가.투입구분, 투입실적 컬럼 매핑에 사용
 export const 투입구분목록 = [
