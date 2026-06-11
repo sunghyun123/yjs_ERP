@@ -1,6 +1,6 @@
 # 영전사 ERP 개발 진행 기록
 
-> 최종 업데이트: 2026-06-10 (투입실적 입력 화면 UI/UX 개선)
+> 최종 업데이트: 2026-06-11 (홈 화면 KPI 개선 + ERP 미입력 공사 섹션 + 대시보드 연동 API)
 
 ---
 
@@ -33,6 +33,10 @@
 | 23 | 투입실적 메뉴 이름 변경 (`투입실적 입력` → `투입실적`) + 입력 탭 공사 선택 시 마지막 투입일 표시 | ✅ |
 | 24 | 달성률 이중 표시 — 수주대장 우측 패널에 공정 달성률(공사이력 누계 기반)·기성 달성률(기성 청구 기반) 나란히 표시, 공사이력 입력 레이블 '공정 달성률'로 통일 | ✅ |
 | 25 | 투입실적 입력 화면 UI/UX 개선 — ①폼 `max-w-4xl` 왼쪽 정렬(공사이력 탭과 통일) ②인풋 크기·테두리·포커스 강화(`w-[68px] h-10`, `border-gray-400`, `ring/40`) ③테이블 행 지브라+호버(`even:bg-blue-50/40`, `hover:bg-blue-100/50`) ④주간/야간 td `text-center`로 헤더-인풋 정렬 일치 | ✅ |
+| 26 | 홈 KPI 개선 — 계획금액 카드 제거, 전월 동기간 대비 성과금액 카드 추가 (양수 녹색·음수 빨강) | ✅ |
+| 27 | ERP 미입력 공사 섹션 (`dashboard_공사` 테이블) — 외부 대시보드에서 공사 목록 수신 후 공사이력·투입실적 미입력 건 표시, ✕ 소프트 삭제, 10건 페이지네이션 | ✅ |
+| 28 | `POST /api/dashboard-sync` — Bearer 인증, 중복 무시(upsert), 서비스 롤 admin 클라이언트 | ✅ |
+| 29 | 이력/실적 빠른 입력 — 미입력 공사 행에서 "이력 입력"·"실적 입력" 버튼 클릭 시 해당 공사·날짜 사전 선택된 채로 `/progress`·`/input` 이동 | ✅ |
 
 ---
 
@@ -100,15 +104,17 @@ src/
 ├── lib/
 │   ├── supabase/client.ts            # 브라우저용 클라이언트
 │   ├── supabase/server.ts            # 서버 컴포넌트용 클라이언트 (async)
+│   ├── supabase/admin.ts             # 서비스 롤 클라이언트 (API 전용)
 │   └── format.ts                     # formatKRW, formatEok
-├── types/database.ts                 # 8개 테이블 TypeScript 타입
+├── types/database.ts                 # 9개 테이블 TypeScript 타입 (dashboard_공사 추가)
 └── app/
     ├── login/                        # 로그인 페이지
     ├── actions/auth.ts               # 로그아웃 Server Action
     └── (dashboard)/
         ├── layout.tsx                # 인증 보호 레이아웃
         ├── _lib/calc.ts              # calc투입금액, calc합계
-        ├── _components/             # KpiCards, ProfitChart, ActiveProjects
+        ├── _components/             # KpiCards, ProfitChart, UnregisteredProjects
+        ├── _actions/dashboard.ts    # deleteUnregisteredProject Server Action
         ├── orders/                  # 수주대장 (OrdersTable, OrderForm — 기본정보/기성/준공 탭)
         ├── input/                   # 투입실적 (InputForm, HistoryTable)
         ├── progress/                # 공사이력 (ProgressInputForm, ProgressHistoryTable)
@@ -130,6 +136,7 @@ cd /var/www/yjs_erp && ./deploy.sh
 NEXT_PUBLIC_SUPABASE_URL=https://ljwglblarxvhhcogznmf.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+DASHBOARD_API_KEY=...   # 대시보드 연동 Bearer 토큰
 ```
 
 ---
