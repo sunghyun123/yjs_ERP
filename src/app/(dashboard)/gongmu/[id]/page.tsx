@@ -46,6 +46,7 @@ export default async function GongmuDetailPage({
 
   const { year: curYear, week: curWeek } = getCurrentWeek()
   const weekOptions = getWeeksInMonth(calYear, calMonth)
+  const isoYearsInMonth = [...new Set(weekOptions.map((w) => w.isoYear))]
 
   // week/year 파라미터 없으면 해당 달의 첫 주차로 기본값 설정
   const selectedYear = sp.year ? Number(sp.year) : (weekOptions[0]?.isoYear ?? calYear)
@@ -53,7 +54,7 @@ export default async function GongmuDetailPage({
 
   const [planResult, allRowsResult, weekRowsResult, 수주Result, 공무담당자Result] = await Promise.all([
     supabase.from('공무_월간계획').select('구분, 월간계획금액').eq('공무_id', 공무_id).eq('year', calYear).eq('month', calMonth),
-    supabase.from('공무_주간보고').select('week_no, year, 금주실적, 구분').eq('공무_id', 공무_id).eq('year', selectedYear),
+    supabase.from('공무_주간보고').select('week_no, year, 금주실적, 구분').eq('공무_id', 공무_id).in('year', isoYearsInMonth),
     supabase.from('공무_주간보고').select('*').eq('공무_id', 공무_id).eq('year', selectedYear).eq('week_no', selectedWeek).order('항목순서'),
     supabase.from('수주').select('id, 지중no, 공사명').eq('준공여부', false).order('지중no'),
     supabase.from('공무담당자').select('id, 이름').order('이름'),
@@ -160,7 +161,7 @@ export default async function GongmuDetailPage({
         plans={planResult.data ?? []}
         month={calMonth}
         이름={공무.이름}
-        weekLabel={weekOptions.find((w) => w.week === selectedWeek)?.label ?? ''}
+        weekLabel={weekStart?.label ?? ''}
         allRows={allRowsResult.data ?? []}
       />
     </div>
