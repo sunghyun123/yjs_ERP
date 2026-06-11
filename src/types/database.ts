@@ -124,6 +124,7 @@ export type Database = {
           생성일: string
           수정자: string | null
           수정일: string | null
+          공무담당자_id: number | null
         }
         Insert: {
           id?: number
@@ -203,6 +204,8 @@ export type Database = {
           기성액_공급가: number | null
           생성자: string | null
           생성일: string
+          작업내용: string | null
+          담당공무_id: number | null
         }
         Insert: {
           id?: number
@@ -229,6 +232,8 @@ export type Database = {
           수주_id: number
           작업일자: string
           성과금액: number | null
+          작업내용: string | null
+          담당공무_id: number | null
         }
         Insert: {
           id?: number
@@ -407,6 +412,42 @@ export type Database = {
           삭제됨?: boolean
         }
       }
+      공무담당자: {
+        Row: { id: number; 이름: string; 생성일: string }
+        Insert: { id?: number; 이름: string; 생성일?: string }
+        Update: { id?: number; 이름?: string; 생성일?: string }
+      }
+      공무_월간계획: {
+        Row: { id: number; 공무_id: number; year: number; month: number; 구분: '공사' | '공무'; 월간계획금액: number }
+        Insert: { id?: number; 공무_id: number; year: number; month: number; 구분: '공사' | '공무'; 월간계획금액?: number }
+        Update: { id?: number; 공무_id?: number; year?: number; month?: number; 구분?: '공사' | '공무'; 월간계획금액?: number }
+      }
+      공무_주간보고: {
+        Row: {
+          id: number; 공무_id: number; year: number; week_no: number; 항목순서: number
+          수주_id: number | null; 지중no: string | null; 공사명: string
+          금주작업: string | null; 차주작업: string | null
+          금주계획: number; 금주실적: number; 차주계획: number
+          구분: '공사' | '공무'; 비고: string | null
+          erp_공사이력_id: number | null; erp_기성_id: number | null
+        }
+        Insert: {
+          id?: number; 공무_id: number; year: number; week_no: number; 항목순서?: number
+          수주_id?: number | null; 지중no?: string | null; 공사명?: string
+          금주작업?: string | null; 차주작업?: string | null
+          금주계획?: number; 금주실적?: number; 차주계획?: number
+          구분: '공사' | '공무'; 비고?: string | null
+          erp_공사이력_id?: number | null; erp_기성_id?: number | null
+        }
+        Update: {
+          id?: number; 공무_id?: number; year?: number; week_no?: number; 항목순서?: number
+          수주_id?: number | null; 지중no?: string | null; 공사명?: string
+          금주작업?: string | null; 차주작업?: string | null
+          금주계획?: number; 금주실적?: number; 차주계획?: number
+          구분?: '공사' | '공무'; 비고?: string | null
+          erp_공사이력_id?: number | null; erp_기성_id?: number | null
+        }
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -442,6 +483,12 @@ export type 기성Update     = Database['public']['Tables']['기성']['Update']
 export type 공사이력Update = Database['public']['Tables']['공사이력']['Update']
 export type 투입실적Update = Database['public']['Tables']['투입실적']['Update']
 export type dashboard_공사Update = Database['public']['Tables']['dashboard_공사']['Update']
+
+// 공무 관련 타입 re-export
+export type 공무담당자Row    = Database['public']['Tables']['공무담당자']['Row']
+export type 공무_월간계획Row = Database['public']['Tables']['공무_월간계획']['Row']
+export type 공무_주간보고Row = Database['public']['Tables']['공무_주간보고']['Row']
+export type 공무_주간보고Insert = Database['public']['Tables']['공무_주간보고']['Insert']
 
 // 투입구분 enum — 공사단가.투입구분, 투입실적 컬럼 매핑에 사용
 export const 투입구분목록 = [
