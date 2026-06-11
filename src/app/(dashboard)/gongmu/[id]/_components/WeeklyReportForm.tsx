@@ -85,15 +85,15 @@ function 공사통합Cell({ 지중no, 공사명, onChange, 수주목록 }: {
   onChange: (지중no: string, 공사명: string) => void
   수주목록: 수주항목[]
 }) {
-  const [query, setQuery] = useState(지중no)
+  const [query, setQuery] = useState(공사명)
   const [open, setOpen] = useState(false)
-  useEffect(() => { setQuery(지중no) }, [지중no])
+  useEffect(() => { setQuery(공사명) }, [공사명])
 
   const filtered = query
-    ? 수주목록.filter((s) => s.지중no.includes(query) || s.공사명.includes(query)).slice(0, 8)
+    ? 수주목록.filter((s) => s.공사명.includes(query) || s.지중no.includes(query)).slice(0, 10)
     : 수주목록.slice(0, 20)
 
-  const 공사명서브 = 공사명 && 공사명 !== 지중no ? 공사명 : null
+  const 지중no서브 = 지중no && 지중no !== 공사명 ? 지중no : null
 
   return (
     <div className="relative">
@@ -102,25 +102,26 @@ function 공사통합Cell({ 지중no, 공사명, onChange, 수주목록 }: {
         className={cellCls('pr-6')}
         style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
         value={query}
-        placeholder="지중No 또는 공사명..."
+        placeholder="공사명 또는 지중No..."
         onChange={(e) => { setQuery(e.target.value); onChange(e.target.value, e.target.value); setOpen(true) }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
       />
-      {공사명서브 && (
-        <span className="block text-[10px] text-gray-400 truncate mt-0.5 px-1">{공사명서브}</span>
+      {지중no서브 && (
+        <span className="block text-[10px] text-gray-400 truncate mt-0.5 px-1">{지중no서브}</span>
       )}
       {open && filtered.length > 0 && (
-        <div className="absolute top-full left-0 z-50 bg-white border border-gray-200 rounded shadow-lg min-w-56 max-h-44 overflow-y-auto">
+        <div className="absolute top-full left-0 z-50 bg-white border border-gray-200 rounded shadow-lg w-72 max-h-64 overflow-y-auto">
           {filtered.map((s) => (
             <button
               key={s.id}
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { onChange(s.지중no, s.공사명); setQuery(s.지중no); setOpen(false) }}
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50"
+              onClick={() => { onChange(s.지중no, s.공사명); setQuery(s.공사명); setOpen(false) }}
+              className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-gray-50 last:border-0"
             >
-              <span className="font-mono text-gray-400 mr-1">{s.지중no}</span>{s.공사명}
+              <div className="font-medium text-gray-800 truncate">{s.공사명}</div>
+              <div className="font-mono text-gray-400 mt-0.5">{s.지중no}</div>
             </button>
           ))}
           {query && (
@@ -225,14 +226,14 @@ export function WeeklyReportForm({
           <span className="text-blue-300 font-normal text-xs">금주 실적: {sumLabel}원</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" style={{ minWidth: 800 }}>
+          <table className="w-full text-sm" style={{ minWidth: 860 }}>
             <colgroup>
               <col style={{ width: 240 }} />
-              <col style={{ width: '26%', minWidth: 170 }} />
-              <col style={{ width: '26%', minWidth: 170 }} />
-              <col style={{ width: 88 }} />
-              <col style={{ width: 88 }} />
-              <col style={{ width: 88 }} />
+              <col style={{ width: '22%', minWidth: 140 }} />
+              <col style={{ width: '22%', minWidth: 140 }} />
+              <col style={{ width: 112 }} />
+              <col style={{ width: 112 }} />
+              <col style={{ width: 112 }} />
               <col style={{ width: 28 }} />
             </colgroup>
             <thead>
