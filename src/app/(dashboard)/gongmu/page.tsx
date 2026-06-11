@@ -35,7 +35,7 @@ export default async function GongmuPage({
   const isoYears = [...new Set(weekEntries.map((w) => w.isoYear))]
 
   // 금주 실적 KPI 카드 타이틀용 레이블 (현재 주차 기준)
-  const curMonthWeeks = getWeeksInMonth(curYear, now.getMonth() + 1)
+  const curMonthWeeks = getWeeksInMonth(now.getFullYear(), now.getMonth() + 1)
   const curWeekEntry = curMonthWeeks.find((w) => w.week === curWeek)
   const curWeekLabel = curWeekEntry
     ? `${now.getMonth() + 1}월 ${curWeekEntry.label.match(/^\d+주차/)?.[0] ?? `${curWeek}주차`}`
@@ -64,7 +64,7 @@ export default async function GongmuPage({
       .eq('month', calMonth),
     supabase
       .from('공무_주간보고')
-      .select('공무_id, 구분, 금주실적')
+      .select('공무_id, 구분, 금주실적, year, week_no')
       .in('공무_id', ids)
       .in('year', isoYears)
       .in('week_no', weekNos),
@@ -77,7 +77,9 @@ export default async function GongmuPage({
   ])
 
   const plans = (plansResult.data ?? []) as { 공무_id: number; 구분: string; 월간계획금액: number }[]
-  const monthRows = (monthRowsResult.data ?? []) as { 공무_id: number; 구분: string; 금주실적: number }[]
+  const validMonthPairs = new Set(getWeeksInMonth(calYear, calMonth).map((w) => `${w.isoYear}-${w.week}`))
+  const monthRows = ((monthRowsResult.data ?? []) as { 공무_id: number; 구분: string; 금주실적: number; year: number; week_no: number }[])
+    .filter((r) => validMonthPairs.has(`${r.year}-${r.week_no}`))
   const weekRows = (weekRowsResult.data ?? []) as { 공무_id: number; 구분: string; 금주실적: number }[]
 
   // 전체 KPI

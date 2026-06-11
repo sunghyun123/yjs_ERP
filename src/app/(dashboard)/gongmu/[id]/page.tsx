@@ -65,22 +65,31 @@ export default async function GongmuDetailPage({
   const savedErp기성Ids = new Set(weekRows.map((r) => r.erp_기성_id).filter(Boolean))
 
   const weekStart = weekOptions.find((w) => w.week === selectedWeek)
-  const weekDates = weekStart
-    ? { start: weekStart.label.match(/\((.+)~/)![1], end: weekStart.label.match(/~(.+)\)/)![1] }
-    : null
+  let weekDates: { startFull: string; endFull: string } | null = null
+  if (weekStart) {
+    const startMM = weekStart.label.match(/\((\d{2})-/)![1]
+    const startDD = weekStart.label.match(/\((\d{2})-(\d{2})~/)![2]
+    const endMM = weekStart.label.match(/~(\d{2})-/)![1]
+    const endDD = weekStart.label.match(/~(\d{2})-(\d{2})\)/)![2]
+    const startYear = Number(startMM) > Number(endMM) ? selectedYear - 1 : selectedYear
+    weekDates = {
+      startFull: `${startYear}-${startMM}-${startDD}`,
+      endFull: `${selectedYear}-${endMM}-${endDD}`,
+    }
+  }
 
   const [이력초안Result, 기성초안Result] = weekDates
     ? await Promise.all([
         supabase.from('공사이력')
           .select('id, 수주_id, 작업일자, 성과금액, 작업내용')
           .eq('담당공무_id', 공무_id)
-          .gte('작업일자', `${selectedYear}-${weekDates.start}`)
-          .lte('작업일자', `${selectedYear}-${weekDates.end}`),
+          .gte('작업일자', weekDates.startFull)
+          .lte('작업일자', weekDates.endFull),
         supabase.from('기성')
           .select('id, 수주_id, 기성일, 기성액_공급가, 작업내용')
           .eq('담당공무_id', 공무_id)
-          .gte('기성일', `${selectedYear}-${weekDates.start}`)
-          .lte('기성일', `${selectedYear}-${weekDates.end}`),
+          .gte('기성일', weekDates.startFull)
+          .lte('기성일', weekDates.endFull),
       ])
     : [{ data: [] }, { data: [] }]
 

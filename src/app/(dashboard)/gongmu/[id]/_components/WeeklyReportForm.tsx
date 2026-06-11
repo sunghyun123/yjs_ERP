@@ -143,8 +143,8 @@ export function WeeklyReportForm({
 
   // 월간 현황 계산
   const calYear = month === 12 && week_no === 1 ? year - 1 : month === 1 && week_no >= 52 ? year + 1 : year
-  const monthWeekNos = new Set(getWeeksInMonth(calYear, month).map((w) => w.week))
-  const 월간rows = allRows.filter((r) => monthWeekNos.has(r.week_no))
+  const validMonthPairs = new Set(getWeeksInMonth(calYear, month).map((w) => `${w.isoYear}-${w.week}`))
+  const 월간rows = allRows.filter((r) => validMonthPairs.has(`${r.year}-${r.week_no}`))
   const 공사누계 = 월간rows.filter((r) => r.구분 === '공사').reduce((s, r) => s + r.금주실적, 0)
   const 공무누계 = 월간rows.filter((r) => r.구분 === '공무').reduce((s, r) => s + r.금주실적, 0)
   const 금주공사 = allRows.filter((r) => r.week_no === week_no && r.year === year && r.구분 === '공사').reduce((s, r) => s + r.금주실적, 0)
@@ -214,8 +214,8 @@ export function WeeklyReportForm({
 
   const handleSave = () => {
     startTransition(async () => {
-      await upsert월간계획(공무_id, year, month, '공사', 공사계획금액)
-      await upsert월간계획(공무_id, year, month, '공무', 공무계획금액)
+      await upsert월간계획(공무_id, calYear, month, '공사', 공사계획금액)
+      await upsert월간계획(공무_id, calYear, month, '공무', 공무계획금액)
       await save주간보고(
         공무_id, year, week_no,
         rows.map((r, i) => ({
