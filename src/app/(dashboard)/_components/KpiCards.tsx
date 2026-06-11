@@ -1,8 +1,9 @@
+// src/app/(dashboard)/_components/KpiCards.tsx
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CalendarCheck, CircleDollarSign, TrendingUp, Wallet } from 'lucide-react'
-import type { 투입실적Row, 공사단가Row, 계획금액Row } from '@/types/database'
+import { CircleDollarSign, TrendingUp, Wallet, ArrowUpDown } from 'lucide-react'
+import type { 투입실적Row, 공사단가Row } from '@/types/database'
 import { formatEok } from '@/lib/format'
 import { calc합계 } from '../_lib/calc'
 
@@ -10,50 +11,63 @@ export async function KpiCards() {
   const supabase = await createClient()
 
   const now = new Date()
-  const 월표시 = `${now.getMonth() + 1}월`
   const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const 년월키 = `${year}-${month}`
-  const monthStart = `${year}-${month}-01`
-  const monthEnd = new Date(year, now.getMonth() + 1, 1).toISOString().slice(0, 10)
+  const month = now.getMonth() + 1
+  const day = now.getDate()
+  const mm = String(month).padStart(2, '0')
+  const dd = String(day).padStart(2, '0')
 
-  const [투입실적결과, 단가결과, 공사이력결과, 계획금액결과] = await Promise.all([
+  const monthStart = `${year}-${mm}-01`
+  const monthEnd = new Date(year, month, 1).toISOString().slice(0, 10)
+
+  // 전월 동기간: 같은 날짜 범위, 한 달 전
+  const firstOfPrevMonth = new Date(year, month - 2, 1)
+  const prevYear = firstOfPrevMonth.getFullYear()
+  const prevMm = String(firstOfPrevMonth.getMonth() + 1).padStart(2, '0')
+  const prevMonthLastDay = new Date(year, month - 1, 0).getDate()
+  const prevDay = Math.min(day, prevMonthLastDay)
+  const prevMonthStart = `${prevYear}-${prevMm}-01`
+  const prevMonthEnd = `${prevYear}-${prevMm}-${String(prevDay).padStart(2, '0')}`
+
+  const [투입실적결과, 단가결과, 공사이력결과, 전월공사이력결과] = await Promise.all([
     supabase.from('투입실적').select('*').gte('투입일', monthStart).lt('투입일', monthEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
-    supabase.from('공사이력').select('성과금액').gte('작업일자', monthStart).lt('작업일자', monthEnd),
-    supabase.from('계획금액').select('금액').eq('년월', 년월키).maybeSingle(),
+    supabase.from('공사이력').select('성과금액').gte('작업일자', monthStart).lte('작업일자', `${year}-${mm}-${dd}`),
+    supabase.from('공사이력').select('성과금액').gte('작업일자', prevMonthStart).lte('작업일자', prevMonthEnd),
   ])
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
   const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적Row[]
 
-  const 이번달투입금액 = 투입실적목록.reduce(
-    (sum, row) => sum + calc합계(row, 단가목록),
-    0,
-  )
-
-  const 계획금액 = (계획금액결과.data as Pick<계획금액Row, '금액'> | null)?.금액 ?? null
+  const 이번달투입금액 = 투입실적목록.reduce((sum, row) => sum + calc합계(row, 단가목록), 0)
 
   const 이번달성과금액 = ((공사이력결과.data ?? []) as { 성과금액: number }[]).reduce(
     (sum, r) => sum + (r.성과금액 ?? 0),
     0,
   )
+  const 전월성과금액 = ((전월공사이력결과.data ?? []) as { 성과금액: number }[]).reduce(
+    (sum, r) => sum + (r.성과금액 ?? 0),
+    0,
+  )
+  const 전월대비성과금액 = 이번달성과금액 - 전월성과금액
   const 이번달손익금액 = 이번달성과금액 - 이번달투입금액
 
+  const 월표시 = `${month}월`
+
   const cards = [
-    {
-      title: `${월표시} 계획금액`,
-      value: 계획금액 !== null ? formatEok(계획금액) : '—',
-      sub: 계획금액 === null ? '미등록' : null,
-      icon: CalendarCheck,
-      color: '#6366f1',
-    },
     {
       title: `${월표시} 성과금액`,
       value: formatEok(이번달성과금액),
       sub: null,
       icon: CircleDollarSign,
       color: '#3d5af1',
+    },
+    {
+      title: `전월대비 성과`,
+      value: (전월대비성과금액 >= 0 ? '+' : '') + formatEok(전월대비성과금액),
+      sub: `전월 동기간 대비`,
+      icon: ArrowUpDown,
+      color: 전월대비성과금액 >= 0 ? '#22c55e' : '#ef4444',
     },
     {
       title: `${월표시} 투입금액`,
@@ -82,12 +96,7 @@ export async function KpiCards() {
             </div>
           </CardHeader>
           <CardContent className="px-5 pb-5">
-            <p
-              className="text-2xl font-bold"
-              style={{ color: sub ? '#94a3b8' : '#0f172a' }}
-            >
-              {value}
-            </p>
+            <p className="text-2xl font-bold" style={{ color: '#0f172a' }}>{value}</p>
             {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
           </CardContent>
         </Card>
@@ -107,6 +116,7 @@ export function KpiCardsSkeleton() {
           </CardHeader>
           <CardContent className="px-5 pb-5">
             <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-3 w-20 mt-1" />
           </CardContent>
         </Card>
       ))}
