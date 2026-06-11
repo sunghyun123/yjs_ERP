@@ -45,16 +45,27 @@ function cellCls(extra = '') {
   return extra ? `${base} ${extra}` : base
 }
 
+function useMoneyInput(value: number, setValue: (n: number) => void) {
+  const [editing, setEditing] = useState(false)
+  const [raw, setRaw] = useState('')
+  return {
+    type: 'text' as const,
+    inputMode: 'numeric' as const,
+    value: editing ? raw : (value === 0 ? '' : value.toLocaleString('ko-KR')),
+    placeholder: '0',
+    onFocus: () => { setRaw(value === 0 ? '' : String(value)); setEditing(true) },
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      const d = e.target.value.replace(/[^0-9]/g, '')
+      setRaw(d)
+      setValue(Number(d) || 0)
+    },
+    onBlur: () => setEditing(false),
+  }
+}
+
 function NumberCell({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  return (
-    <input
-      type="number"
-      className={cellCls('text-right')}
-      value={value === 0 ? '' : value}
-      placeholder="0"
-      onChange={(e) => onChange(Number(e.target.value) || 0)}
-    />
-  )
+  const props = useMoneyInput(value, onChange)
+  return <input className={cellCls('text-right')} {...props} />
 }
 
 function TextCell({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
@@ -170,6 +181,8 @@ export function WeeklyReportForm({
   const [pending, startTransition] = useTransition()
   const [공사계획금액, set공사계획금액] = useState(plans.find((p) => p.구분 === '공사')?.월간계획금액 ?? 0)
   const [공무계획금액, set공무계획금액] = useState(plans.find((p) => p.구분 === '공무')?.월간계획금액 ?? 0)
+  const 공사계획Props = useMoneyInput(공사계획금액, set공사계획금액)
+  const 공무계획Props = useMoneyInput(공무계획금액, set공무계획금액)
 
   const validMonthPairs = new Set(getWeeksInMonth(calYear, month).map((w) => `${w.isoYear}-${w.week}`))
   const 월간rows = allRows.filter((r) => validMonthPairs.has(`${r.year}-${r.week_no}`))
@@ -341,11 +354,8 @@ export function WeeklyReportForm({
             <div className="flex items-center gap-1.5 mb-2">
               <span className="text-[10px] text-gray-400 w-7 shrink-0">계획</span>
               <input
-                type="number"
                 className="flex-1 h-7 border border-gray-200 rounded-md px-2 text-xs text-right font-semibold text-[#1e2d5a] bg-blue-50/60 outline-none focus:border-blue-400 min-w-0"
-                value={공사계획금액 || ''}
-                placeholder="0"
-                onChange={(e) => set공사계획금액(Number(e.target.value) || 0)}
+                {...공사계획Props}
               />
               <span className="text-[10px] text-gray-400 shrink-0">원</span>
             </div>
@@ -365,11 +375,8 @@ export function WeeklyReportForm({
             <div className="flex items-center gap-1.5 mb-2">
               <span className="text-[10px] text-gray-400 w-7 shrink-0">계획</span>
               <input
-                type="number"
                 className="flex-1 h-7 border border-gray-200 rounded-md px-2 text-xs text-right font-semibold text-[#1e2d5a] bg-blue-50/60 outline-none focus:border-blue-400 min-w-0"
-                value={공무계획금액 || ''}
-                placeholder="0"
-                onChange={(e) => set공무계획금액(Number(e.target.value) || 0)}
+                {...공무계획Props}
               />
               <span className="text-[10px] text-gray-400 shrink-0">원</span>
             </div>
