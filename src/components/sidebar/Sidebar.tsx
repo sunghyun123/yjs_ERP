@@ -28,12 +28,13 @@ const mainNav = [
   { href: '/input', label: '투입실적', icon: PenLine },
   { href: '/progress', label: '공사이력', icon: Activity },
   { href: '/sales', label: '매출손익 현황', icon: TrendingUp },
-  { href: '/gongmu', label: '공무 보고서', icon: FileText },
+  { href: '/gongmu', label: '공무', icon: FileText },
 ] as const
 
 const adminNav = [
   { href: '/admin/clients', label: '거래처 관리' },
   { href: '/admin/rates', label: '공사단가 관리' },
+  { href: '/admin/gongmu', label: '공무담당자 관리' },
 ] as const
 
 interface SidebarProps {

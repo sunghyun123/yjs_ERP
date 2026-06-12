@@ -104,8 +104,9 @@ function 공사통합Cell({ 지중no, 공사명, onChange, 수주목록 }: {
 
   useEffect(() => { setQuery(공사명) }, [공사명])
 
+  const q = query.toLowerCase()
   const filtered = query
-    ? 수주목록.filter((s) => s.공사명.includes(query) || s.지중no.includes(query)).slice(0, 10)
+    ? 수주목록.filter((s) => s.공사명.toLowerCase().includes(q) || s.지중no.toLowerCase().includes(q)).slice(0, 10)
     : 수주목록.slice(0, 20)
 
   const 지중no서브 = 지중no && 지중no !== 공사명 ? 지중no : null
@@ -115,11 +116,14 @@ function 공사통합Cell({ 지중no, 공사명, onChange, 수주목록 }: {
     setOpen(true)
   }
 
+  const openUpward = dropRect ? window.innerHeight - dropRect.bottom < 220 : false
   const dropdown = open && filtered.length > 0 && dropRect && createPortal(
     <div
       style={{
         position: 'fixed',
-        top: dropRect.bottom + 2,
+        ...(openUpward
+          ? { bottom: window.innerHeight - dropRect.top + 2 }
+          : { top: dropRect.bottom + 2 }),
         left: dropRect.left,
         width: Math.max(dropRect.width, 288),
         zIndex: 9999,

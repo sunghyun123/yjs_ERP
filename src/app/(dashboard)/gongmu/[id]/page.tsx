@@ -48,9 +48,11 @@ export default async function GongmuDetailPage({
   const weekOptions = getWeeksInMonth(calYear, calMonth)
   const isoYearsInMonth = [...new Set(weekOptions.map((w) => w.isoYear))]
 
-  // week/year 파라미터 없으면 해당 달의 첫 주차로 기본값 설정
-  const selectedYear = sp.year ? Number(sp.year) : (weekOptions[0]?.isoYear ?? calYear)
-  const selectedWeek = sp.week ? Number(sp.week) : (weekOptions[0]?.week ?? curWeek)
+  // week/year 파라미터 없으면 현재 주차(이번 달에 속할 경우), 없으면 첫 주차
+  const curWeekOption = weekOptions.find((w) => w.isoYear === curYear && w.week === curWeek)
+  const defaultWeekOption = curWeekOption ?? weekOptions[0]
+  const selectedYear = sp.year ? Number(sp.year) : (defaultWeekOption?.isoYear ?? calYear)
+  const selectedWeek = sp.week ? Number(sp.week) : (defaultWeekOption?.week ?? curWeek)
 
   const [planResult, allRowsResult, weekRowsResult, 수주Result, 공무담당자Result] = await Promise.all([
     supabase.from('공무_월간계획').select('구분, 월간계획금액').eq('공무_id', 공무_id).eq('year', calYear).eq('month', calMonth),

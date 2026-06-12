@@ -5,7 +5,7 @@ import { getCurrentWeek, getWeeksInMonth } from '@/lib/week'
 import { formatEok } from '@/lib/format'
 import { calc달성률 } from './_lib/calc'
 
-export const metadata = { title: '공무 보고서 | 영전사 ERP' }
+export const metadata = { title: '공무 | 영전사 ERP' }
 
 function shiftMonth(yyyy: number, mm: number, delta: number): string {
   const d = new Date(yyyy, mm - 1 + delta, 1)
@@ -42,7 +42,14 @@ export default async function GongmuPage({
     : `${curWeek}주차`
 
   const supabase = await createClient()
-  const { data: 공무들raw } = await supabase.from('공무담당자').select('id, 이름').order('이름')
+  // 해당 월 이후 등록된 담당자는 이전 달 보고서에 표시되지 않도록 필터링
+  const nextMonthYear = calMonth === 12 ? calYear + 1 : calYear
+  const nextMonthCutoff = `${nextMonthYear}-${String(calMonth === 12 ? 1 : calMonth + 1).padStart(2, '0')}-01`
+  const { data: 공무들raw } = await supabase
+    .from('공무담당자')
+    .select('id, 이름')
+    .lt('생성일', nextMonthCutoff)
+    .order('id')
   const 공무들 = (공무들raw ?? []) as { id: number; 이름: string }[]
 
   if (공무들.length === 0) {
@@ -109,7 +116,7 @@ export default async function GongmuPage({
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">공무 보고서</h1>
+          <h1 className="text-xl font-semibold text-gray-900">공무</h1>
           <p className="text-sm text-gray-500 mt-0.5">{calYear}년 {calMonth}월</p>
         </div>
         <div className="flex gap-2">

@@ -11,7 +11,7 @@ const tabs = [
   { href: '/input', label: '투입실적', icon: PenLine },
   { href: '/progress', label: '공사이력', icon: Activity },
   { href: '/sales', label: '매출손익', icon: TrendingUp },
-  { href: '/gongmu', label: '공무 보고서', icon: FileText },
+  { href: '/gongmu', label: '공무', icon: FileText },
 ] as const
 
 export function MobileTabBar() {
