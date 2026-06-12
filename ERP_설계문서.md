@@ -46,6 +46,10 @@
 | `투입실적` | 일별 직종별 투입 인원 |
 | `시스템설정` | 일반관리비율(6%) 등 전사 설정 |
 | `계획금액` | 월별 성과 계획금액 (YYYY-MM PK) |
+| `공무담당자` | ✏️ 신규 — 공무 보고서 담당자 마스터 |
+| `공무_월간계획` | ✏️ 신규 — 공무담당자별 월간 계획금액 |
+| `공무_주간보고` | ✏️ 신규 — 공무담당자별 주간 보고서 항목 |
+| `dashboard_공사` | ✏️ 신규 — 외부 대시보드 연동 진행 공사 목록 |
 
 ### 거래처
 
@@ -101,6 +105,7 @@ CREATE TABLE 공사단가 (
 ### 수주
 
 > ⚠️ 보험료율·하도전용율은 `거래처`에서 JOIN 하지 않고 `수주` 테이블에 직접 저장 (원청사 기준, 수주별로 다름)
+> ✏️ 변경: `공무담당자_id` 필드 추가 (공무 보고서 연동)
 
 ```sql
 CREATE TABLE 수주 (
@@ -132,7 +137,7 @@ CREATE TABLE 수주 (
   준공액_공급가       DECIMAL(15,2),
   달성율              DECIMAL(5,2),
   참고사항            TEXT,
-  안전회의            VARCHAR(10),
+  공무담당자_id       INTEGER REFERENCES 공무담당자(id),
   생성자              TEXT REFERENCES 사용자(id),
   생성일              TIMESTAMP DEFAULT NOW(),
   수정자              TEXT REFERENCES 사용자(id),
@@ -142,17 +147,23 @@ CREATE TABLE 수주 (
 
 ### 공사이력
 
+> ✏️ 변경: `작업내용`, `담당공무_id` 필드 추가 (공무 보고서 연동)
+
 ```sql
 CREATE TABLE 공사이력 (
-  id         SERIAL PRIMARY KEY,
-  수주_id    INTEGER NOT NULL REFERENCES 수주(id),
-  작업일자   DATE NOT NULL,
-  성과금액   DECIMAL(15,2),  -- Δ달성률/100 × 하도적용금액
+  id            SERIAL PRIMARY KEY,
+  수주_id       INTEGER NOT NULL REFERENCES 수주(id),
+  작업일자      DATE NOT NULL,
+  성과금액      DECIMAL(15,2),  -- Δ달성률/100 × 하도적용금액
+  작업내용      TEXT,
+  담당공무_id   INTEGER REFERENCES 공무담당자(id),
   UNIQUE (수주_id, 작업일자)
 );
 ```
 
 ### 기성
+
+> ✏️ 변경: `작업내용`, `담당공무_id` 필드 추가 (공무 보고서 연동)
 
 ```sql
 CREATE TABLE 기성 (
@@ -161,7 +172,9 @@ CREATE TABLE 기성 (
   차수            INTEGER NOT NULL,
   기성일          DATE,
   기성액_공급가   DECIMAL(15,2),
-  생성자          INTEGER REFERENCES 사용자(id),
+  작업내용        TEXT,
+  담당공무_id     INTEGER REFERENCES 공무담당자(id),
+  생성자          TEXT REFERENCES 사용자(id),
   생성일          TIMESTAMP DEFAULT NOW(),
   UNIQUE (수주_id, 차수)
 );
@@ -203,6 +216,75 @@ CREATE TABLE 투입실적 (
   수정자          INTEGER REFERENCES 사용자(id),
   수정일          TIMESTAMP,
   UNIQUE (수주_id, 투입일)
+);
+```
+
+### 공무담당자
+
+> ✏️ 신규: 공무 보고서 담당자 마스터
+
+```sql
+CREATE TABLE 공무담당자 (
+  id      SERIAL PRIMARY KEY,
+  이름    VARCHAR(50) NOT NULL,
+  생성일  TIMESTAMP DEFAULT NOW()
+);
+```
+
+### 공무_월간계획
+
+> ✏️ 신규: 공무담당자별 월간 계획금액
+
+```sql
+CREATE TABLE 공무_월간계획 (
+  id              SERIAL PRIMARY KEY,
+  공무_id         INTEGER NOT NULL REFERENCES 공무담당자(id),
+  year            INTEGER NOT NULL,
+  month           INTEGER NOT NULL,
+  구분            VARCHAR(10) NOT NULL,  -- '공사' | '공무'
+  월간계획금액    DECIMAL(15,2) DEFAULT 0,
+  UNIQUE (공무_id, year, month, 구분)
+);
+```
+
+### 공무_주간보고
+
+> ✏️ 신규: 공무담당자별 주간 보고서 항목
+
+```sql
+CREATE TABLE 공무_주간보고 (
+  id              SERIAL PRIMARY KEY,
+  공무_id         INTEGER NOT NULL REFERENCES 공무담당자(id),
+  year            INTEGER NOT NULL,
+  week_no         INTEGER NOT NULL,
+  항목순서        INTEGER DEFAULT 0,
+  수주_id         INTEGER REFERENCES 수주(id),
+  지중no          VARCHAR(20),
+  공사명          VARCHAR(200) NOT NULL DEFAULT '',
+  금주작업        TEXT,
+  차주작업        TEXT,
+  금주계획        DECIMAL(15,2) DEFAULT 0,
+  금주실적        DECIMAL(15,2) DEFAULT 0,
+  차주계획        DECIMAL(15,2) DEFAULT 0,
+  구분            VARCHAR(10) NOT NULL,  -- '공사' | '공무'
+  비고            TEXT,
+  erp_공사이력_id INTEGER REFERENCES 공사이력(id),
+  erp_기성_id     INTEGER REFERENCES 기성(id)
+);
+```
+
+### dashboard_공사
+
+> ✏️ 신규: 외부 대시보드(yjsboard.com)에서 수신한 진행 공사 목록 — 투입실적·공사이력 미입력 건 알림용
+
+```sql
+CREATE TABLE dashboard_공사 (
+  id          SERIAL PRIMARY KEY,
+  지중no      VARCHAR(20) NOT NULL,
+  공사명      VARCHAR(200) NOT NULL,
+  진행날짜    DATE NOT NULL,
+  등록일      TIMESTAMP DEFAULT NOW(),
+  삭제됨      BOOLEAN DEFAULT FALSE
 );
 ```
 
@@ -282,24 +364,31 @@ CREATE TABLE 계획금액 (
 | `/sales` | 매출손익 현황 | ✅ |
 | `/admin/clients` | 거래처 관리 (목록·등록·수정·삭제) | ✅ |
 | `/admin/rates` | 공사단가 관리 (현행 단가·인라인 수정·추가·삭제) | ✅ |
+| `/progress` | ✏️ 신규 — 공사이력 (입력·현황·수정·삭제) | ✅ |
+| `/gongmu` | ✏️ 신규 — 공무 보고서 담당자 목록 | ✅ |
+| `/gongmu/[id]` | ✏️ 신규 — 공무 주간/월간 보고서 입력 | ✅ |
+| `/admin/gongmu` | ✏️ 신규 — 공무담당자 관리 (CRUD) | ✅ |
 
-### 구현 예정 (우선순위 순)
+### ✏️ 구현 예정 → 완료 처리
 
-| URL | 화면 | 방식 |
+| URL | 화면 | 결과 |
 |-----|------|------|
-| `/orders` Sheet 탭 | 공사이력 조회·등록·수정·삭제 | Sheet 내 탭 추가 |
-| `/orders` Sheet | 기성 등록 | Sheet 내 탭 |
+| `/orders` Dialog 탭 | 기성 조회·등록·수정·삭제 | ✅ Dialog [기본정보][기성][준공] 탭으로 구현 |
+| `/progress` | 공사이력 조회·등록·수정·삭제 | ✅ `/orders` Sheet 탭 대신 별도 페이지로 구현 |
 
 ---
 
 ## 6. 개발 로드맵
 
-**Phase 2 (현재):** CRUD 완성
-1. 공사이력 조회·등록·수정·삭제
-2. 거래처 관리
-3. 공사단가 관리
+**Phase 2 (완료 ✅):** CRUD 완성
+1. 공사이력 조회·등록·수정·삭제 → `/progress` 별도 페이지로 구현
+2. 거래처 관리 → `/admin/clients`
+3. 공사단가 관리 → `/admin/rates`
+4. ✏️ 기성 CRUD → `/orders` Dialog 탭으로 구현
+5. ✏️ 공무 보고서 → `/gongmu`, `/gongmu/[id]`, `/admin/gongmu`
+6. ✏️ 외부 대시보드 연동 → `POST /api/dashboard-sync`, `dashboard_공사` 테이블
 
-**Phase 3:** 권한 관리, REST API 공개, yjsboard.com 연동, EMAX 완전 대체
+**Phase 3 (예정):** 권한 관리, REST API 공개, yjsboard.com 연동, EMAX 완전 대체
 
 ---
 
