@@ -10,6 +10,7 @@ export default async function Page() {
     .from('공사단가')
     .select()
     .order('적용시작일', { ascending: false })
+    .order('id', { ascending: false })
 
   const seen = new Set<string>()
   const currentRates = ((ratesRaw ?? []) as 공사단가Row[]).filter(r => {

@@ -47,6 +47,7 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
   }
 
   const handleSaveEdit = async (row: 공사단가Row) => {
+    if (!editValues.적용시작일) { showToast(false, '적용시작일을 입력하세요.'); return }
     setSaving(true)
     const { data, error } = await (supabase.from('공사단가') as any)
       .update({
@@ -57,15 +58,17 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
       .eq('id', row.id)
       .select()
       .single()
-    setSaving(false)
-    if (error) { showToast(false, '저장에 실패했습니다.'); return }
+    if (error) { setSaving(false); showToast(false, '저장에 실패했습니다.'); return }
     setRows(prev => prev.map(r => r.id === row.id ? (data as 공사단가Row) : r))
     setEditingId(null)
+    setSaving(false)
     showToast(true, '수정되었습니다.')
   }
 
   const handleDelete = async (row: 공사단가Row) => {
+    setSaving(true)
     const { error } = await (supabase.from('공사단가') as any).delete().eq('id', row.id)
+    setSaving(false)
     if (error) { showToast(false, '삭제에 실패했습니다.'); return }
     setRows(prev => prev.filter(r => r.id !== row.id))
     showToast(true, '삭제되었습니다.')
@@ -73,6 +76,7 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
 
   const handleAdd = async () => {
     if (!addValues.투입구분.trim()) { showToast(false, '투입구분을 입력하세요.'); return }
+    if (!addValues.적용시작일) { showToast(false, '적용시작일을 입력하세요.'); return }
     setSaving(true)
     const { data, error } = await (supabase.from('공사단가') as any)
       .insert({
@@ -83,15 +87,15 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
       })
       .select()
       .single()
-    setSaving(false)
-    if (error) { showToast(false, '저장에 실패했습니다.'); return }
+    if (error) { setSaving(false); showToast(false, '저장에 실패했습니다.'); return }
     setRows(prev => [...prev, data as 공사단가Row])
     setAdding(false)
     setAddValues({ 투입구분: '', 주간단가: '', 야간단가: '', 적용시작일: today() })
+    setSaving(false)
     showToast(true, '추가되었습니다.')
   }
 
-  const busy = editingId !== null || adding
+  const busy = editingId !== null || adding || saving
 
   return (
     <>
@@ -112,7 +116,7 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
         <Button
           size="sm"
           onClick={() => { setAdding(true); setEditingId(null) }}
-          disabled={adding}
+          disabled={adding || saving}
         >
           + 항목 추가
         </Button>
@@ -254,7 +258,7 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
                     <Button size="sm" className="h-7 text-xs" disabled={saving} onClick={handleAdd}>
                       {saving ? '...' : '추가'}
                     </Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAdding(false)}>
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setAdding(false); setAddValues({ 투입구분: '', 주간단가: '', 야간단가: '', 적용시작일: today() }) }}>
                       취소
                     </Button>
                   </div>
