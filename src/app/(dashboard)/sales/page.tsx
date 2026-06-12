@@ -6,6 +6,7 @@ import { calc합계 } from '../_lib/calc'
 import { formatEok } from '@/lib/format'
 import { YearSelector } from './_components/YearSelector'
 import { SalesChart } from './_components/SalesChart'
+import { ProjectTable } from './_components/ProjectTable'
 
 export default async function SalesPage({
   searchParams,
@@ -19,10 +20,11 @@ export default async function SalesPage({
 
   const supabase = await createClient()
 
-  const [투입실적결과, 단가결과, 공사이력결과] = await Promise.all([
+  const [투입실적결과, 단가결과, 공사이력결과, 수주결과] = await Promise.all([
     supabase.from('투입실적').select('*').gte('투입일', yearStart).lt('투입일', yearEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
-    supabase.from('공사이력').select('작업일자, 성과금액').gte('작업일자', yearStart).lt('작업일자', yearEnd),
+    supabase.from('공사이력').select('작업일자, 수주_id, 성과금액').gte('작업일자', yearStart).lt('작업일자', yearEnd),
+    supabase.from('수주').select('id, 지중no, 공사명').order('지중no'),
   ])
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
@@ -36,11 +38,48 @@ export default async function SalesPage({
     monthly[m].투입 += calc합계(row, 단가목록)
   }
 
-  for (const row of (공사이력결과.data ?? []) as { 작업일자: string; 성과금액: number }[]) {
+  const 공사이력목록 = (공사이력결과.data ?? []) as { 작업일자: string; 수주_id: number; 성과금액: number }[]
+
+  for (const row of 공사이력목록) {
     if (!row.작업일자) continue
     const m = parseInt(row.작업일자.slice(5, 7), 10) - 1
     monthly[m].성과 += row.성과금액 ?? 0
   }
+
+  // 공사별 집계
+  const 공사별 = new Map<number, { 성과: number; 투입: number }>()
+  for (const row of 투입실적목록) {
+    const id = row.수주_id
+    if (!공사별.has(id)) 공사별.set(id, { 성과: 0, 투입: 0 })
+    공사별.get(id)!.투입 += calc합계(row, 단가목록)
+  }
+  for (const row of 공사이력목록) {
+    if (!row.작업일자) continue
+    const id = row.수주_id
+    if (!공사별.has(id)) 공사별.set(id, { 성과: 0, 투입: 0 })
+    공사별.get(id)!.성과 += row.성과금액 ?? 0
+  }
+
+  type 수주Info = { 지중no: string; 공사명: string }
+  const 수주Map = new Map<number, 수주Info>(
+    ((수주결과.data ?? []) as (수주Info & { id: number })[]).map(r => [r.id, { 지중no: r.지중no, 공사명: r.공사명 }])
+  )
+
+  const projectData = [...공사별.entries()]
+    .map(([id, { 성과, 투입 }]) => {
+      const info = 수주Map.get(id)
+      const 손익 = 성과 - 투입
+      return {
+        id,
+        지중no: info?.지중no ?? `(id:${id})`,
+        공사명: info?.공사명 ?? '(공사명 없음)',
+        성과금액: 성과,
+        투입금액: 투입,
+        손익금액: 손익,
+        이익률: 성과 > 0 ? (손익 / 성과) * 100 : 0,
+      }
+    })
+    .sort((a, b) => a.지중no.localeCompare(b.지중no, 'ko'))
 
   // 연간 합계
   const 총성과 = monthly.reduce((sum, m) => sum + m.성과, 0)
@@ -148,6 +187,18 @@ export default async function SalesPage({
         </CardHeader>
         <CardContent className="px-5 pt-4 pb-5">
           <SalesChart data={chartData} />
+        </CardContent>
+      </Card>
+
+      {/* 공사별 상세 테이블 */}
+      <Card className="bg-white shadow-sm border-0">
+        <CardHeader className="px-5 pt-5 pb-0">
+          <CardTitle className="text-sm font-medium text-gray-600">
+            {year}년 공사별 상세
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-5 pt-4 pb-5">
+          <ProjectTable data={projectData} />
         </CardContent>
       </Card>
 
