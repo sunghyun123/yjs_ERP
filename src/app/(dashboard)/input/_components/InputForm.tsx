@@ -28,7 +28,6 @@ const 직종행 = [
   { label: '크레인',    주: '크레인_주',    야: '크레인_야'    },
   { label: '물청소차',  주: '물청소차_주',  야: '물청소차_야'  },
   { label: 'MCM',       주: 'mcm_주',       야: 'mcm_야'       },
-  { label: '재료비/인', 주: '재료비인_주',  야: '재료비인_야'  },
   { label: '접속',      주: '접속_주',      야: '접속_야'      },
 ] as const
 
@@ -137,7 +136,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
     크레인_주:    n(values.크레인_주),    크레인_야:    n(values.크레인_야),
     물청소차_주:  n(values.물청소차_주),  물청소차_야:  n(values.물청소차_야),
     mcm_주:       n(values.mcm_주),       mcm_야:       n(values.mcm_야),
-    재료비인_주:  n(values.재료비인_주),  재료비인_야:  n(values.재료비인_야),
+    재료비인_주:  n(values.상용직_주),    재료비인_야:  n(values.상용직_야),
     접속_주:      n(values.접속_주),      접속_야:      n(values.접속_야),
     외주1: n(values.외주1), 외주2: n(values.외주2),
     생성자: null, 생성일: '', 수정자: null, 수정일: null,
@@ -278,7 +277,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
         크레인_주: data.크레인_주,    크레인_야: data.크레인_야,
         물청소차_주: data.물청소차_주, 물청소차_야: data.물청소차_야,
         mcm_주: data.mcm_주, mcm_야: data.mcm_야,
-        재료비인_주: data.재료비인_주, 재료비인_야: data.재료비인_야,
+        재료비인_주: data.상용직_주,   재료비인_야: data.상용직_야,
         접속_주: data.접속_주,        접속_야: data.접속_야,
         외주1: data.외주1, 외주2: data.외주2,
         수정자: uid, 수정일: new Date().toISOString(),
@@ -288,7 +287,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
       const { error } = await (supabase.from('투입실적') as any).update(payload).eq('id', 기존Id)
       if (error) { showToast(false, '저장 실패: ' + (error as { message: string }).message); return }
     } else {
-      const payload: 투입실적Insert = { ...data, 생성자: uid }
+      const payload: 투입실적Insert = { ...data, 재료비인_주: data.상용직_주, 재료비인_야: data.상용직_야, 생성자: uid }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: ins, error } = await (supabase.from('투입실적') as any)
         .insert(payload).select('id').single()
