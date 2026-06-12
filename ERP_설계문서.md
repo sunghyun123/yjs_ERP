@@ -280,14 +280,14 @@ CREATE TABLE 계획금액 (
 | `/input` | 투입실적 입력 | ✅ |
 | `/input?tab=history` | 투입실적 현황 (조회·수정·삭제) | ✅ |
 | `/sales` | 매출손익 현황 | ✅ |
+| `/admin/clients` | 거래처 관리 (목록·등록·수정·삭제) | ✅ |
+| `/admin/rates` | 공사단가 관리 (현행 단가·인라인 수정·추가·삭제) | ✅ |
 
 ### 구현 예정 (우선순위 순)
 
 | URL | 화면 | 방식 |
 |-----|------|------|
 | `/orders` Sheet 탭 | 공사이력 조회·등록·수정·삭제 | Sheet 내 탭 추가 |
-| `/admin/clients` | 거래처 관리 | DataTable + Sheet |
-| `/admin/rates` | 공사단가 관리 | DataTable + Sheet |
 | `/orders` Sheet | 기성 등록 | Sheet 내 탭 |
 
 ---
