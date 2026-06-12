@@ -309,7 +309,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
                 <div>
                   <span className="text-gray-400 text-xs block">현재 공정 달성률</span>
                   <span className="font-semibold text-amber-600">
-                    {현재달성율 != null ? `${현재달성율.toFixed(1)}%` : '—'}
+                    {현재달성율 != null ? `${현재달성율.toFixed(2)}%` : '—'}
                   </span>
                 </div>
               </div>
@@ -402,7 +402,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
           <div className="flex justify-between">
             <span className="text-blue-200 text-sm">공정 달성률</span>
             <span className="text-amber-300 font-bold text-xl">
-              {저장후달성율 != null ? `${저장후달성율.toFixed(1)}%` : '—'}
+              {저장후달성율 != null ? `${저장후달성율.toFixed(2)}%` : '—'}
             </span>
           </div>
         </div>

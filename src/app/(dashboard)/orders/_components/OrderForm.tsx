@@ -884,14 +884,14 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, o
                   <div className="rounded-lg px-3 py-2 bg-amber-50 border border-amber-100">
                     <p className="text-[10px] text-gray-400">공정 달성률</p>
                     <p className="text-lg font-bold text-amber-600">
-                      {((공정누계 / 하도적용) * 100).toFixed(1)}%
+                      {((공정누계 / 하도적용) * 100).toFixed(2)}%
                     </p>
                     <p className="text-[10px] text-gray-400">공사이력 누계</p>
                   </div>
                   <div className="rounded-lg px-3 py-2 bg-blue-50 border border-blue-100">
                     <p className="text-[10px] text-gray-400">기성 달성률</p>
                     <p className="text-lg font-bold text-[#1e2d5a]">
-                      {((기성누계공급가 / 하도적용) * 100).toFixed(1)}%
+                      {((기성누계공급가 / 하도적용) * 100).toFixed(2)}%
                     </p>
                     <p className="text-[10px] text-gray-400">기성 청구 누계</p>
                   </div>
