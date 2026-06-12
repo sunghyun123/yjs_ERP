@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
@@ -46,11 +46,19 @@ export function ClientsClient({ initialRows }: { initialRows: 거래처Row[] }) 
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const supabase = useMemo(() => createClient(), [])
 
   const showToast = (ok: boolean, msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     setToast({ ok, msg })
-    setTimeout(() => setToast(null), 3000)
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000)
   }
+
+  useEffect(() => {
+    return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }
+  }, [])
 
   const openNew = () => {
     setEditRow(null)
@@ -73,8 +81,13 @@ export function ClientsClient({ initialRows }: { initialRows: 거래처Row[] }) 
   const handleSave = async () => {
     if (!form.거래처코드.trim()) { showToast(false, '거래처코드를 입력하세요.'); return }
     if (!form.거래처명.trim()) { showToast(false, '거래처명을 입력하세요.'); return }
+    if (form.보험료제외율 !== '' && isNaN(parseFloat(form.보험료제외율))) {
+      showToast(false, '보험료제외율에 올바른 숫자를 입력하세요.'); return
+    }
+    if (form.하도전용율 !== '' && isNaN(parseFloat(form.하도전용율))) {
+      showToast(false, '하도전용율에 올바른 숫자를 입력하세요.'); return
+    }
     setSaving(true)
-    const supabase = createClient()
     const payload = {
       거래처코드: form.거래처코드.trim(),
       거래처명: form.거래처명.trim(),
@@ -102,7 +115,7 @@ export function ClientsClient({ initialRows }: { initialRows: 거래처Row[] }) 
         .single()
       setSaving(false)
       if (error) {
-        const msg = error.message?.includes('거래처코드') ? '이미 등록된 코드입니다.' : '저장에 실패했습니다.'
+        const msg = error.code === '23505' ? '이미 등록된 코드입니다.' : '저장에 실패했습니다.'
         showToast(false, msg)
         return
       }
@@ -117,7 +130,6 @@ export function ClientsClient({ initialRows }: { initialRows: 거래처Row[] }) 
   const handleDelete = async () => {
     if (!editRow) return
     setDeleting(true)
-    const supabase = createClient()
     const { error } = await (supabase.from('거래처') as any).delete().eq('id', editRow.id)
     setDeleting(false)
     if (error) { showToast(false, '삭제에 실패했습니다.'); return }
@@ -209,16 +221,18 @@ export function ClientsClient({ initialRows }: { initialRows: 거래처Row[] }) 
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={7} className="py-10 text-center text-sm text-gray-400">
-                  거래처가 없습니다.
+                  {query.trim() ? '검색 결과가 없습니다.' : '거래처가 없습니다.'}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-gray-400">총 {rows.length}개 거래처</p>
+      <p className="mt-2 text-xs text-gray-400">
+        {query.trim() ? `${filtered.length}개 검색결과 (전체 ${rows.length}개)` : `총 ${rows.length}개 거래처`}
+      </p>
 
-      <Sheet open={sheetOpen} onOpenChange={open => { if (!open) closeSheet() }}>
+      <Sheet open={sheetOpen} onOpenChange={open => { if (!open && !saving && !deleting) closeSheet() }}>
         <SheetContent className="w-[380px] sm:max-w-[380px] flex flex-col p-0">
           <SheetHeader className="border-b px-6 py-4">
             <SheetTitle>{editRow ? '거래처 수정' : '새 거래처'}</SheetTitle>
