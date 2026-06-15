@@ -1,11 +1,15 @@
 'use client'
 
-import { useState, useDeferredValue } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { useDeferredValue, useMemo, useState } from 'react'
+import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { formatEok } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { 손익색 } from '../_lib/colors'
-import { WeeklyDetailModal } from './WeeklyDetailModal'
+
+/* ------------------------------------------------------------------ */
+/*  Types — kept identical so page.tsx / ExcelExportButton 그대로 동작  */
+/* ------------------------------------------------------------------ */
 
 export type PivotProjectRow = {
   id: number
@@ -15,274 +19,250 @@ export type PivotProjectRow = {
   투입금액: number
   손익금액: number
   monthly: Array<{ 성과: number; 투입: number; 손익: number }>
-  weekly: Array<{ week: string; label: string; 성과: number; 투입: number; 손익: number }>
 }
 
 type Props = {
   data: PivotProjectRow[]
 }
 
-const PAGE_SIZE = 25
-const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월']
+type Metric = '성과' | '투입' | '손익'
 
-function Paginator({
-  page,
-  totalPages,
-  onChange,
-}: {
-  page: number
-  totalPages: number
-  onChange: (p: number) => void
-}) {
-  const pages: (number | null)[] = []
-  if (totalPages <= 7) {
-    for (let i = 0; i < totalPages; i++) pages.push(i)
-  } else {
-    if (page > 2) { pages.push(0); if (page > 3) pages.push(null) }
-    const windowStart = page > 2 ? Math.max(1, page - 2) : 0
-    for (let i = windowStart; i <= Math.min(totalPages - 1, page + 2); i++) pages.push(i)
-    if (page < totalPages - 3) { if (page < totalPages - 4) pages.push(null); pages.push(totalPages - 1) }
-  }
+/* ------------------------------------------------------------------ */
+/*  Constants                                                          */
+/* ------------------------------------------------------------------ */
 
-  return (
-    <div className="flex items-center gap-1">
-      <button
-        onClick={() => onChange(Math.max(0, page - 1))}
-        disabled={page === 0}
-        className="px-2 py-1 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-30"
-      >
-        〈
-      </button>
-      {pages.map((p, i) =>
-        p === null ? (
-          <span key={`e${i}`} className="px-2 py-1 text-sm text-gray-400">…</span>
-        ) : (
-          <button
-            key={p}
-            onClick={() => onChange(p)}
-            className={`px-2 py-1 text-sm rounded ${p === page ? 'bg-blue-500 text-white' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            {p + 1}
-          </button>
-        ),
-      )}
-      <button
-        onClick={() => onChange(Math.min(totalPages - 1, page + 1))}
-        disabled={page === totalPages - 1}
-        className="px-2 py-1 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-30"
-      >
-        〉
-      </button>
-    </div>
-  )
+const MONTHS = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
+const METRICS: Metric[] = ['성과', '투입', '손익']
+
+/** 컬럼 너비(px) — table-fixed + colgroup으로 정확히 고정. sticky left 오프셋도 여기서 파생 */
+const COL = { no: 92, name: 240, sum: 104, month: 74 } as const
+const TABLE_WIDTH = COL.no + COL.name + COL.sum + COL.month * 12
+const LEFT_NAME = COL.no // 공사명 sticky 시작 위치 = 지중No 너비
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+function rowTotal(row: PivotProjectRow, metric: Metric) {
+  if (metric === '성과') return row.성과금액
+  if (metric === '투입') return row.투입금액
+  return row.손익금액
 }
 
-function ExpandedBlock({
-  row,
-  onCollapse,
-  onWeekly,
-}: {
-  row: PivotProjectRow
-  onCollapse: () => void
-  onWeekly: () => void
-}) {
-  const hasWeekly = row.weekly.length > 0
-  const expandedBg = '#eff6ff'
-
-  return (
-    <>
-      {/* 헤더 행 */}
-      <tr
-        className="border-b border-blue-100 cursor-pointer hover:bg-blue-100/50"
-        style={{ background: expandedBg }}
-        onClick={onCollapse}
-      >
-        <td className="py-2 px-2 font-mono text-xs text-gray-400 border-l-2 border-blue-400">
-          {row.지중no}
-        </td>
-        <td className="py-2 px-2 text-gray-700 font-medium text-xs" colSpan={14}>
-          <span className="inline-flex items-center gap-1">
-            <ChevronDown className="size-3 text-blue-400 shrink-0" />
-            {row.공사명}
-          </span>
-        </td>
-      </tr>
-
-      {/* 성과 행 */}
-      <tr className="border-b border-blue-50" style={{ background: expandedBg }}>
-        <td className="py-1.5 px-2 text-blue-500 text-xs font-medium border-l-2 border-blue-400">성과</td>
-        <td className="py-1.5 px-2" />
-        {row.monthly.map((m, i) => (
-          <td key={i} className="py-1.5 px-2 text-right tabular-nums text-xs text-gray-600">
-            {m.성과 === 0 ? '—' : formatEok(m.성과)}
-          </td>
-        ))}
-        <td className="py-1.5 px-2 text-right tabular-nums text-xs font-semibold text-gray-700">
-          {formatEok(row.성과금액)}
-        </td>
-      </tr>
-
-      {/* 투입 행 */}
-      <tr className="border-b border-blue-50" style={{ background: expandedBg }}>
-        <td className="py-1.5 px-2 text-amber-500 text-xs font-medium border-l-2 border-blue-400">투입</td>
-        <td className="py-1.5 px-2" />
-        {row.monthly.map((m, i) => (
-          <td key={i} className="py-1.5 px-2 text-right tabular-nums text-xs text-gray-600">
-            {m.투입 === 0 ? '—' : formatEok(m.투입)}
-          </td>
-        ))}
-        <td className="py-1.5 px-2 text-right tabular-nums text-xs font-semibold text-gray-700">
-          {formatEok(row.투입금액)}
-        </td>
-      </tr>
-
-      {/* 손익 행 */}
-      <tr className="border-b border-gray-100" style={{ background: expandedBg }}>
-        <td className="py-1.5 px-2 text-gray-500 text-xs font-medium border-l-2 border-blue-400">손익</td>
-        <td className="py-1.5 px-2">
-          {hasWeekly && (
-            <button
-              onClick={e => { e.stopPropagation(); onWeekly() }}
-              className="text-xs text-blue-500 underline cursor-pointer whitespace-nowrap"
-            >
-              주별로 보기 →
-            </button>
-          )}
-        </td>
-        {row.monthly.map((m, i) => (
-          <td
-            key={i}
-            className="py-1.5 px-2 text-right tabular-nums text-xs font-medium"
-            style={{ color: 손익색(m.손익) }}
-          >
-            {m.손익 === 0 ? '—' : formatEok(m.손익)}
-          </td>
-        ))}
-        <td
-          className="py-1.5 px-2 text-right tabular-nums text-xs font-bold"
-          style={{ color: 손익색(row.손익금액) }}
-        >
-          {formatEok(row.손익금액)}
-        </td>
-      </tr>
-    </>
-  )
+/** 0은 '—', 손익 흑자는 +접두사 */
+function formatCell(value: number, metric: Metric) {
+  if (value === 0) return '—'
+  if (metric === '손익' && value > 0) return `+${formatEok(value)}`
+  return formatEok(value)
 }
+
+/** 손익만 흑자/적자 색, 성과·투입은 기본색 */
+function cellColor(value: number, metric: Metric) {
+  if (value === 0) return '#d1d5db' // gray-300
+  if (metric === '손익') return 손익색(value)
+  return '#374151' // gray-700
+}
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 
 export function PivotProjectTable({ data }: Props) {
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
-  const [page, setPage] = useState(0)
+  const [metric, setMetric] = useState<Metric>('손익')
   const [query, setQuery] = useState('')
-  const [weeklyTarget, setWeeklyTarget] = useState<PivotProjectRow | null>(null)
-  const dq = useDeferredValue(query)
+  const deferredQuery = useDeferredValue(query)
 
-  const filtered = dq
-    ? data.filter(
-        r =>
-          r.지중no.toLowerCase().includes(dq.toLowerCase()) ||
-          r.공사명.toLowerCase().includes(dq.toLowerCase()),
-      )
-    : data
+  const rows = useMemo(() => {
+    const q = deferredQuery.trim().toLowerCase()
+    if (q.length === 0) return data
+    return data.filter(
+      row =>
+        row.지중no.toLowerCase().includes(q) ||
+        row.공사명.toLowerCase().includes(q),
+    )
+  }, [data, deferredQuery])
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+  /** 전체 합계 행 — 월별 총합 + 총계 */
+  const totals = useMemo(() => {
+    const monthly = Array.from({ length: 12 }, () => 0)
+    let total = 0
+    for (const row of rows) {
+      for (let i = 0; i < 12; i++) monthly[i] += row.monthly[i]?.[metric] ?? 0
+      total += rowTotal(row, metric)
+    }
+    return { monthly, total }
+  }, [rows, metric])
 
-  function handleQueryChange(q: string) {
-    setQuery(q)
-    setPage(0)
-  }
-
-  function toggleExpand(id: number) {
-    setExpandedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+  const metricColor = metric === '성과' ? '#2563eb' : metric === '투입' ? '#d97706' : '#374151'
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <Input
-          placeholder="지중No 또는 공사명 검색..."
-          value={query}
-          onChange={e => handleQueryChange(e.target.value)}
-          className="max-w-xs h-9 text-sm"
-        />
-        {totalPages > 1 && (
-          <Paginator page={page} totalPages={totalPages} onChange={setPage} />
-        )}
+    <div className="space-y-4">
+      {/* ── 툴바: 지표 토글 + 검색 ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1">
+          {METRICS.map(item => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setMetric(item)}
+              className={cn(
+                'h-8 rounded-md px-4 text-sm font-medium transition-colors',
+                metric === item
+                  ? 'bg-slate-900 text-white'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800',
+              )}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full max-w-xs">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+          <Input
+            placeholder="지중No 또는 공사명 검색"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="h-9 pl-9 text-sm"
+          />
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs" style={{ minWidth: 1100 }}>
+      {/* ── 표 ── */}
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table
+          className="border-separate border-spacing-0 text-xs"
+          style={{ width: TABLE_WIDTH, tableLayout: 'fixed' }}
+        >
+          <colgroup>
+            <col style={{ width: COL.no }} />
+            <col style={{ width: COL.name }} />
+            <col style={{ width: COL.sum }} />
+            {MONTHS.map(m => (
+              <col key={m} style={{ width: COL.month }} />
+            ))}
+          </colgroup>
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left py-2.5 px-2 font-medium text-gray-500 w-24">지중No</th>
-              <th className="text-left py-2.5 px-2 font-medium text-gray-500 min-w-[140px]">공사명</th>
-              {MONTHS.map(m => (
-                <th key={m} className="text-right py-2.5 px-2 font-medium text-gray-500 w-16">{m}</th>
+            <tr className="bg-gray-50">
+              <th
+                className="sticky left-0 z-20 whitespace-nowrap border-b border-gray-200 bg-gray-50 px-3 py-2.5 text-left font-medium text-gray-500"
+                style={{ left: 0 }}
+              >
+                지중No
+              </th>
+              <th
+                className="sticky z-20 whitespace-nowrap border-b border-r border-gray-200 bg-gray-50 px-3 py-2.5 text-left font-medium text-gray-500"
+                style={{ left: LEFT_NAME }}
+              >
+                공사명
+              </th>
+              <th
+                className="whitespace-nowrap border-b border-r border-gray-200 bg-gray-50 px-3 py-2.5 text-right font-semibold"
+                style={{ color: metricColor }}
+              >
+                합계
+              </th>
+              {MONTHS.map(month => (
+                <th
+                  key={month}
+                  className="whitespace-nowrap border-b border-gray-200 bg-gray-50 px-2 py-2.5 text-right font-medium text-gray-500"
+                >
+                  {month}
+                </th>
               ))}
-              <th className="text-right py-2.5 px-2 font-medium text-gray-500 w-20">합계</th>
             </tr>
           </thead>
-          <tbody>
-            {paged.map((row, index) => {
-              if (expandedIds.has(row.id)) {
-                return (
-                  <ExpandedBlock
-                    key={row.id}
-                    row={row}
-                    onCollapse={() => toggleExpand(row.id)}
-                    onWeekly={() => setWeeklyTarget(row)}
-                  />
-                )
-              }
 
-              const zebraClass = index % 2 === 1 ? 'bg-gray-50/50' : ''
-              return (
-                <tr
-                  key={row.id}
-                  className={`border-b border-gray-50 hover:bg-blue-50/30 cursor-pointer transition-colors ${zebraClass}`}
-                  onClick={() => toggleExpand(row.id)}
-                >
-                  <td className="py-2 px-2 font-mono text-gray-400">{row.지중no}</td>
-                  <td className="py-2 px-2 text-gray-700 max-w-[180px] truncate">
-                    <span className="inline-flex items-center gap-1">
-                      <ChevronRight className="size-3 text-gray-300 shrink-0" />
-                      {row.공사명}
-                    </span>
-                  </td>
-                  {row.monthly.map((m, i) => (
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={15} className="px-4 py-10 text-center text-sm text-gray-400">
+                  조건에 맞는 공사가 없습니다.
+                </td>
+              </tr>
+            ) : (
+              rows.map((row, index) => {
+                const bg = index % 2 === 1 ? 'bg-gray-50/60' : 'bg-white'
+                const total = rowTotal(row, metric)
+                return (
+                  <tr key={row.id} className={cn('transition-colors hover:bg-slate-50', bg)}>
                     <td
-                      key={i}
-                      className="py-2 px-2 text-right tabular-nums"
-                      style={{ color: 손익색(m.손익) }}
+                      className={cn('sticky left-0 z-10 whitespace-nowrap border-b border-gray-100 px-3 py-2 font-mono text-gray-500', bg)}
+                      style={{ left: 0 }}
                     >
-                      {m.손익 === 0 ? '—' : formatEok(m.손익)}
+                      {row.지중no}
                     </td>
-                  ))}
-                  <td
-                    className="py-2 px-2 text-right tabular-nums font-semibold"
-                    style={{ color: 손익색(row.손익금액) }}
-                  >
-                    {formatEok(row.손익금액)}
-                  </td>
-                </tr>
-              )
-            })}
+                    <td
+                      className={cn('sticky z-10 border-b border-r border-gray-100 px-3 py-2', bg)}
+                      style={{ left: LEFT_NAME }}
+                    >
+                      <span className="block truncate font-medium text-gray-800" title={row.공사명}>
+                        {row.공사명}
+                      </span>
+                    </td>
+                    <td
+                      className="whitespace-nowrap border-b border-r border-gray-100 px-3 py-2 text-right font-semibold tabular-nums"
+                      style={{ color: cellColor(total, metric) }}
+                    >
+                      {formatCell(total, metric)}
+                    </td>
+                    {MONTHS.map((month, i) => {
+                      const value = row.monthly[i]?.[metric] ?? 0
+                      return (
+                        <td
+                          key={month}
+                          className="whitespace-nowrap border-b border-gray-100 px-2 py-2 text-right tabular-nums"
+                          style={{ color: cellColor(value, metric) }}
+                        >
+                          {formatCell(value, metric)}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })
+            )}
           </tbody>
+
+          {rows.length > 0 && (
+            <tfoot>
+              <tr className="bg-gray-100 font-semibold">
+                <td
+                  className="sticky left-0 z-10 whitespace-nowrap border-t border-gray-200 bg-gray-100 px-3 py-2.5 text-gray-600"
+                  style={{ left: 0 }}
+                >
+                  합계
+                </td>
+                <td
+                  className="sticky z-10 whitespace-nowrap border-t border-r border-gray-200 bg-gray-100 px-3 py-2.5 text-gray-400"
+                  style={{ left: LEFT_NAME }}
+                >
+                  {rows.length.toLocaleString('ko-KR')}건
+                </td>
+                <td
+                  className="whitespace-nowrap border-t border-r border-gray-200 px-3 py-2.5 text-right tabular-nums"
+                  style={{ color: cellColor(totals.total, metric) }}
+                >
+                  {formatCell(totals.total, metric)}
+                </td>
+                {totals.monthly.map((value, i) => (
+                  <td
+                    key={MONTHS[i]}
+                    className="whitespace-nowrap border-t border-gray-200 px-2 py-2.5 text-right tabular-nums"
+                    style={{ color: cellColor(value, metric) }}
+                  >
+                    {formatCell(value, metric)}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex justify-center pt-2">
-          <Paginator page={page} totalPages={totalPages} onChange={setPage} />
-        </div>
-      )}
-
-      <WeeklyDetailModal row={weeklyTarget} onClose={() => setWeeklyTarget(null)} />
+      <p className="text-xs text-gray-400">
+        총 {rows.length.toLocaleString('ko-KR')}건
+      </p>
     </div>
   )
 }

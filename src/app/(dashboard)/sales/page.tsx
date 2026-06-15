@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { 투입실적Row, 공사단가Row } from '@/types/database'
 import { calc합계 } from '../_lib/calc'
 import { formatEok } from '@/lib/format'
-import { isoWeek } from './_lib/pivot'
 import { YearSelector } from './_components/YearSelector'
 import { CollapsibleChart } from './_components/CollapsibleChart'
 import { ExcelExportButton } from './_components/ExcelExportButton'
@@ -53,7 +52,6 @@ export default async function SalesPage({
 
   type 공사상세 = {
     monthly: { 성과: number; 투입: number }[]
-    weekly: Map<string, { 성과: number; 투입: number; label: string }>
   }
   const 공사별상세 = new Map<number, 공사상세>()
 
@@ -61,7 +59,6 @@ export default async function SalesPage({
     if (!공사별상세.has(id)) {
       공사별상세.set(id, {
         monthly: Array.from({ length: 12 }, () => ({ 성과: 0, 투입: 0 })),
-        weekly: new Map(),
       })
     }
     return 공사별상세.get(id)!
@@ -71,12 +68,7 @@ export default async function SalesPage({
     const m = parseInt(row.투입일.slice(5, 7), 10) - 1
     const amt = calc합계(row, 단가목록)
     monthly[m].투입 += amt
-    const 상세 = get공사상세(row.수주_id)
-    상세.monthly[m].투입 += amt
-    const { key, label } = isoWeek(row.투입일)
-    const wEntry = 상세.weekly.get(key) ?? { 성과: 0, 투입: 0, label }
-    wEntry.투입 += amt
-    상세.weekly.set(key, wEntry)
+    get공사상세(row.수주_id).monthly[m].투입 += amt
   }
 
   for (const row of 공사이력목록) {
@@ -84,16 +76,11 @@ export default async function SalesPage({
     const m = parseInt(row.작업일자.slice(5, 7), 10) - 1
     const amt = row.성과금액 ?? 0
     monthly[m].성과 += amt
-    const 상세 = get공사상세(row.수주_id)
-    상세.monthly[m].성과 += amt
-    const { key, label } = isoWeek(row.작업일자)
-    const wEntry = 상세.weekly.get(key) ?? { 성과: 0, 투입: 0, label }
-    wEntry.성과 += amt
-    상세.weekly.set(key, wEntry)
+    get공사상세(row.수주_id).monthly[m].성과 += amt
   }
 
   const pivotData: PivotProjectRow[] = [...공사별상세.entries()]
-    .map(([id, { monthly: pm, weekly }]) => {
+    .map(([id, { monthly: pm }]) => {
       const info = 수주Map.get(id)
       const 성과 = pm.reduce((s, m) => s + m.성과, 0)
       const 투입 = pm.reduce((s, m) => s + m.투입, 0)
@@ -105,15 +92,6 @@ export default async function SalesPage({
         투입금액: 투입,
         손익금액: 성과 - 투입,
         monthly: pm.map(({ 성과, 투입 }) => ({ 성과, 투입, 손익: 성과 - 투입 })),
-        weekly: [...weekly.entries()]
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([week, { 성과, 투입, label }]) => ({
-            week,
-            label,
-            성과,
-            투입,
-            손익: 성과 - 투입,
-          })),
       }
     })
     .sort((a, b) => a.지중no.localeCompare(b.지중no, 'ko'))
@@ -160,7 +138,7 @@ export default async function SalesPage({
         </div>
         <div className="px-5 py-4">
           <p className="text-xs text-gray-500">{year}년 누적 투입금액</p>
-          <p className="text-2xl font-bold mt-1 text-amber-500">{formatEok(총투입)}</p>
+          <p className="text-2xl font-bold mt-1 text-amber-600">{formatEok(총투입)}</p>
         </div>
         <div className="px-5 py-4">
           <p className="text-xs text-gray-500">{year}년 누적 손익</p>
