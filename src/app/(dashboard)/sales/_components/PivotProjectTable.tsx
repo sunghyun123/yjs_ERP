@@ -4,6 +4,7 @@ import { useState, useDeferredValue } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { formatEok } from '@/lib/format'
+import { 손익색 } from '../_lib/colors'
 import { WeeklyDetailModal } from './WeeklyDetailModal'
 
 export type PivotProjectRow = {
@@ -23,12 +24,6 @@ type Props = {
 
 const PAGE_SIZE = 25
 const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월']
-
-function 손익색(v: number): string {
-  if (v >= 5_000_000) return '#16a34a'
-  if (v <= -5_000_000) return '#dc2626'
-  return '#374151'
-}
 
 function Paginator({
   page,

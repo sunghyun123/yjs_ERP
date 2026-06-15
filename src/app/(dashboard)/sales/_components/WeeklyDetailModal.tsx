@@ -3,16 +3,11 @@
 import { useEffect } from 'react'
 import type { PivotProjectRow } from './PivotProjectTable'
 import { formatEok } from '@/lib/format'
+import { 손익색 } from '../_lib/colors'
 
 type Props = {
   row: PivotProjectRow | null
   onClose: () => void
-}
-
-function 손익색(v: number): string {
-  if (v >= 5_000_000) return '#16a34a'
-  if (v <= -5_000_000) return '#dc2626'
-  return '#374151'
 }
 
 export function WeeklyDetailModal({ row, onClose }: Props) {
