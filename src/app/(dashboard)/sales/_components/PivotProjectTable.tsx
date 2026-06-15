@@ -19,7 +19,6 @@ export type PivotProjectRow = {
 
 type Props = {
   data: PivotProjectRow[]
-  year: number
 }
 
 const PAGE_SIZE = 25
@@ -45,7 +44,8 @@ function Paginator({
     for (let i = 0; i < totalPages; i++) pages.push(i)
   } else {
     if (page > 2) { pages.push(0); if (page > 3) pages.push(null) }
-    for (let i = Math.max(0, page - 2); i <= Math.min(totalPages - 1, page + 2); i++) pages.push(i)
+    const windowStart = page > 2 ? Math.max(1, page - 2) : 0
+    for (let i = windowStart; i <= Math.min(totalPages - 1, page + 2); i++) pages.push(i)
     if (page < totalPages - 3) { if (page < totalPages - 4) pages.push(null); pages.push(totalPages - 1) }
   }
 
