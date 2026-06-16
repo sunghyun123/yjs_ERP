@@ -270,8 +270,8 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
   }
 
   return (
-    <div className="flex gap-0 max-w-4xl">
-      <div className="flex-1 space-y-5 pr-6">
+    <div className="flex flex-col lg:flex-row gap-0 max-w-4xl">
+      <div className="flex-1 space-y-5 lg:pr-6">
         {toast && (
           <div className={cn(
             'flex items-center gap-2 px-3 py-2 rounded-lg text-sm border',
@@ -317,7 +317,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label className="text-xs text-gray-600 mb-1.5 block">작업일자</Label>
             <Input
@@ -378,7 +378,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
         </Button>
       </div>
 
-      <div className="w-60 shrink-0 border-l border-gray-100 pl-6 space-y-4">
+      <div className="w-full lg:w-60 shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 pt-5 lg:pt-0 lg:pl-6 space-y-4">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">자동 계산</p>
 
         <div className="bg-white border border-gray-200 rounded-lg p-3">

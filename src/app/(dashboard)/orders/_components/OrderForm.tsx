@@ -582,12 +582,12 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, o
 
       {/* 기본정보 탭 */}
       {activeTab === 'info' && (
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">
           {/* 좌측: 스크롤 폼 */}
           <form
             id="order-form"
             onSubmit={handleSubmit(onSubmit)}
-            className="flex-1 overflow-y-auto px-6 py-5 space-y-5 min-w-0"
+            className="flex-1 lg:overflow-y-auto px-6 py-5 space-y-5 min-w-0"
           >
             {/* ── 필수 정보 ─────────────────────────────────────────────────── */}
             <Section title="필수 정보">
@@ -848,8 +848,8 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, o
           </form>
 
           {/* 우측: 실시간 계산 + 버튼 */}
-          <div className="w-72 shrink-0 border-l border-gray-100 flex flex-col bg-gray-50/40">
-            <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+          <div className="w-full lg:w-72 shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 flex flex-col bg-gray-50/40">
+            <div className="flex-1 lg:overflow-y-auto px-4 py-5 space-y-4">
 
               {/* 수주금액 계산 */}
               <div className="space-y-1">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -40,11 +40,25 @@ const METRIC_COLOR: Record<Metric, string> = {
   손익: '#374151',
 }
 
-/** 컬럼 너비(px) — 원 단위(일의 자리까지) 표기를 위해 넉넉히. sticky left 오프셋도 여기서 파생 */
-const COL = { no: 88, name: 200, metric: 48, sum: 128, month: 104 } as const
-const TABLE_WIDTH = COL.no + COL.name + COL.metric + COL.sum + COL.month * 12
-const LEFT_NAME = COL.no // 공사명 sticky 시작 = 지중No 너비
-const LEFT_METRIC = COL.no + COL.name // 지표 sticky 시작 = 지중No + 공사명
+/**
+ * 컬럼 너비(px) — sticky left 오프셋도 여기서 파생.
+ * 모바일은 고정열(지중No+공사명+지표) 합이 화면을 덮지 않도록 좁게 → 숫자가 가로 스크롤로 보임.
+ */
+const COL_DESKTOP = { no: 88, name: 200, metric: 48, sum: 128, month: 104 } as const
+const COL_MOBILE = { no: 60, name: 96, metric: 36, sum: 92, month: 88 } as const
+
+/** (max-width: 640px) 매칭 여부 — 컬럼 폭 세트 선택용 */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)')
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+  return isMobile
+}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -78,6 +92,12 @@ function cellColor(value: number, metric: Metric) {
 export function PivotProjectTable({ data }: Props) {
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
+
+  const isMobile = useIsMobile()
+  const COL = isMobile ? COL_MOBILE : COL_DESKTOP
+  const TABLE_WIDTH = COL.no + COL.name + COL.metric + COL.sum + COL.month * 12
+  const LEFT_NAME = COL.no // 공사명 sticky 시작 = 지중No 너비
+  const LEFT_METRIC = COL.no + COL.name // 지표 sticky 시작 = 지중No + 공사명
 
   const rows = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase()

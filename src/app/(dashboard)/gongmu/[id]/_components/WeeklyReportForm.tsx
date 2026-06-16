@@ -351,7 +351,7 @@ export function WeeklyReportForm({
             계획 수정 가능
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {/* 공사 */}
           <div>
             <span className="inline-block text-[11px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded mb-2">공사</span>
@@ -395,7 +395,7 @@ export function WeeklyReportForm({
             </div>
           </div>
           {/* 금주 실적 패널 */}
-          <div className="border-l border-gray-100 pl-5">
+          <div className="border-t sm:border-t-0 sm:border-l border-gray-100 pt-4 sm:pt-0 sm:pl-5">
             <p className="text-[11px] font-bold text-gray-400 tracking-wide mb-1">
               금주 실적 ({month}월 {weekShort})
             </p>

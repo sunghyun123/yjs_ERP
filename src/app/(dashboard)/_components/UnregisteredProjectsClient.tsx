@@ -60,7 +60,7 @@ export function UnregisteredProjectsClient({ items }: { items: ProjectStatus[] }
       {pageItems.map((item) => (
         <div
           key={item.id}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-100"
+          className="flex flex-col sm:flex-row sm:items-center gap-2 px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-100"
         >
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-900 truncate">
@@ -68,7 +68,7 @@ export function UnregisteredProjectsClient({ items }: { items: ProjectStatus[] }
             </p>
             <p className="text-xs text-gray-400 mt-0.5">진행일 {item.진행날짜}</p>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+          <div className="flex items-center gap-1.5 sm:shrink-0 flex-wrap sm:justify-end">
             <StatusBadge has공사이력={item.has공사이력} has투입실적={item.has투입실적} />
             {!item.has공사이력 && item.수주_id && (
               <Button asChild size="sm" variant="outline" className="h-7 text-xs px-2.5 border-blue-400 text-blue-600">
