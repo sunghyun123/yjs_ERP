@@ -16,7 +16,9 @@ export async function KpiCards() {
   const mm = String(month).padStart(2, '0')
 
   const monthStart = `${year}-${mm}-01`
-  const monthEnd = new Date(year, month, 1).toISOString().slice(0, 10)
+  const nextMm = String(month === 12 ? 1 : month + 1).padStart(2, '0')
+  const nextYr = month === 12 ? year + 1 : year
+  const monthEnd = `${nextYr}-${nextMm}-01`
 
   // 전월 전체 범위 (공사이력은 월말 일괄 삽입이므로 동기간 비교 불가, 전월 전체로 비교)
   const firstOfPrevMonth = new Date(year, month - 2, 1)
