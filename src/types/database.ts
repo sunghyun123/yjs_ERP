@@ -458,6 +458,26 @@ export type Database = {
           erp_공사이력_id?: number | null; erp_기성_id?: number | null
         }
       }
+      whitelist: {
+        Row: {
+          kakao_id: string
+          user_name: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          kakao_id: string
+          user_name: string
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          kakao_id?: string
+          user_name?: string
+          role?: string
+          updated_at?: string
+        }
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -476,6 +496,7 @@ export type 투입실적Row    = Database['public']['Tables']['투입실적']['R
 export type 시스템설정Row  = Database['public']['Tables']['시스템설정']['Row']
 export type 계획금액Row    = Database['public']['Tables']['계획금액']['Row']
 export type dashboard_공사Row = Database['public']['Tables']['dashboard_공사']['Row']
+export type whitelistRow = Database['public']['Tables']['whitelist']['Row']
 
 // Insert 타입 re-export
 export type 사용자Insert   = Database['public']['Tables']['사용자']['Insert']
