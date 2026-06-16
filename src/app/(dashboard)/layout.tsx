@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import type { 사용자Row } from '@/types/database'
+import { extractKakaoId, getWhitelistEntry } from '@/lib/whitelist'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { MobileTabBar } from '@/components/sidebar/MobileTabBar'
 
@@ -19,14 +19,15 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  const { data: rawProfile } = await supabase
-    .from('사용자')
-    .select()
-    .eq('id', user.id)
-    .single()
+  // 매 요청마다 화이트리스트 재확인 (퇴사자/명단 이탈자 즉시 차단)
+  const kakaoId = extractKakaoId(user)
+  const entry = kakaoId ? await getWhitelistEntry(supabase, kakaoId) : null
+  if (!entry) {
+    // 서버 컴포넌트에선 쿠키를 못 지우므로 로그아웃 라우트를 경유 (무한루프 방지)
+    redirect('/auth/signout?reason=not_allowed')
+  }
 
-  const profile = rawProfile as Pick<사용자Row, '이름' | '이메일'> | null
-  const displayName = profile?.이름 || profile?.이메일 || user.email || '사용자'
+  const displayName = entry.user_name
 
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: '#f1f4fb' }}>
