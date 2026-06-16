@@ -113,7 +113,7 @@ export default async function SalesPage({
     총손익 >= 5_000_000 ? '#16a34a' : 총손익 <= -5_000_000 ? '#dc2626' : '#374151'
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
       {/* 헤더 */}
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -131,7 +131,7 @@ export default async function SalesPage({
       </div>
 
       {/* KPI 스트립 */}
-      <div className="grid grid-cols-3 divide-x divide-gray-100 border border-gray-100 rounded-xl bg-white shadow-sm overflow-hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 border border-gray-100 rounded-xl bg-white shadow-sm overflow-hidden">
         <div className="px-5 py-4">
           <p className="text-xs text-gray-500">{year}년 누적 성과금액</p>
           <p className="text-2xl font-bold mt-1 text-blue-600">{formatEok(총성과)}</p>

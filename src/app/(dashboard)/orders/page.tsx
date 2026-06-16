@@ -35,7 +35,7 @@ export default async function 수주대장Page() {
   const 공무담당자목록 = (공무담당자raw ?? []) as { id: number; 이름: string }[]
 
   return (
-    <div className="p-6 max-w-screen-2xl mx-auto">
+    <div className="p-4 md:p-6 max-w-screen-2xl mx-auto">
       <div className="mb-6">
         <h1 className="text-xl font-semibold" style={{ color: '#0f172a' }}>
           수주대장

@@ -71,7 +71,7 @@ export default async function GongmuDetailPage({
   const nextMonth = shiftMonth(calYear, calMonth, 1)
 
   return (
-    <div className="p-6" style={{ maxWidth: 1400, margin: '0 auto' }}>
+    <div className="p-4 md:p-6" style={{ maxWidth: 1400, margin: '0 auto' }}>
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <div className="flex items-center gap-3">

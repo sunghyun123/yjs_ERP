@@ -5,7 +5,7 @@ import { UnregisteredProjects, UnregisteredProjectsSkeleton } from './_component
 
 export default function DashboardPage() {
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
       <div>
         <h1 className="text-xl font-semibold" style={{ color: '#0f172a' }}>
           대시보드

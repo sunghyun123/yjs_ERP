@@ -54,7 +54,7 @@ export default async function GongmuPage({
 
   if (공무들.length === 0) {
     return (
-      <div className="p-6" style={{ maxWidth: 1280, margin: '0 auto' }}>
+      <div className="p-4 md:p-6" style={{ maxWidth: 1280, margin: '0 auto' }}>
         <p className="text-sm text-gray-500">등록된 공무담당자가 없습니다.</p>
       </div>
     )
@@ -112,7 +112,7 @@ export default async function GongmuPage({
   const 공무달성 = calc달성률(총누계공무, 총계획공무) ?? 0
 
   return (
-    <div className="p-6" style={{ maxWidth: 1280, margin: '0 auto' }}>
+    <div className="p-4 md:p-6" style={{ maxWidth: 1280, margin: '0 auto' }}>
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -140,7 +140,7 @@ export default async function GongmuPage({
 
       {/* KPI 3카드 */}
       <p className="text-[11px] font-bold tracking-widest text-gray-400 uppercase mb-3">전체 종합 현황</p>
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         {([
           {
             title: '총 월간계획',
@@ -180,7 +180,7 @@ export default async function GongmuPage({
       <p className="text-[11px] font-bold tracking-widest text-gray-400 uppercase mb-3">
         담당자별 현황 · 클릭하면 상세 보고서로 이동
       </p>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Σ 전체 합산 카드 */}
         <div className="bg-gradient-to-br from-[#1e2d5a] to-[#2d45a8] rounded-2xl p-5">
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-base mb-3">
