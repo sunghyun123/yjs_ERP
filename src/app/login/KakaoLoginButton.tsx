@@ -9,15 +9,20 @@ export function KakaoLoginButton() {
 
   async function handleLogin() {
     setLoading(true)
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'kakao',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-    // 성공 시 카카오로 리다이렉트되어 이 아래는 실행되지 않음
-    if (error) {
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'kakao',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      // 성공 시 카카오로 리다이렉트되어 이 아래는 실행되지 않음
+      if (error) {
+        setLoading(false)
+        window.location.href = '/login?error=oauth'
+      }
+    } catch {
       setLoading(false)
       window.location.href = '/login?error=oauth'
     }
