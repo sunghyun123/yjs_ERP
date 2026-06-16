@@ -52,6 +52,7 @@ const schema = z.object({
   포장여부:        z.boolean().optional(),
   자재청구여부:    z.boolean().optional(),
   참고사항:        z.string().optional(),
+  착공일:          z.string().nullable().optional(),
   시공상태:        z.string().nullable().optional(),
   정산상태:        z.string().nullable().optional(),
 })
@@ -334,6 +335,7 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, o
           포장여부:        row.포장여부,
           자재청구여부:    row.자재청구여부,
           참고사항:        row.참고사항 ?? '',
+          착공일:          row.착공일 ?? '',
           시공상태:        row.시공상태 ?? '',
           정산상태:        row.정산상태 ?? '',
         }
@@ -390,6 +392,7 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, o
       포장여부:        values.포장여부 ?? false,
       자재청구여부:    values.자재청구여부 ?? false,
       참고사항:        values.참고사항?.trim() || null,
+      착공일:          values.착공일?.trim() || null,
       ...(mode === 'edit' ? {
         시공상태:      values.시공상태 || null,
         정산상태:      values.정산상태 || null,
@@ -773,6 +776,9 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, o
                   )}
                 />
               </div>
+              <Field label="착공일">
+                <Input type="date" className="h-9 text-sm" {...register('착공일')} />
+              </Field>
               <Field label="참고사항">
                 <Textarea className="text-sm min-h-[64px] resize-none" {...register('참고사항')} />
               </Field>

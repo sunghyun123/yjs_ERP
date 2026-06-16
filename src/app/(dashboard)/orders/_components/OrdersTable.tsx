@@ -21,13 +21,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet'
-import {
   Dialog,
   DialogClose,
   DialogContent,
@@ -37,7 +30,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
 import {
   Select,
   SelectContent,
@@ -96,163 +88,6 @@ function SortHeader({
 // ── 컬럼 정의 ─────────────────────────────────────────────────────────────
 const ch = createColumnHelper<수주행>()
 
-// ── 수주금액 계산 헬퍼 ─────────────────────────────────────────────────────
-function calc수주금액(row: 수주행) {
-  const 공급가 = row.수주금액_공급가 ?? 0
-  const 부가세 = 공급가 * 0.1
-  const 보험료율 = row.보험료율 ?? null
-  const 하도전용율 = row.하도전용율 ?? null
-  const 보험료제외 =
-    보험료율 !== null ? 공급가 * (1 - 보험료율) : null
-  const 하도적용 =
-    보험료제외 !== null && 하도전용율 !== null
-      ? 보험료제외 * 하도전용율
-      : null
-  return { 공급가, 부가세, 보험료율, 보험료제외, 하도전용율, 하도적용 }
-}
-
-// ── 상세 슬라이드오버 내용 ──────────────────────────────────────────────────
-function OrderDetail({ row }: { row: 수주행 }) {
-  const 금액 = calc수주금액(row)
-  const 누적기성 = row.기성.reduce((s, g) => s + (g.기성액_공급가 ?? 0), 0)
-  const 정렬기성 = [...row.기성].sort((a, b) => a.차수 - b.차수)
-
-  const 기본정보행: [string, string][] = [
-    ['원청사', row.원청사?.거래처명 ?? '—'],
-    ['공사번호', row.공사번호 ?? '—'],
-    ['공사구분', row.공사구분 ?? '—'],
-    ['공사종류', row.공사종류 ?? '—'],
-    ['공사현장', row.공사현장 ?? '—'],
-    ['작업구분', row.작업구분 ?? '—'],
-    ['시공상태', row.시공상태 ?? '—'],
-    ['정산상태', row.정산상태 ?? '—'],
-    ['공사담당', row.공사담당 ?? '—'],
-    ['감독자', row.감독자 ?? '—'],
-    ['착공일', row.착공일 ?? '—'],
-    ['준공일', row.준공일 ?? '—'],
-    ['준공여부', row.준공여부 ? '준공완료' : '진행중'],
-    ['포장여부', row.포장여부 ? '포장' : '미포장'],
-    ['자재청구', row.자재청구여부 ? '청구' : '미청구'],
-    ['참고사항', row.참고사항 ?? '—'],
-  ]
-
-  return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="px-5 py-4 space-y-5">
-
-        {/* 기본 정보 */}
-        <section>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">
-            기본 정보
-          </p>
-          <dl className="space-y-1.5">
-            {기본정보행.map(([label, value]) => (
-              <div key={label} className="flex gap-3 text-sm">
-                <dt className="w-16 shrink-0 text-gray-400">{label}</dt>
-                <dd className="text-gray-800 break-words">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-
-        <Separator />
-
-        {/* 수주금액 계산 */}
-        <section>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">
-            수주금액
-          </p>
-          <table className="w-full text-sm">
-            <tbody>
-              <tr className="border-b border-gray-200 bg-blue-50/60">
-                <td className="py-1.5 font-semibold text-gray-700">공급가</td>
-                <td className="py-1.5 text-right tabular-nums font-semibold text-gray-700">
-                  {formatKRW(금액.공급가)}
-                </td>
-              </tr>
-              <tr className="border-b border-gray-100">
-                <td className="py-1.5 text-gray-400">부가세 (10%)</td>
-                <td className="py-1.5 text-right tabular-nums text-gray-400">
-                  {formatKRW(금액.부가세)}
-                </td>
-              </tr>
-              {금액.보험료율 !== null && (
-                <tr className="border-b border-gray-100">
-                  <td className="py-1.5 text-gray-500">
-                    보험료제외{' '}
-                    <span className="text-xs text-gray-400">
-                      ({(금액.보험료율 * 100).toFixed(1)}%)
-                    </span>
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums text-gray-700">
-                    {금액.보험료제외 !== null ? formatKRW(금액.보험료제외) : '—'}
-                  </td>
-                </tr>
-              )}
-              {금액.하도전용율 !== null && (
-                <tr className="border-b border-gray-200 bg-blue-50/60">
-                  <td className="py-1.5 font-semibold text-gray-700">
-                    하도적용{' '}
-                    <span className="text-xs font-normal text-gray-400">
-                      ({(금액.하도전용율 * 100).toFixed(1)}%)
-                    </span>
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums font-semibold text-gray-700">
-                    {금액.하도적용 !== null ? formatKRW(금액.하도적용) : '—'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </section>
-
-        <Separator />
-
-        {/* 기성 이력 */}
-        <section>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">
-            기성 이력
-          </p>
-          {정렬기성.length === 0 ? (
-            <p className="text-sm text-gray-400">등록된 기성이 없습니다.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="pb-1.5 text-left text-xs font-medium text-gray-500">차수</th>
-                  <th className="pb-1.5 text-left text-xs font-medium text-gray-500">기성일</th>
-                  <th className="pb-1.5 text-right text-xs font-medium text-gray-500">기성액 (공급가)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {정렬기성.map((g) => (
-                  <tr key={g.차수} className="border-b border-gray-100">
-                    <td className="py-1.5 text-gray-700">{g.차수}차</td>
-                    <td className="py-1.5 text-gray-600">{g.기성일 ?? '—'}</td>
-                    <td className="py-1.5 text-right tabular-nums">
-                      {g.기성액_공급가 !== null ? formatKRW(g.기성액_공급가) : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-gray-200 bg-gray-50">
-                  <td colSpan={2} className="pt-2 pb-1.5 font-semibold text-gray-700">
-                    누적기성 합계
-                  </td>
-                  <td className="pt-2 pb-1.5 text-right tabular-nums font-semibold text-gray-700">
-                    {formatKRW(누적기성)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          )}
-        </section>
-      </div>
-    </div>
-  )
-}
-
 // ── 필터 타입 ─────────────────────────────────────────────────────────────
 type 준공필터타입 = 'all' | 'active' | 'done'
 const 준공필터옵션: { value: 준공필터타입; label: string }[] = [
@@ -280,7 +115,6 @@ export function OrdersTable({
   const [준공필터, set준공필터] = useState<준공필터타입>('all')
   const [공사구분필터, set공사구분필터] = useState('전체')
   const [검색어, set검색어] = useState('')
-  const [detailRow, setDetailRow] = useState<수주행 | null>(null)
   const [formState, setFormState] = useState<FormState | null>(null)
   const [sorting, setSorting] = useState<SortingState>([])
   const [pagination, setPagination] = useState<PaginationState>({
@@ -551,7 +385,7 @@ export function OrdersTable({
                 <TableRow
                   key={row.id}
                   className="cursor-pointer hover:bg-blue-50/50 border-b border-gray-100 transition-colors"
-                  onClick={() => setDetailRow(row.original)}
+                  onClick={() => setFormState({ mode: 'edit', row: row.original })}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="px-3 py-2.5 text-sm">
@@ -599,49 +433,6 @@ export function OrdersTable({
           </div>
         </div>
       </div>
-
-      {/* 상세 조회 Sheet */}
-      <Sheet
-        open={detailRow !== null}
-        onOpenChange={(open) => {
-          if (!open) setDetailRow(null)
-        }}
-      >
-        <SheetContent
-          side="right"
-          className="flex flex-col p-0 sm:max-w-[480px]"
-        >
-          <SheetHeader className="px-5 pt-5 pb-3 border-b border-gray-100 shrink-0">
-            <div className="flex items-start justify-between gap-2 pr-8">
-              <div className="flex items-start gap-2 min-w-0">
-                <span className="font-mono text-xs text-gray-400 mt-0.5 shrink-0">
-                  {detailRow?.지중no}
-                </span>
-                <SheetTitle className="text-base font-semibold text-left leading-snug">
-                  {detailRow?.공사명}
-                </SheetTitle>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0 h-7 text-xs px-2.5"
-                onClick={() => {
-                  const row = detailRow!
-                  setDetailRow(null)
-                  setFormState({ mode: 'edit', row })
-                }}
-              >
-                <Pencil className="size-3 mr-1" />
-                수정
-              </Button>
-            </div>
-            <SheetDescription className="text-left">
-              {detailRow?.발주자?.거래처명 ?? '발주자 미등록'}
-            </SheetDescription>
-          </SheetHeader>
-          {detailRow && <OrderDetail row={detailRow} />}
-        </SheetContent>
-      </Sheet>
 
       {/* 등록 · 수정 폼 Dialog */}
       <Dialog open={formState !== null} onOpenChange={(open) => !open && setFormState(null)}>

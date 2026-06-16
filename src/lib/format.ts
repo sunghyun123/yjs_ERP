@@ -5,10 +5,15 @@ export function formatKRW(n: number): string {
 export function formatEok(n: number): string {
   const abs = Math.abs(n)
   if (abs >= 100_000_000) {
-    return (n / 100_000_000).toFixed(1) + '억원'
+    return (
+      (n / 100_000_000).toLocaleString('ko-KR', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }) + '억원'
+    )
   }
   if (abs >= 10_000) {
-    return Math.round(n / 10_000) + '만원'
+    return Math.round(n / 10_000).toLocaleString('ko-KR') + '만원'
   }
   return formatKRW(n)
 }
