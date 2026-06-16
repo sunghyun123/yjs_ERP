@@ -34,11 +34,14 @@ export default async function GongmuPage({
   const weekNos = weekEntries.map((w) => w.week)
   const isoYears = [...new Set(weekEntries.map((w) => w.isoYear))]
 
-  // 금주 실적 KPI 카드 타이틀용 레이블 (현재 주차 기준)
-  const curMonthWeeks = getWeeksInMonth(now.getFullYear(), now.getMonth() + 1)
-  const curWeekEntry = curMonthWeeks.find((w) => w.week === curWeek)
-  const curWeekLabel = curWeekEntry
-    ? `${now.getMonth() + 1}월 ${curWeekEntry.label.match(/^\d+주차/)?.[0] ?? `${curWeek}주차`}`
+  // 금주 실적 기준 주차: 해당 월에 현재 주차가 있으면 사용, 없으면 마지막 주차
+  const displayWeekEntry =
+    weekEntries.find((w) => w.isoYear === curYear && w.week === curWeek) ??
+    weekEntries[weekEntries.length - 1]
+  const displayWeekYear = displayWeekEntry?.isoYear ?? curYear
+  const displayWeek = displayWeekEntry?.week ?? curWeek
+  const displayWeekLabel = displayWeekEntry
+    ? `${calMonth}월 ${displayWeekEntry.label.match(/^\d+주차/)?.[0] ?? `${displayWeek}주차`}`
     : `${curWeek}주차`
 
   const supabase = await createClient()
@@ -79,8 +82,8 @@ export default async function GongmuPage({
       .from('공무_주간보고')
       .select('공무_id, 구분, 금주실적')
       .in('공무_id', ids)
-      .eq('year', curYear)
-      .eq('week_no', curWeek),
+      .eq('year', displayWeekYear)
+      .eq('week_no', displayWeek),
   ])
 
   const plans = (plansResult.data ?? []) as { 공무_id: number; 구분: string; 월간계획금액: number }[]
@@ -157,7 +160,7 @@ export default async function GongmuPage({
             ],
           },
           {
-            title: `금주 실적 (${curWeekLabel})`,
+            title: `금주 실적 (${displayWeekLabel})`,
             rows: [
               { tag: '공사', tagCls: 'bg-blue-100 text-blue-800', amount: formatEok(총금주공사) },
               { tag: '공무', tagCls: 'bg-green-100 text-green-800', amount: formatEok(총금주공무) },
