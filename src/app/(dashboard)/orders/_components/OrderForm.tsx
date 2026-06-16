@@ -825,31 +825,6 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, o
               </>
             )}
 
-            {/* 삭제 확인 */}
-            {deleteConfirm && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
-                <p className="text-sm text-red-700 font-medium flex items-center gap-1.5">
-                  <AlertTriangle className="size-4" />
-                  정말 삭제하시겠습니까?
-                </p>
-                <p className="text-xs text-red-600">연결된 투입실적·공사이력이 없는 경우에만 삭제됩니다.</p>
-                <div className="flex gap-2 pt-1">
-                  <Button
-                    type="button" size="sm" variant="destructive"
-                    onClick={handleDelete} disabled={deleting} className="h-7 text-xs"
-                  >
-                    {deleting ? <Loader2 className="size-3 animate-spin" /> : '삭제 확인'}
-                  </Button>
-                  <Button
-                    type="button" size="sm" variant="outline"
-                    onClick={() => setDeleteConfirm(false)} className="h-7 text-xs"
-                  >
-                    취소
-                  </Button>
-                </div>
-              </div>
-            )}
-
             <div className="h-2" />
           </form>
 
@@ -913,27 +888,53 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, o
 
             {/* 버튼 */}
             <div className="px-4 pb-5 pt-3 space-y-2 shrink-0 border-t border-gray-100">
-              <Button
-                type="submit"
-                form="order-form"
-                size="sm"
-                className="w-full h-9 text-sm bg-[#1e2d5a] hover:bg-[#2d45a8]"
-                disabled={saving}
-              >
-                {saving
-                  ? <Loader2 className="size-3.5 animate-spin mr-1.5" />
-                  : <Save className="size-3.5 mr-1.5" />}
-                {mode === 'new' ? '등록' : '저장'}
-              </Button>
-              {mode === 'edit' && !deleteConfirm && (
-                <Button
-                  type="button" size="sm" variant="outline"
-                  className="w-full h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
-                  onClick={() => setDeleteConfirm(true)}
-                >
-                  <Trash2 className="size-3.5 mr-1.5" />
-                  삭제
-                </Button>
+              {deleteConfirm ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-2">
+                  <p className="text-xs text-red-700 font-medium flex items-center gap-1.5">
+                    <AlertTriangle className="size-3.5 shrink-0" />
+                    정말 삭제하시겠습니까?
+                  </p>
+                  <p className="text-[11px] text-red-600">연결된 투입실적·공사이력이 없는 경우에만 삭제됩니다.</p>
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      type="button" size="sm" variant="destructive"
+                      onClick={handleDelete} disabled={deleting} className="h-7 text-xs flex-1"
+                    >
+                      {deleting ? <Loader2 className="size-3 animate-spin" /> : '삭제 확인'}
+                    </Button>
+                    <Button
+                      type="button" size="sm" variant="outline"
+                      onClick={() => setDeleteConfirm(false)} className="h-7 text-xs flex-1"
+                    >
+                      취소
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Button
+                    type="submit"
+                    form="order-form"
+                    size="sm"
+                    className="w-full h-9 text-sm bg-[#1e2d5a] hover:bg-[#2d45a8]"
+                    disabled={saving}
+                  >
+                    {saving
+                      ? <Loader2 className="size-3.5 animate-spin mr-1.5" />
+                      : <Save className="size-3.5 mr-1.5" />}
+                    {mode === 'new' ? '등록' : '저장'}
+                  </Button>
+                  {mode === 'edit' && (
+                    <Button
+                      type="button" size="sm" variant="outline"
+                      className="w-full h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                      onClick={() => setDeleteConfirm(true)}
+                    >
+                      <Trash2 className="size-3.5 mr-1.5" />
+                      삭제
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>
