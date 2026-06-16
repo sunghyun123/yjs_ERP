@@ -13,27 +13,23 @@ export async function KpiCards() {
   const now = new Date()
   const year = now.getFullYear()
   const month = now.getMonth() + 1
-  const day = now.getDate()
   const mm = String(month).padStart(2, '0')
-  const dd = String(day).padStart(2, '0')
 
   const monthStart = `${year}-${mm}-01`
   const monthEnd = new Date(year, month, 1).toISOString().slice(0, 10)
 
-  // 전월 동기간: 같은 날짜 범위, 한 달 전
+  // 전월 전체 범위 (공사이력은 월말 일괄 삽입이므로 동기간 비교 불가, 전월 전체로 비교)
   const firstOfPrevMonth = new Date(year, month - 2, 1)
   const prevYear = firstOfPrevMonth.getFullYear()
   const prevMm = String(firstOfPrevMonth.getMonth() + 1).padStart(2, '0')
-  const prevMonthLastDay = new Date(year, month - 1, 0).getDate()
-  const prevDay = Math.min(day, prevMonthLastDay)
   const prevMonthStart = `${prevYear}-${prevMm}-01`
-  const prevMonthEnd = `${prevYear}-${prevMm}-${String(prevDay).padStart(2, '0')}`
 
   const [투입실적결과, 단가결과, 공사이력결과, 전월공사이력결과] = await Promise.all([
     supabase.from('투입실적').select('*').gte('투입일', monthStart).lt('투입일', monthEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
-    supabase.from('공사이력').select('성과금액').gte('작업일자', monthStart).lte('작업일자', `${year}-${mm}-${dd}`),
-    supabase.from('공사이력').select('성과금액').gte('작업일자', prevMonthStart).lte('작업일자', prevMonthEnd),
+    // 공사이력은 월말 기준 일괄 삽입이므로 월 전체 범위로 조회
+    supabase.from('공사이력').select('성과금액').gte('작업일자', monthStart).lt('작업일자', monthEnd),
+    supabase.from('공사이력').select('성과금액').gte('작업일자', prevMonthStart).lt('작업일자', monthStart),
   ])
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
