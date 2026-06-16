@@ -7,15 +7,21 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
 
+  // 리버스 프록시(nginx) 뒤에서는 request.url이 내부 업스트림 주소(localhost:3001)라
+  // origin으로 리다이렉트하면 안 됨. 프록시가 전달한 원래 호스트를 사용한다.
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https'
+  const baseUrl = forwardedHost ? `${forwardedProto}://${forwardedHost}` : origin
+
   if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=oauth`)
+    return NextResponse.redirect(`${baseUrl}/login?error=oauth`)
   }
 
   const supabase = await createClient()
 
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
   if (exchangeError) {
-    return NextResponse.redirect(`${origin}/login?error=oauth`)
+    return NextResponse.redirect(`${baseUrl}/login?error=oauth`)
   }
 
   const {
@@ -25,14 +31,14 @@ export async function GET(request: Request) {
   const kakaoId = extractKakaoId(user)
   if (!kakaoId) {
     await supabase.auth.signOut()
-    return NextResponse.redirect(`${origin}/login?error=not_allowed`)
+    return NextResponse.redirect(`${baseUrl}/login?error=not_allowed`)
   }
 
   const entry = await getWhitelistEntry(supabase, kakaoId)
   if (!entry) {
     await supabase.auth.signOut()
-    return NextResponse.redirect(`${origin}/login?error=not_allowed`)
+    return NextResponse.redirect(`${baseUrl}/login?error=not_allowed`)
   }
 
-  return NextResponse.redirect(`${origin}/`)
+  return NextResponse.redirect(`${baseUrl}/`)
 }
