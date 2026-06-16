@@ -46,7 +46,7 @@ export function ExcelExportButton({ pivotData, chartData, year }: Props) {
     ])
     XLSX.utils.book_append_sheet(wb, sheet3, '월별 합계')
 
-    XLSX.writeFile(wb, `매출손익현황_${year}.xlsx`)
+    XLSX.writeFile(wb, `매출손익_${year}.xlsx`)
   }
 
   return (

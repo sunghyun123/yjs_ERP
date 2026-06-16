@@ -37,7 +37,7 @@ export function CollapsibleChart({ data, year, 총성과, 총투입, 총손익 }
             </span>
             <span className="text-xs text-gray-500">
               투입{' '}
-              <span className="font-semibold text-amber-500">{formatEok(총투입)}</span>
+              <span className="font-semibold text-amber-600">{formatEok(총투입)}</span>
             </span>
             <span className="text-xs text-gray-500">
               손익{' '}

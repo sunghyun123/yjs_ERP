@@ -1,5 +1,5 @@
 /**
- * 신ERP(Supabase) vs 구ERP(매출손익현황.xlsx) 공사별 성과금액·투입금액 비교
+ * 신ERP(Supabase) vs 구ERP(매출손익.xlsx) 공사별 성과금액·투입금액 비교
  *
  * 실행: npx ts-node --project scripts/tsconfig.json scripts/check-신구비교.ts
  */
@@ -17,7 +17,7 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY) as any
 
-// ── 구ERP 데이터 (매출손익현황.xlsx 합계 컬럼 기준) ───────────────────────────
+// ── 구ERP 데이터 (매출손익.xlsx 합계 컬럼 기준) ───────────────────────────────
 const 구ERP: Record<string, { 성과: number; 투입: number }> = {
   'CG26-001': { 성과: 0,              투입: 2191917.82 },
   'CG26-005': { 성과: 18037500,       투입: 0 },
@@ -173,7 +173,7 @@ async function main() {
 
   // 공사이력 성과 비교
   console.log('\n=== 성과금액 비교 (구ERP vs 신ERP) ===')
-  console.log('※ 신ERP: Supabase 공사이력 합계 / 구ERP: 매출손익현황.xlsx 합계')
+  console.log('※ 신ERP: Supabase 공사이력 합계 / 구ERP: 매출손익.xlsx 합계')
   console.log('※ 차이 = 신ERP - 구ERP  (음수: 신ERP가 낮음)\n')
 
   type Row = { 지중no: string; 구: number; 신: number; diff: number }
