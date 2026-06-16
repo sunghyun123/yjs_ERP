@@ -69,7 +69,7 @@ export async function KpiCards() {
     {
       title: `전월대비 성과`,
       value: (전월대비성과금액 >= 0 ? '+' : '') + formatEok(전월대비성과금액),
-      sub: `전월 동기간 대비`,
+      sub: `전월 대비`,
       icon: ArrowUpDown,
       color: 전월대비성과금액 >= 0 ? '#22c55e' : '#ef4444',
     },
