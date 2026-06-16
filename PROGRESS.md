@@ -1,6 +1,6 @@
 # 영전사 ERP 개발 진행 기록
 
-> 최종 업데이트: 2026-06-16 (공무 금주실적 월 이동 버그 수정)
+> 최종 업데이트: 2026-06-16 (카카오 단일 로그인 + 화이트리스트)
 
 ---
 
@@ -57,6 +57,7 @@
 | 47 | 수주대장 팝업 통합 — 상세 사이드 Sheet(`OrderDetail`·`calc수주금액`·`detailRow`) 전부 제거, 행 클릭 시 수정 Dialog 직접 오픈, 수정 폼에 착공일 날짜 필드 추가(schema·defaultValues·payload·렌더) | ✅ |
 | 48 | 삭제 확인 UI 위치 재수정 — 좌측 form 스크롤 영역(폼 하단) → 우측 버튼 패널 하단으로 이동, 스크롤 없이 항상 보이도록 복원 (기존 #19 회귀 버그) | ✅ |
 | 49 | 공무 목록 페이지 금주실적 월 이동 버그 수정 — `weekRowsResult` 쿼리가 항상 오늘 실제 주차(`curYear/curWeek`)를 고정 사용해 월 이동해도 같은 값 표시. 선택 월에 현재 주차가 있으면 해당 주, 없으면 마지막 주차(`displayWeekEntry`)로 동적 전환. KPI 카드 타이틀도 함께 변경 | ✅ |
+| 50 | 카카오 단일 로그인 + 화이트리스트 — 이메일/비번 로그인 제거, `signInWithOAuth({provider:'kakao'})` 단일 방식. `whitelist` 테이블(kakao_id)로 외부 접근 차단: `/auth/callback`에서 명단 대조 후 미등록자 거부, 대시보드 레이아웃 매 요청 재확인(퇴사자 차단), `/auth/signout` 쿠키정리 라우트(무한루프 방지). `kakao_whitelist.json`→DB 동기화 스크립트(`npm run sync:whitelist`, reconcile). **함정 3종**: ①kakao_id는 카카오 앱마다 다름 → 명단 공유하는 다른 사내 프로그램과 **동일 카카오 앱**을 Supabase 공급자에 연결 ②GoTrue가 `account_email`+`profile_image`+`profile_nickname` 스코프 강제 → 동의항목 3개 활성화 ③`handle_new_user` 트리거가 카카오 유저 NULL 이메일에서 실패 → 합성 이메일 폴백(`supabase/handle-new-user.sql`) | ✅ |
 
 ---
 
@@ -88,10 +89,17 @@ const { data: raw } = await supabase.from('사용자').select()
 const user = raw as Pick<사용자Row, '이름'> | null
 ```
 
-### 인증
+### 인증 — 카카오 OAuth 단일 로그인 + 화이트리스트
 - `auth.getSession()` 대신 `auth.getUser()` (서버 측 토큰 검증)
-- 미로그인 → `/login` 서버 리다이렉트 (dashboard layout)
-- 로그아웃: Server Action (`src/app/actions/auth.ts`)
+- 로그인: 카카오 OAuth 단일 (`signInWithOAuth({provider:'kakao'})`). 이메일/비번 로그인 제거.
+- 인가: `whitelist` 테이블(kakao_id). `/auth/callback`에서 명단 대조 → 미등록자 `signOut` + `?error=not_allowed`. 대시보드 레이아웃이 매 요청 재확인(퇴사자 즉시 차단).
+- 표시 이름: `사용자` 테이블이 아니라 `whitelist.user_name`에서 읽음.
+- 미로그인 → `/login` 리다이렉트. 강제 로그아웃은 `/auth/signout` 라우트 경유(서버 컴포넌트는 쿠키를 못 지워 무한루프 → 라우트 핸들러에서 쿠키 정리).
+- 명단 동기화: `npm run sync:whitelist` (`kakao_whitelist.json` → `whitelist` 테이블 reconcile, service-role). JSON은 gitignore(개인정보).
+- ⚠️ **카카오 회원번호(kakao_id)는 카카오 앱마다 다름** → 명단을 공유하는 다른 사내 프로그램과 **동일 카카오 앱**을 Supabase 공급자에 연결해야 매칭됨.
+- ⚠️ **Supabase GoTrue는 `account_email`+`profile_image`+`profile_nickname` 3개 스코프를 서버에서 강제** 요청(클라 `scopes`로 제거 불가) → 카카오 앱 동의항목 3개 모두 "사용"이어야 함(이메일은 비즈앱 전환 필요).
+- DB: `supabase/whitelist.sql`(테이블+RLS), `supabase/handle-new-user.sql`(트리거가 카카오 NULL 이메일 처리 — 합성 `<uid>@kakao.local`). `사용자` 테이블은 생성자/수정자 FK 대상이라 유지.
+- 로그아웃 버튼: Server Action (`src/app/actions/auth.ts`)
 
 ### 스크롤 레이아웃
 - `html/body`에 `h-full` + `overflow-y-auto` 조합 금지 → `min-h-screen` + 자연 window 스크롤 사용
@@ -142,10 +150,15 @@ src/
 │   ├── supabase/client.ts            # 브라우저용 클라이언트
 │   ├── supabase/server.ts            # 서버 컴포넌트용 클라이언트 (async)
 │   ├── supabase/admin.ts             # 서비스 롤 클라이언트 (API 전용)
+│   ├── whitelist.ts                  # extractKakaoId + getWhitelistEntry (명단 조회)
+│   ├── whitelist-sync.ts             # reconcileWhitelist 순수 함수 (sync 스크립트용)
 │   └── format.ts                     # formatKRW, formatEok
-├── types/database.ts                 # 9개 테이블 TypeScript 타입 (dashboard_공사 추가)
+├── types/database.ts                 # 10개 테이블 TypeScript 타입 (whitelist 추가)
 └── app/
-    ├── login/                        # 로그인 페이지
+    ├── login/                        # 카카오 로그인 페이지 (KakaoLoginButton)
+    ├── auth/
+    │   ├── callback/route.ts         # 카카오 OAuth 콜백 + 화이트리스트 검증
+    │   └── signout/route.ts          # 쿠키 정리 로그아웃 (강제 차단용)
     ├── actions/auth.ts               # 로그아웃 Server Action
     └── (dashboard)/
         ├── layout.tsx                # 인증 보호 레이아웃
@@ -185,4 +198,4 @@ npm run dev   # http://localhost:3000
 npx tsc --noEmit  # 타입 검사
 ```
 
-Supabase 사용자 생성: [Auth 콘솔](https://supabase.com/dashboard/project/ljwglblarxvhhcogznmf/auth/users) → Add user → Auto Confirm User
+사용자 등록(카카오 로그인): `kakao_whitelist.json`에 `{kakao_id, user_name, role}` 추가 → `npm run sync:whitelist`로 `whitelist` 테이블 반영. 신입 kakao_id는 명단 공유하는 다른 사내 프로그램(동일 카카오 앱)에서 확보.
