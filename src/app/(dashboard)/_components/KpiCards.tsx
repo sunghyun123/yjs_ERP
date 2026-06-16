@@ -20,16 +20,20 @@ export async function KpiCards() {
   const nextYr = month === 12 ? year + 1 : year
   const monthEnd = `${nextYr}-${nextMm}-01`
 
-  // 전월 전체 범위 (공사이력은 월말 일괄 삽입이므로 동기간 비교 불가, 전월 전체로 비교)
+  const day = now.getDate()
+
+  // 전월 범위
   const firstOfPrevMonth = new Date(year, month - 2, 1)
   const prevYear = firstOfPrevMonth.getFullYear()
   const prevMm = String(firstOfPrevMonth.getMonth() + 1).padStart(2, '0')
   const prevMonthStart = `${prevYear}-${prevMm}-01`
+  // 전월 총 일수 (동기간 환산에 사용)
+  const prevMonthDays = new Date(year, month - 1, 0).getDate()
 
   const [투입실적결과, 단가결과, 공사이력결과, 전월공사이력결과] = await Promise.all([
     supabase.from('투입실적').select('*').gte('투입일', monthStart).lt('투입일', monthEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
-    // 공사이력은 월말 기준 일괄 삽입이므로 월 전체 범위로 조회
+    // 공사이력은 월말 기준 일괄 삽입 → 월 전체 범위로 조회
     supabase.from('공사이력').select('성과금액').gte('작업일자', monthStart).lt('작업일자', monthEnd),
     supabase.from('공사이력').select('성과금액').gte('작업일자', prevMonthStart).lt('작업일자', monthStart),
   ])
@@ -43,11 +47,13 @@ export async function KpiCards() {
     (sum, r) => sum + (r.성과금액 ?? 0),
     0,
   )
-  const 전월성과금액 = ((전월공사이력결과.data ?? []) as { 성과금액: number }[]).reduce(
+  const 전월전체성과금액 = ((전월공사이력결과.data ?? []) as { 성과금액: number }[]).reduce(
     (sum, r) => sum + (r.성과금액 ?? 0),
     0,
   )
-  const 전월대비성과금액 = 이번달성과금액 - 전월성과금액
+  // 공사이력이 월말 일괄값이므로 전월 동기간(같은 날짜)을 일수 비율로 환산
+  const 전월동기간성과금액 = 전월전체성과금액 * (day / prevMonthDays)
+  const 전월대비성과금액 = 이번달성과금액 - 전월동기간성과금액
   const 이번달손익금액 = 이번달성과금액 - 이번달투입금액
 
   const 월표시 = `${month}월`
