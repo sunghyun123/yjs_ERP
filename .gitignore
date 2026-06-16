@@ -43,3 +43,6 @@ next-env.d.ts
 
 # superpowers brainstorm sessions
 .superpowers/
+
+# 카카오 화이트리스트 (직원 개인정보 — 커밋 금지, 로컬에서만 관리하고 sync 스크립트로 DB 반영)
+kakao_whitelist.json
