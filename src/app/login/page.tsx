@@ -1,15 +1,27 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { LoginForm } from './LoginForm'
+import { KakaoLoginButton } from './KakaoLoginButton'
 
-// 이미 로그인한 경우 대시보드로 보냄
-export default async function LoginPage() {
+// 이미 로그인한 경우 홈으로 보냄
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (user) redirect('/dashboard')
+  if (user) redirect('/')
+
+  const { error } = await searchParams
+  const errorMessage =
+    error === 'not_allowed'
+      ? '등록되지 않은 사용자입니다. 전산담당자에게 문의하세요.'
+      : error
+        ? '로그인이 취소되었거나 실패했습니다. 다시 시도해 주세요.'
+        : null
 
   return (
     <div
@@ -31,7 +43,13 @@ export default async function LoginPage() {
           <p className="mt-1 text-sm text-gray-500">영전사 전기공사 ERP 시스템</p>
         </div>
 
-        <LoginForm />
+        {errorMessage && (
+          <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-3 py-2.5">
+            <p className="text-sm text-red-600">{errorMessage}</p>
+          </div>
+        )}
+
+        <KakaoLoginButton />
       </div>
     </div>
   )
