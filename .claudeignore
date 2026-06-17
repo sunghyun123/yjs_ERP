@@ -1,0 +1,21 @@
+# 빌드 아티팩트
+.next/
+out/
+build/
+coverage/
+
+# 패키지
+node_modules/
+
+# 대용량 데이터 / 개인정보
+kakao_whitelist.json
+scripts/failed_rows.json
+*.xlsx
+
+# 환경변수
+.env*
+
+# 기타
+*.tsbuildinfo
+next-env.d.ts
+.vercel/

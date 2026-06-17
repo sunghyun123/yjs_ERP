@@ -34,6 +34,19 @@ yarn-error.log*
 .env*
 !.env*.example
 
+# private source/business data
+/*.xlsx
+/scripts/failed_rows.json
+
+# backup evidence tiers
+/backups/private/*
+!/backups/private/README.md
+/backups/reproducible/generated/*
+!/backups/reproducible/generated/.gitkeep
+/backups/portfolio/generated/*
+!/backups/portfolio/generated/.gitkeep
+/docs/*.generated.json
+
 # vercel
 .vercel
 
@@ -46,3 +59,4 @@ next-env.d.ts
 
 # 카카오 화이트리스트 (직원 개인정보 — 커밋 금지, 로컬에서만 관리하고 sync 스크립트로 DB 반영)
 kakao_whitelist.json
+.env.local

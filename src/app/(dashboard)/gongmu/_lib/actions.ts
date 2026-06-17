@@ -3,6 +3,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { captureServerEvent } from '@/lib/analytics/server'
 import type { 공무_주간보고Insert } from '@/types/database'
 
 /** 월간계획 upsert */
@@ -19,6 +20,11 @@ export async function upsert월간계획(
     { 공무_id, year, month, 구분, 월간계획금액 },
     { onConflict: '공무_id,year,month,구분' },
   )
+  await captureServerEvent('admin_action_performed', {
+    entity_type: 'admin',
+    action_type: 'update',
+    result: 'success',
+  })
   revalidatePath(`/gongmu/${공무_id}`)
 }
 
@@ -42,6 +48,11 @@ export async function save주간보고(
   if (rows.length > 0) {
     await supabase.from('공무_주간보고').insert(rows)
   }
+  await captureServerEvent('admin_action_performed', {
+    entity_type: 'admin',
+    action_type: 'update',
+    result: 'success',
+  })
   revalidatePath(`/gongmu/${공무_id}`)
 }
 
@@ -50,5 +61,10 @@ export async function delete주간보고행(id: number, 공무_id: number) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createClient() as any
   await supabase.from('공무_주간보고').delete().eq('id', id)
+  await captureServerEvent('admin_action_performed', {
+    entity_type: 'admin',
+    action_type: 'delete',
+    result: 'success',
+  })
   revalidatePath(`/gongmu/${공무_id}`)
 }

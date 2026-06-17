@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,7 +21,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={geistSans.variable}>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <PostHogProvider>
+          <PageViewTracker />
+          {children}
+        </PostHogProvider>
+      </body>
     </html>
   );
 }
