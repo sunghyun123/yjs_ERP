@@ -27,6 +27,7 @@ cd "$PROJECT_DIR"
 
 echo ""
 echo "[1/4] git pull"
+git restore package-lock.json 2>/dev/null || git checkout -- package-lock.json 2>/dev/null || true
 git pull origin main
 
 echo ""
