@@ -1,6 +1,20 @@
 # 영전사 ERP 개발 진행 기록
 
-> 최종 업데이트: 2026-06-17 (nginx 502 + localhost 리다이렉트 수정)
+> 최종 업데이트: 2026-06-17 (백업/포트폴리오 증거 체계 정리)
+
+---
+
+## 2026-06-17 백업/포트폴리오 증거 체계
+
+- 원천 Excel 복구용 private 백업 체계 추가: `npm run backup:data`가 `backups/private/<timestamp>-data-backup/<yyyy-mm-dd>.backup.xlsx` 단일 workbook 생성.
+- 일일 백업 대상은 `공사현황`, `매출손익`, `수주대장조회`, `투입실적현황` 4개 시트로 제한. `거래처 데이터.xlsx`는 정적 reference 성격이라 daily backup에서 제외하고 manifest에 제외 사유 기록.
+- Windows 작업 스케줄러 `YJS ERP Daily Data Backup` 등록: 매일 02:00 `npm run backup:data` 실행.
+- 최신 private 백업 위치 추적용 `backups/private/LATEST_BACKUP.txt` 생성.
+- public portfolio용 합성 데이터 생성 스크립트 추가: `npm run backup:portfolio`가 실제 원본을 읽지 않고 `backups/portfolio/generated/<yyyy-mm-dd>.portfolio-sample.xlsx` 생성.
+- 백업/검증/포트폴리오 문서 추가: `docs/backup-inventory.md`, `docs/data-validation-report-template.md`, `docs/anonymized-sample-data-plan.md`, `docs/portfolio-case-study.md`.
+- PostHog 제품 분석 기반 포트폴리오 증거 체계 초안 구현: production-only 초기화, URL 원문 미전송, hashed distinctId, allowlist property sanitizer, manual page view capture, Excel export event capture.
+- 문서화: `docs/posthog-analytics.md`. 당장은 운영 수집을 보류하고, 필요 시 env 설정 후 이어서 사용.
+- 검증: `npm test` 10개 통과, `npx tsc --noEmit` 통과.
 
 ---
 
