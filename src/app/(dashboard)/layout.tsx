@@ -28,10 +28,11 @@ export default async function DashboardLayout({
   }
 
   const displayName = entry.user_name
+  const isAdmin = entry.role === 'admin'
 
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: '#f1f4fb' }}>
-      <Sidebar userName={displayName} />
+      <Sidebar userName={displayName} isAdmin={isAdmin} />
       <main className="flex-1 min-w-0 pb-16 md:pb-0">
         {children}
       </main>

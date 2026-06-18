@@ -39,9 +39,10 @@ const adminNav = [
 
 interface SidebarProps {
   userName: string
+  isAdmin: boolean
 }
 
-export function Sidebar({ userName }: SidebarProps) {
+export function Sidebar({ userName, isAdmin }: SidebarProps) {
   const pathname = usePathname()
   const [adminOpen, setAdminOpen] = useState(pathname.startsWith('/admin'))
 
@@ -92,47 +93,51 @@ export function Sidebar({ userName }: SidebarProps) {
           )
         })}
 
-        {/* 구분선 */}
-        <div className="my-2 border-t border-white/10" />
+        {isAdmin && (
+          <>
+            {/* 구분선 */}
+            <div className="my-2 border-t border-white/10" />
 
-        {/* 관리자 메뉴 */}
-        <button
-          type="button"
-          onClick={() => setAdminOpen((v) => !v)}
-          className={cn(
-            'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left',
-            isAdminActive ? 'text-white' : 'hover:bg-white/10',
-          )}
-          style={isAdminActive ? { backgroundColor: ACTIVE_BG, color: '#fff' } : undefined}
-        >
-          <Settings className="size-4 shrink-0" />
-          <span className="flex-1">관리자</span>
-          {adminOpen ? (
-            <ChevronDown className="size-3.5 opacity-70" />
-          ) : (
-            <ChevronRight className="size-3.5 opacity-70" />
-          )}
-        </button>
+            {/* 관리자 메뉴 */}
+            <button
+              type="button"
+              onClick={() => setAdminOpen((v) => !v)}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left',
+                isAdminActive ? 'text-white' : 'hover:bg-white/10',
+              )}
+              style={isAdminActive ? { backgroundColor: ACTIVE_BG, color: '#fff' } : undefined}
+            >
+              <Settings className="size-4 shrink-0" />
+              <span className="flex-1">관리자</span>
+              {adminOpen ? (
+                <ChevronDown className="size-3.5 opacity-70" />
+              ) : (
+                <ChevronRight className="size-3.5 opacity-70" />
+              )}
+            </button>
 
-        {adminOpen && (
-          <div className="ml-7 space-y-0.5">
-            {adminNav.map(({ href, label }) => {
-              const active = pathname === href
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    'flex items-center px-3 py-1.5 rounded-md text-[13px] transition-colors',
-                    active ? 'text-white' : 'hover:bg-white/10',
-                  )}
-                  style={active ? { backgroundColor: ACTIVE_BG, color: '#fff' } : undefined}
-                >
-                  {label}
-                </Link>
-              )
-            })}
-          </div>
+            {adminOpen && (
+              <div className="ml-7 space-y-0.5">
+                {adminNav.map(({ href, label }) => {
+                  const active = pathname === href
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        'flex items-center px-3 py-1.5 rounded-md text-[13px] transition-colors',
+                        active ? 'text-white' : 'hover:bg-white/10',
+                      )}
+                      style={active ? { backgroundColor: ACTIVE_BG, color: '#fff' } : undefined}
+                    >
+                      {label}
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </>
         )}
       </nav>
 

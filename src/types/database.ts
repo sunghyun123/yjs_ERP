@@ -359,6 +359,32 @@ export type Database = {
           수정일?: string | null
         }
       }
+      투입실적상세: {
+        Row: {
+          id: number
+          투입실적_id: number
+          투입구분: string
+          주간수량: number
+          야간수량: number
+          생성일: string
+        }
+        Insert: {
+          id?: number
+          투입실적_id: number
+          투입구분: string
+          주간수량?: number
+          야간수량?: number
+          생성일?: string
+        }
+        Update: {
+          id?: number
+          투입실적_id?: number
+          투입구분?: string
+          주간수량?: number
+          야간수량?: number
+          생성일?: string
+        }
+      }
       시스템설정: {
         Row: {
           키: string
@@ -493,6 +519,7 @@ export type 수주Row        = Database['public']['Tables']['수주']['Row']
 export type 기성Row        = Database['public']['Tables']['기성']['Row']
 export type 공사이력Row    = Database['public']['Tables']['공사이력']['Row']
 export type 투입실적Row    = Database['public']['Tables']['투입실적']['Row']
+export type 투입실적상세Row = Database['public']['Tables']['투입실적상세']['Row']
 export type 시스템설정Row  = Database['public']['Tables']['시스템설정']['Row']
 export type 계획금액Row    = Database['public']['Tables']['계획금액']['Row']
 export type dashboard_공사Row = Database['public']['Tables']['dashboard_공사']['Row']
@@ -506,6 +533,7 @@ export type 수주Insert     = Database['public']['Tables']['수주']['Insert']
 export type 기성Insert     = Database['public']['Tables']['기성']['Insert']
 export type 공사이력Insert = Database['public']['Tables']['공사이력']['Insert']
 export type 투입실적Insert = Database['public']['Tables']['투입실적']['Insert']
+export type 투입실적상세Insert = Database['public']['Tables']['투입실적상세']['Insert']
 export type dashboard_공사Insert = Database['public']['Tables']['dashboard_공사']['Insert']
 
 // Update 타입 re-export
@@ -513,6 +541,7 @@ export type 수주Update     = Database['public']['Tables']['수주']['Update']
 export type 기성Update     = Database['public']['Tables']['기성']['Update']
 export type 공사이력Update = Database['public']['Tables']['공사이력']['Update']
 export type 투입실적Update = Database['public']['Tables']['투입실적']['Update']
+export type 투입실적상세Update = Database['public']['Tables']['투입실적상세']['Update']
 export type dashboard_공사Update = Database['public']['Tables']['dashboard_공사']['Update']
 
 // 공무 관련 타입 re-export

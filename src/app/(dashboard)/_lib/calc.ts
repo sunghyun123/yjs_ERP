@@ -1,52 +1,139 @@
-import type { 투입실적Row, 공사단가Row } from '@/types/database'
+import type { 공사단가Row, 투입실적Row, 투입실적상세Row } from '@/types/database'
 
-function get단가(
+export type 투입상세수량 = Pick<투입실적상세Row, '투입구분' | '주간수량' | '야간수량'>
+export type 투입실적With상세 = 투입실적Row & {
+  투입실적상세?: 투입상세수량[] | null
+}
+
+type 단가 = { 주간단가: number; 야간단가: number }
+
+export const 재료비투입구분 = '재료비/인'
+
+export const 레거시투입컬럼 = [
+  { 투입구분: '상용직', 주: '상용직_주', 야: '상용직_야' },
+  { 투입구분: '일용직', 주: '일용직_주', 야: '일용직_야' },
+  { 투입구분: '모범신호수', 주: '모범신호수_주', 야: '모범신호수_야' },
+  { 투입구분: '6W', 주: 'w6_주', 야: 'w6_야' },
+  { 투입구분: '3W', 주: 'w3_주', 야: 'w3_야' },
+  { 투입구분: '덤프15T', 주: '덤프15t_주', 야: '덤프15t_야' },
+  { 투입구분: '크레인', 주: '크레인_주', 야: '크레인_야' },
+  { 투입구분: '물청소차', 주: '물청소차_주', 야: '물청소차_야' },
+  { 투입구분: 'MCM', 주: 'mcm_주', 야: 'mcm_야' },
+  { 투입구분: '접속', 주: '접속_주', 야: '접속_야' },
+] as const
+
+const 기본투입구분순서: string[] = 레거시투입컬럼.map((row) => row.투입구분)
+
+function n(v: unknown): number {
+  const num = Number(v)
+  return Number.isFinite(num) ? num : 0
+}
+
+export function get단가(
   단가목록: 공사단가Row[],
   투입구분: string,
   투입일: string,
-): { 주간단가: number; 야간단가: number } {
+): 단가 {
   const applicable = 단가목록
     .filter((d) => d.투입구분 === 투입구분 && d.적용시작일 <= 투입일)
-    .sort((a, b) => b.적용시작일.localeCompare(a.적용시작일))
+    .sort((a, b) => {
+      const byDate = b.적용시작일.localeCompare(a.적용시작일)
+      return byDate !== 0 ? byDate : b.id - a.id
+    })
 
   if (applicable.length === 0) return { 주간단가: 0, 야간단가: 0 }
   const d = applicable[0]
   return { 주간단가: d.주간단가, 야간단가: d.야간단가 ?? 0 }
 }
 
-export function calc투입금액(row: 투입실적Row, 단가목록: 공사단가Row[]): number {
-  const d = row.투입일
-  const s = (구분: string) => get단가(단가목록, 구분, d)
+export function get동적투입구분목록(단가목록: 공사단가Row[]): string[] {
+  const seen = new Set<string>()
+  const latest = [...단가목록].sort((a, b) => {
+    const byDate = b.적용시작일.localeCompare(a.적용시작일)
+    return byDate !== 0 ? byDate : b.id - a.id
+  })
 
-  const 직접노무비 =
-    row.상용직_주 * s('상용직').주간단가 +
-    row.상용직_야 * s('상용직').야간단가 +
-    row.일용직_주 * s('일용직').주간단가 +
-    row.일용직_야 * s('일용직').야간단가 +
-    row.모범신호수_주 * s('모범신호수').주간단가 +
-    row.모범신호수_야 * s('모범신호수').야간단가 +
-    row.w6_주 * s('6W').주간단가 +
-    row.w6_야 * s('6W').야간단가 +
-    row.w3_주 * s('3W').주간단가 +
-    row.w3_야 * s('3W').야간단가 +
-    row.덤프15t_주 * s('덤프15T').주간단가 +
-    row.덤프15t_야 * s('덤프15T').야간단가 +
-    row.크레인_주 * s('크레인').주간단가 +
-    row.크레인_야 * s('크레인').야간단가 +
-    row.물청소차_주 * s('물청소차').주간단가 +
-    row.물청소차_야 * s('물청소차').야간단가 +
-    row.mcm_주 * s('MCM').주간단가 +
-    row.mcm_야 * s('MCM').야간단가 +
-    row.접속_주 * s('접속').주간단가 +
-    row.접속_야 * s('접속').야간단가
+  for (const row of latest) {
+    if (row.투입구분 === 재료비투입구분) continue
+    if (!seen.has(row.투입구분)) seen.add(row.투입구분)
+  }
 
-  const 재료비 = (row.재료비인_주 + row.재료비인_야) * s('재료비/인').주간단가
+  return [...seen].sort((a, b) => {
+    const ai = 기본투입구분순서.indexOf(a)
+    const bi = 기본투입구분순서.indexOf(b)
+    if (ai !== -1 || bi !== -1) {
+      if (ai === -1) return 1
+      if (bi === -1) return -1
+      return ai - bi
+    }
+    return a.localeCompare(b, 'ko')
+  })
+}
 
-  return 직접노무비 + 재료비 + row.외주1 + row.외주2
+export function legacyRowTo상세(row: 투입실적Row): 투입상세수량[] {
+  return 레거시투입컬럼.map(({ 투입구분, 주, 야 }) => ({
+    투입구분,
+    주간수량: n(row[주]),
+    야간수량: n(row[야]),
+  }))
+}
+
+export function merge상세목록(
+  투입구분목록: string[],
+  상세목록: 투입상세수량[] | null | undefined,
+): 투입상세수량[] {
+  const map = new Map((상세목록 ?? []).map((row) => [row.투입구분, row]))
+  return 투입구분목록.map((투입구분) => ({
+    투입구분,
+    주간수량: n(map.get(투입구분)?.주간수량),
+    야간수량: n(map.get(투입구분)?.야간수량),
+  }))
+}
+
+export function 상세목록ToLegacyUpdate(상세목록: 투입상세수량[]) {
+  const byName = new Map(상세목록.map((row) => [row.투입구분, row]))
+  const 상용직 = byName.get('상용직')
+  const payload: Record<string, number> = {}
+
+  for (const { 투입구분, 주, 야 } of 레거시투입컬럼) {
+    const row = byName.get(투입구분)
+    payload[주] = n(row?.주간수량)
+    payload[야] = n(row?.야간수량)
+  }
+
+  payload.재료비인_주 = n(상용직?.주간수량)
+  payload.재료비인_야 = n(상용직?.야간수량)
+  return payload
+}
+
+export function calc투입금액상세(
+  row: Pick<투입실적Row, '투입일' | '외주1' | '외주2'>,
+  상세목록: 투입상세수량[],
+  단가목록: 공사단가Row[],
+): number {
+  let 직접노무비 = 0
+  const 상용직 = 상세목록.find((detail) => detail.투입구분 === '상용직')
+
+  for (const detail of 상세목록) {
+    if (detail.투입구분 === 재료비투입구분) continue
+    const 단가 = get단가(단가목록, detail.투입구분, row.투입일)
+    직접노무비 += n(detail.주간수량) * 단가.주간단가
+    직접노무비 += n(detail.야간수량) * 단가.야간단가
+  }
+
+  const 재료비단가 = get단가(단가목록, 재료비투입구분, row.투입일)
+  const 재료비 = (n(상용직?.주간수량) + n(상용직?.야간수량)) * 재료비단가.주간단가
+
+  return 직접노무비 + 재료비 + n(row.외주1) + n(row.외주2)
+}
+
+export function calc투입금액(row: 투입실적With상세, 단가목록: 공사단가Row[]): number {
+  const 상세목록 = row.투입실적상세?.length ? row.투입실적상세 : legacyRowTo상세(row)
+  return calc투입금액상세(row, 상세목록, 단가목록)
 }
 
 // 합계 = 투입금액 + 일반관리비(6%) — 매출손익 리포트에서 사용
-export function calc합계(row: 투입실적Row, 단가목록: 공사단가Row[]): number {
+export function calc합계(row: 투입실적With상세, 단가목록: 공사단가Row[]): number {
   const 투입금액 = calc투입금액(row, 단가목록)
   return 투입금액 * 1.06
 }

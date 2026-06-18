@@ -23,7 +23,7 @@ export default async function Page() {
     <div className="p-4 md:p-6">
       <div className="mb-5">
         <h1 className="text-xl font-semibold text-gray-900">공사단가 관리</h1>
-        <p className="text-sm text-gray-400 mt-0.5">투입구분별 현행 단가 · 수정 시 해당 레코드 직접 UPDATE</p>
+        <p className="text-sm text-gray-400 mt-0.5">투입구분별 현행 단가 · 관리자 전용 단가 관리</p>
       </div>
       <RatesClient initialRows={currentRates} />
     </div>

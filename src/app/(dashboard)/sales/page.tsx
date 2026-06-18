@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { 투입실적Row, 공사단가Row } from '@/types/database'
+import type { 공사단가Row } from '@/types/database'
+import type { 투입실적With상세 } from '../_lib/calc'
 import { calc합계 } from '../_lib/calc'
 import { isMonthEndDate } from '../_lib/revenue'
 import { formatEok } from '@/lib/format'
@@ -22,7 +23,7 @@ export default async function SalesPage({
   const supabase = await createClient()
 
   const [투입실적결과, 단가결과, 공사이력결과, 수주결과] = await Promise.all([
-    supabase.from('투입실적').select('*').gte('투입일', yearStart).lt('투입일', yearEnd),
+    supabase.from('투입실적').select('*, 투입실적상세(투입구분, 주간수량, 야간수량)').gte('투입일', yearStart).lt('투입일', yearEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
     supabase
       .from('공사이력')
@@ -33,7 +34,7 @@ export default async function SalesPage({
   ])
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
-  const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적Row[]
+  const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적With상세[]
   const 공사이력목록 = (공사이력결과.data ?? []) as {
     작업일자: string
     수주_id: number

@@ -13,6 +13,19 @@ type AddValues  = { 투입구분: string; 주간단가: string; 야간단가: st
 
 function today() { return new Date().toISOString().slice(0, 10) }
 
+function getCurrentRows(rows: 공사단가Row[]) {
+  const seen = new Set<string>()
+  return [...rows]
+    .sort((a, b) =>
+      b.적용시작일.localeCompare(a.적용시작일) || b.id - a.id
+    )
+    .filter(row => {
+      if (seen.has(row.투입구분)) return false
+      seen.add(row.투입구분)
+      return true
+    })
+}
+
 export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] }) {
   const [rows, setRows]           = useState(initialRows)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -59,13 +72,14 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
       .select()
       .single()
     if (error) { setSaving(false); showToast(false, '저장에 실패했습니다.'); return }
-    setRows(prev => prev.map(r => r.id === row.id ? (data as 공사단가Row) : r))
+    setRows(prev => getCurrentRows(prev.map(r => r.id === row.id ? (data as 공사단가Row) : r)))
     setEditingId(null)
     setSaving(false)
     showToast(true, '수정되었습니다.')
   }
 
   const handleDelete = async (row: 공사단가Row) => {
+    if (!window.confirm(`${row.투입구분} 단가를 삭제할까요? 기존 계산 결과가 바뀔 수 있습니다.`)) return
     setSaving(true)
     const { error } = await (supabase.from('공사단가') as any).delete().eq('id', row.id)
     setSaving(false)
@@ -77,10 +91,11 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
   const handleAdd = async () => {
     if (!addValues.투입구분.trim()) { showToast(false, '투입구분을 입력하세요.'); return }
     if (!addValues.적용시작일) { showToast(false, '적용시작일을 입력하세요.'); return }
+    const 투입구분 = addValues.투입구분.trim()
     setSaving(true)
     const { data, error } = await (supabase.from('공사단가') as any)
       .insert({
-        투입구분:   addValues.투입구분.trim(),
+        투입구분,
         주간단가:   parseInt(addValues.주간단가.replace(/,/g, ''), 10) || 0,
         야간단가:   addValues.야간단가 !== '' ? parseInt(addValues.야간단가.replace(/,/g, ''), 10) : null,
         적용시작일: addValues.적용시작일,
@@ -88,11 +103,11 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
       .select()
       .single()
     if (error) { setSaving(false); showToast(false, '저장에 실패했습니다.'); return }
-    setRows(prev => [...prev, data as 공사단가Row])
+    setRows(prev => getCurrentRows([...prev, data as 공사단가Row]))
     setAdding(false)
     setAddValues({ 투입구분: '', 주간단가: '', 야간단가: '', 적용시작일: today() })
     setSaving(false)
-    showToast(true, '추가되었습니다.')
+    showToast(true, '단가가 추가되었습니다.')
   }
 
   const busy = editingId !== null || adding || saving
@@ -115,12 +130,22 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
       <div className="flex gap-2 items-center mb-4">
         <Button
           size="sm"
-          onClick={() => { setAdding(true); setEditingId(null) }}
-          disabled={adding || saving}
+          onClick={() => setAdding(true)}
+          disabled={busy}
         >
-          + 항목 추가
+          + 단가 추가
         </Button>
-        <span className="text-xs text-gray-400">수정 버튼 클릭 → 인라인 편집</span>
+        <span className="text-xs text-gray-400">
+          관리자만 단가 추가 · 수정 · 삭제가 가능합니다.
+        </span>
+      </div>
+
+      <div className="mb-3 max-w-3xl rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+        <strong className="font-semibold">운영 안내</strong>
+        <span className="ml-1">
+          기존 단가를 수정하거나 삭제하면 이미 등록된 투입실적의 투입금액과 손익이 바뀔 수 있습니다.
+          일반적인 단가 변경은 같은 투입구분과 새 적용시작일로 단가를 추가해 관리하세요.
+        </span>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden max-w-3xl">
@@ -236,7 +261,7 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
                     inputMode="numeric"
                   />
                 </td>
-                <td className="py-2 px-4">
+                <td className="py-2 px-4" colSpan={2}>
                   <Input
                     className="h-8 text-sm text-right w-32 ml-auto"
                     placeholder="—"
@@ -253,7 +278,7 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
                     onChange={e => setAddValues(v => ({ ...v, 적용시작일: e.target.value }))}
                   />
                 </td>
-                <td className="py-2 px-4" colSpan={2}>
+                <td className="py-2 px-4">
                   <div className="flex gap-1.5">
                     <Button size="sm" className="h-7 text-xs" disabled={saving} onClick={handleAdd}>
                       {saving ? '...' : '추가'}
@@ -277,7 +302,7 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
         </table>
       </div>
       <p className="mt-2 text-xs text-gray-400">
-        투입구분별 현행 단가 (최신 레코드 기준) · 수정 시 해당 레코드 직접 UPDATE
+        투입구분별 현행 단가 (최신 레코드 기준) · 수정/삭제 시 기존 실적 금액이 재계산될 수 있음
       </p>
     </>
   )

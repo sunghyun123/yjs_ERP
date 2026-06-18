@@ -1,6 +1,19 @@
 # 영전사 ERP 개발 진행 기록
 
-> 최종 업데이트: 2026-06-17 (백업/포트폴리오 증거 체계 정리)
+> 최종 업데이트: 2026-06-18 (투입실적 상세 구조 + 관리자 권한 보호)
+
+---
+
+## 2026-06-18 투입실적 상세 구조 + 관리자 권한 보호
+
+- `투입실적상세` 테이블 마이그레이션 추가: `투입실적_id + 투입구분` 단위로 주간/야간 수량 저장, 기존 `투입실적` 고정 컬럼은 호환용으로 유지.
+- 기존 고정 컬럼(`상용직`, `일용직`, `모범신호수`, `6W`, `3W`, `덤프15T`, `크레인`, `물청소차`, `MCM`, `접속`)을 `투입실적상세`로 백필하는 SQL 포함. `재료비/인`은 별도 상세 row를 만들지 않고 상용직 수량 기반 계산 정책 유지.
+- 투입실적 입력/현황을 공사단가의 `투입구분` 목록 기반 동적 행으로 전환. 새 단가 항목 추가 시 코드 수정 없이 입력/수정 화면에 표시.
+- 매출손익, 홈 KPI, 손익 차트의 투입금액 계산을 상세 기반으로 전환하되, 기존 데이터 호환을 위해 레거시 고정 컬럼 fallback 유지.
+- `/admin/*` 전체를 `whitelist.role = 'admin'` 사용자만 접근 가능하도록 서버 layout 보호 추가. 사이드바 관리자 메뉴도 admin에게만 표시.
+- 공사단가 관리(`/admin/rates`)는 관리자 전용 CRUD로 유지하고, 수정/삭제 시 기존 투입실적 금액이 재계산될 수 있다는 안내와 삭제 확인창 추가.
+- 운영 DB 백필 확인: `select count(*) from "투입실적상세";` 결과 3,530건, 신규 `test` 투입구분 저장 확인.
+- 검증: `npm run build` 통과, `npm test` 10개 통과.
 
 ---
 
@@ -72,6 +85,8 @@
 | 48 | 삭제 확인 UI 위치 재수정 — 좌측 form 스크롤 영역(폼 하단) → 우측 버튼 패널 하단으로 이동, 스크롤 없이 항상 보이도록 복원 (기존 #19 회귀 버그) | ✅ |
 | 49 | 공무 목록 페이지 금주실적 월 이동 버그 수정 — `weekRowsResult` 쿼리가 항상 오늘 실제 주차(`curYear/curWeek`)를 고정 사용해 월 이동해도 같은 값 표시. 선택 월에 현재 주차가 있으면 해당 주, 없으면 마지막 주차(`displayWeekEntry`)로 동적 전환. KPI 카드 타이틀도 함께 변경 | ✅ |
 | 50 | 카카오 단일 로그인 + 화이트리스트 — 이메일/비번 로그인 제거, `signInWithOAuth({provider:'kakao'})` 단일 방식. `whitelist` 테이블(kakao_id)로 외부 접근 차단: `/auth/callback`에서 명단 대조 후 미등록자 거부, 대시보드 레이아웃 매 요청 재확인(퇴사자 차단), `/auth/signout` 쿠키정리 라우트(무한루프 방지). `kakao_whitelist.json`→DB 동기화 스크립트(`npm run sync:whitelist`, reconcile). **함정 3종**: ①kakao_id는 카카오 앱마다 다름 → 명단 공유하는 다른 사내 프로그램과 **동일 카카오 앱**을 Supabase 공급자에 연결 ②GoTrue가 `account_email`+`profile_image`+`profile_nickname` 스코프 강제 → 동의항목 3개 활성화 ③`handle_new_user` 트리거가 카카오 유저 NULL 이메일에서 실패 → 합성 이메일 폴백(`supabase/handle-new-user.sql`) | ✅ |
+| 51 | 투입실적 상세 테이블 전환 — `투입실적상세` 추가, 기존 고정 컬럼 백필, 입력/현황/수정 화면을 공사단가 `투입구분` 기반 동적 행으로 전환. `재료비/인`은 상용직 수량 기반 계산 정책 유지, 외주1/외주2는 헤더 유지 | ✅ |
+| 52 | 상세 기반 투입금액/손익 계산 + 관리자 권한 보호 — `calc투입금액상세` 추가, 기존 `calc합계` 호출부는 상세 우선·레거시 fallback으로 호환. 매출손익/KPI/차트 반영. `/admin/*`는 `whitelist.role = 'admin'`만 접근, 공사단가 CRUD는 관리자 전용으로 복구 | ✅ |
 
 ---
 
@@ -167,7 +182,7 @@ src/
 │   ├── whitelist.ts                  # extractKakaoId + getWhitelistEntry (명단 조회)
 │   ├── whitelist-sync.ts             # reconcileWhitelist 순수 함수 (sync 스크립트용)
 │   └── format.ts                     # formatKRW, formatEok
-├── types/database.ts                 # 10개 테이블 TypeScript 타입 (whitelist 추가)
+├── types/database.ts                 # 11개 테이블 TypeScript 타입 (whitelist, 투입실적상세 추가)
 └── app/
     ├── login/                        # 카카오 로그인 페이지 (KakaoLoginButton)
     ├── auth/
@@ -176,6 +191,7 @@ src/
     ├── actions/auth.ts               # 로그아웃 Server Action
     └── (dashboard)/
         ├── layout.tsx                # 인증 보호 레이아웃
+        ├── admin/layout.tsx          # whitelist.role=admin 관리자 구역 보호
         ├── _lib/calc.ts              # calc투입금액, calc합계
         ├── _components/             # KpiCards, ProfitChart, UnregisteredProjects
         ├── _actions/dashboard.ts    # deleteUnregisteredProject Server Action

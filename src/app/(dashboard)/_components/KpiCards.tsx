@@ -3,9 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CircleDollarSign, TrendingUp, Wallet, ArrowUpDown } from 'lucide-react'
-import type { 투입실적Row, 공사단가Row } from '@/types/database'
+import type { 공사단가Row } from '@/types/database'
 import { formatEok } from '@/lib/format'
-import { calc합계 } from '../_lib/calc'
+import { calc합계, type 투입실적With상세 } from '../_lib/calc'
 import { sumMonthlyRevenue, type RevenueHistoryRow } from '../_lib/revenue'
 
 export async function KpiCards() {
@@ -32,7 +32,7 @@ export async function KpiCards() {
   const prevMonthDays = new Date(year, month - 1, 0).getDate()
 
   const [투입실적결과, 단가결과, 공사이력결과, 전월공사이력결과] = await Promise.all([
-    supabase.from('투입실적').select('*').gte('투입일', monthStart).lt('투입일', monthEnd),
+    supabase.from('투입실적').select('*, 투입실적상세(투입구분, 주간수량, 야간수량)').gte('투입일', monthStart).lt('투입일', monthEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
     // 매출손익 마이그레이션 성과는 월말 행으로 들어간다.
     supabase.from('공사이력').select('작업일자, 성과금액').gte('작업일자', monthStart).lt('작업일자', monthEnd),
@@ -40,7 +40,7 @@ export async function KpiCards() {
   ])
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
-  const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적Row[]
+  const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적With상세[]
 
   const 이번달투입금액 = 투입실적목록.reduce((sum, row) => sum + calc합계(row, 단가목록), 0)
 
