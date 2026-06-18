@@ -3,18 +3,8 @@ export type RevenueHistoryRow = {
   성과금액: number | null
 }
 
-export function isMonthEndDate(date: string): boolean {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date)
-  if (!match) return false
-
-  const year = Number(match[1])
-  const month = Number(match[2])
-  const day = Number(match[3])
-  return day === new Date(year, month, 0).getDate()
-}
-
+// 성과금액은 공사현황.xlsx 기준 일별 증분으로 적재된다 (단일 정본).
+// 따라서 기간 내 모든 행을 합산한다 — 과거 월말 일괄행 가정(isMonthEndDate)은 폐기됨.
 export function sumMonthlyRevenue(rows: RevenueHistoryRow[]): number {
-  return rows
-    .filter((row) => isMonthEndDate(row.작업일자))
-    .reduce((sum, row) => sum + (row.성과금액 ?? 0), 0)
+  return rows.reduce((sum, row) => sum + (row.성과금액 ?? 0), 0)
 }

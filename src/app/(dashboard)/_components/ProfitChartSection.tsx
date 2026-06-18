@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { 공사단가Row } from '@/types/database'
 import { calc합계, type 투입실적With상세 } from '../_lib/calc'
-import { isMonthEndDate } from '../_lib/revenue'
 import { ProfitChart } from './ProfitChart'
 
 export async function ProfitChartSection() {
@@ -32,7 +31,6 @@ export async function ProfitChartSection() {
 
   for (const row of (공사이력결과.data ?? []) as { 작업일자: string; 성과금액: number }[]) {
     if (!row.작업일자) continue
-    if (!isMonthEndDate(row.작업일자)) continue
     const m = parseInt(row.작업일자.slice(5, 7), 10) - 1
     monthly[m].성과 += row.성과금액 ?? 0
   }

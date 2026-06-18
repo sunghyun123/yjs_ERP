@@ -72,7 +72,7 @@ export async function getMonthlyKpiData(
       .gte('투입일', period.monthStart)
       .lt('투입일', period.monthEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
-    // 매출손익 마이그레이션 성과는 월말 행으로 들어간다.
+    // 성과금액은 일별 증분으로 적재됨 → 기간 내 모든 행을 합산한다.
     supabase
       .from('공사이력')
       .select('작업일자, 성과금액')
@@ -99,7 +99,7 @@ export async function getMonthlyKpiData(
   const prevMonthRevenue = sumMonthlyRevenue(
     (전월공사이력결과.data ?? []) as RevenueHistoryRow[],
   )
-  // 공사이력이 월말 일괄값이므로 전월 동기간(같은 날짜)을 일수 비율로 환산
+  // 이번 달은 오늘까지(MTD), 전월은 한 달 전체이므로 경과일 비율로 환산해 동기간 비교
   const prevMonthComparableRevenue =
     prevMonthRevenue * (period.comparisonDay / period.prevMonthDays)
   const revenueDelta = monthlyRevenue - prevMonthComparableRevenue

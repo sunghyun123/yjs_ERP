@@ -13,6 +13,7 @@
  *
  * 삽입 조건:
  *   Δ달성률 > 0 인 날만 삽입 (달성률 감소/정체 행은 스킵)
+ *   ※ 공사현황.xlsx가 성과금액의 단일 정본. 월말도 동일하게 일별 증분으로 삽입한다.
  *
  * 실행:
  *   npx ts-node --project scripts/tsconfig.json scripts/migrate-공사이력.ts
@@ -47,11 +48,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY) as any
 // ── 유틸 ──────────────────────────────────────────────────────────────────────
 function excelDateToISO(serial: number): string {
   return new Date((serial - 25569) * 86400000).toISOString().slice(0, 10)
-}
-
-function isMonthEndDate(date: string): boolean {
-  const [year, month, day] = date.split('-').map(Number)
-  return day === new Date(year, month, 0).getDate()
 }
 
 // ── 메인 ──────────────────────────────────────────────────────────────────────
@@ -99,7 +95,6 @@ async function main() {
   const records: Record<string, unknown>[] = []
   const skippedNos: string[] = []
   let skippedRows = 0
-  let skippedMonthEndRows = 0
 
   for (const [지중no, entries] of groups) {
     const 수주 = 수주Map.get(지중no)
@@ -124,11 +119,6 @@ async function main() {
 
       prev달성률 = 달성률  // 증가했을 때만 갱신
 
-      if (isMonthEndDate(작업일자)) {
-        skippedMonthEndRows++
-        continue
-      }
-
       const 성과금액 = Math.round((delta / 100) * 수주.하도적용금액 * 100) / 100
       records.push({
         수주_id:  수주.id,
@@ -140,7 +130,6 @@ async function main() {
 
   console.log(`✅ 변환: ${records.length}건 삽입 예정`)
   console.log(`   스킵 (달성률 정체/감소 또는 수주 미등록): ${skippedRows}건`)
-  console.log(`   스킵 (월말 성과는 매출손익.xlsx 기준으로 예약): ${skippedMonthEndRows}건`)
   if (skippedNos.length > 0) {
     console.log(`   수주 테이블에 없는 지중No: ${[...new Set(skippedNos)].join(', ')}`)
   }
