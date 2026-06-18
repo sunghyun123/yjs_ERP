@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "migrate:all": "ts-node --project scripts/tsconfig.json scripts/migrate-수주.ts && ts-node --project scripts/tsconfig.json scripts/migrate-공사이력.ts && ts-node --project scripts/tsconfig.json scripts/migrate-투입실적.ts && ts-node --project scripts/tsconfig.json scripts/migrate-매출손익.ts",
     "backup:data": "ts-node --project scripts/tsconfig.json scripts/backup-data.ts",
     "backup:inventory": "ts-node --project scripts/tsconfig.json scripts/backup-inventory.ts",
     "backup:portfolio": "ts-node --project scripts/tsconfig.json scripts/backup-portfolio.ts",

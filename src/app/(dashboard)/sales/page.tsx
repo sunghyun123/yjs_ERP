@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { 투입실적Row, 공사단가Row } from '@/types/database'
 import { calc합계 } from '../_lib/calc'
+import { isMonthEndDate } from '../_lib/revenue'
 import { formatEok } from '@/lib/format'
 import { YearSelector } from './_components/YearSelector'
 import { CollapsibleChart } from './_components/CollapsibleChart'
@@ -73,6 +74,7 @@ export default async function SalesPage({
 
   for (const row of 공사이력목록) {
     if (!row.작업일자) continue
+    if (!isMonthEndDate(row.작업일자)) continue
     const m = parseInt(row.작업일자.slice(5, 7), 10) - 1
     const amt = row.성과금액 ?? 0
     monthly[m].성과 += amt
@@ -121,7 +123,7 @@ export default async function SalesPage({
             매출손익
           </h1>
           <p className="text-sm mt-0.5" style={{ color: '#64748b' }}>
-            공사이력·투입일 기준 월별 집계
+            월말 성과·투입일 기준 월별 집계
           </p>
         </div>
         <div className="flex items-center gap-2">

@@ -49,6 +49,10 @@ function lastDayOfMonth(year: number, month: number): string {
   return d.toISOString().slice(0, 10)
 }
 
+function isSummaryRow(지중no: string): boolean {
+  return /합계/.test(지중no)
+}
+
 // ── 메인 ──────────────────────────────────────────────────────────────────────
 async function main() {
   const year = parseInt(process.argv[2] ?? '2026', 10)
@@ -59,8 +63,10 @@ async function main() {
   const ws = wb.Sheets[wb.SheetNames[0]]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawRows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null })
-  const dataRows = rawRows.slice(1).filter(r => r[0] && r[2] === '성과금액')
+  const revenueRows = rawRows.slice(1).filter(r => r[0] && r[2] === '성과금액')
+  const dataRows = revenueRows.filter(r => !isSummaryRow(String(r[0]).trim()))
   console.log(`📂 엑셀 성과금액 행: ${dataRows.length}건 로드`)
+  console.log(`   제외 (합계행): ${revenueRows.length - dataRows.length}건`)
 
   // 2. 수주 테이블에서 지중no → id 맵 생성
   const { data: 수주목록, error: 수주에러 } = await supabase
@@ -78,6 +84,7 @@ async function main() {
   // 3. 행 변환 (월별 성과금액 → 공사이력 레코드)
   const records: Record<string, unknown>[] = []
   const skipped: string[] = []
+  const monthEndDates = Array.from({ length: 12 }, (_, i) => lastDayOfMonth(year, i + 1))
 
   for (const row of dataRows) {
     const 지중no = String(row[0]).trim()
@@ -104,8 +111,22 @@ async function main() {
     console.log(`   수주 테이블에 없는 지중No (${[...new Set(skipped)].length}개): ${[...new Set(skipped)].join(', ')}`)
   }
 
+  // 매출손익 마이그레이션은 월말 성과의 기준 데이터다.
+  // 반복 실행 또는 공사현황 마이그레이션 실행 순서와 무관하게 같은 결과가 되도록
+  // 대상 연도 월말 공사이력 행을 먼저 정리한 뒤 다시 적재한다.
+  const { error: deleteError } = await supabase
+    .from('공사이력')
+    .delete()
+    .in('작업일자', monthEndDates)
+
+  if (deleteError) {
+    console.error('❌ 기존 월말 공사이력 정리 실패:', deleteError.message)
+    process.exit(1)
+  }
+  console.log(`🧹 기존 월말 공사이력 정리 완료: ${year}년 12개월`)
+
   if (records.length === 0) {
-    console.log('⚠️  삽입할 데이터가 없습니다.')
+    console.log('⚠️  삽입할 데이터가 없습니다. 기존 월말 성과는 정리되었습니다.')
     return
   }
 
