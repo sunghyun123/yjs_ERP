@@ -3,84 +3,41 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CircleDollarSign, TrendingUp, Wallet, ArrowUpDown } from 'lucide-react'
-import type { 공사단가Row } from '@/types/database'
-import { formatEok } from '@/lib/format'
-import { calc합계, type 투입실적With상세 } from '../_lib/calc'
-import { sumMonthlyRevenue, type RevenueHistoryRow } from '../_lib/revenue'
+import { getMonthlyKpiData } from '../_lib/monthly-kpi'
 
 export async function KpiCards() {
   const supabase = await createClient()
-
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
-  const mm = String(month).padStart(2, '0')
-
-  const monthStart = `${year}-${mm}-01`
-  const nextMm = String(month === 12 ? 1 : month + 1).padStart(2, '0')
-  const nextYr = month === 12 ? year + 1 : year
-  const monthEnd = `${nextYr}-${nextMm}-01`
-
-  const day = now.getDate()
-
-  // 전월 범위
-  const firstOfPrevMonth = new Date(year, month - 2, 1)
-  const prevYear = firstOfPrevMonth.getFullYear()
-  const prevMm = String(firstOfPrevMonth.getMonth() + 1).padStart(2, '0')
-  const prevMonthStart = `${prevYear}-${prevMm}-01`
-  // 전월 총 일수 (동기간 환산에 사용)
-  const prevMonthDays = new Date(year, month - 1, 0).getDate()
-
-  const [투입실적결과, 단가결과, 공사이력결과, 전월공사이력결과] = await Promise.all([
-    supabase.from('투입실적').select('*, 투입실적상세(투입구분, 주간수량, 야간수량)').gte('투입일', monthStart).lt('투입일', monthEnd),
-    supabase.from('공사단가').select('*').order('적용시작일'),
-    // 매출손익 마이그레이션 성과는 월말 행으로 들어간다.
-    supabase.from('공사이력').select('작업일자, 성과금액').gte('작업일자', monthStart).lt('작업일자', monthEnd),
-    supabase.from('공사이력').select('작업일자, 성과금액').gte('작업일자', prevMonthStart).lt('작업일자', monthStart),
-  ])
-
-  const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
-  const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적With상세[]
-
-  const 이번달투입금액 = 투입실적목록.reduce((sum, row) => sum + calc합계(row, 단가목록), 0)
-
-  const 이번달성과금액 = sumMonthlyRevenue((공사이력결과.data ?? []) as RevenueHistoryRow[])
-  const 전월전체성과금액 = sumMonthlyRevenue((전월공사이력결과.data ?? []) as RevenueHistoryRow[])
-  // 공사이력이 월말 일괄값이므로 전월 동기간(같은 날짜)을 일수 비율로 환산
-  const 전월동기간성과금액 = 전월전체성과금액 * (day / prevMonthDays)
-  const 전월대비성과금액 = 이번달성과금액 - 전월동기간성과금액
-  const 이번달손익금액 = 이번달성과금액 - 이번달투입금액
-
-  const 월표시 = `${month}월`
+  const kpi = await getMonthlyKpiData(supabase)
+  const { label: 월표시, amounts, formatted } = kpi
 
   const cards = [
     {
       title: `${월표시} 성과금액`,
-      value: formatEok(이번달성과금액),
+      value: formatted.monthlyRevenue,
       sub: null,
       icon: CircleDollarSign,
       color: '#3d5af1',
     },
     {
       title: `전월대비 성과`,
-      value: (전월대비성과금액 >= 0 ? '+' : '') + formatEok(전월대비성과금액),
+      value: formatted.revenueDelta,
       sub: `전월 대비`,
       icon: ArrowUpDown,
-      color: 전월대비성과금액 >= 0 ? '#22c55e' : '#ef4444',
+      color: amounts.revenueDelta >= 0 ? '#22c55e' : '#ef4444',
     },
     {
       title: `${월표시} 투입금액`,
-      value: formatEok(이번달투입금액),
+      value: formatted.monthlyInput,
       sub: null,
       icon: Wallet,
       color: '#f59e0b',
     },
     {
       title: `${월표시} 손익금액`,
-      value: formatEok(이번달손익금액),
+      value: formatted.monthlyProfit,
       sub: null,
       icon: TrendingUp,
-      color: 이번달손익금액 >= 0 ? '#22c55e' : '#ef4444',
+      color: amounts.monthlyProfit >= 0 ? '#22c55e' : '#ef4444',
     },
   ]
 
