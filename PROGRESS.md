@@ -1,6 +1,17 @@
 # 영전사 ERP 개발 진행 기록
 
-> 최종 업데이트: 2026-06-18 (투입실적 상세 구조 + 관리자 권한 보호)
+> 최종 업데이트: 2026-06-18 (Dashboard 월간 KPI API 연동)
+
+---
+
+## 2026-06-18 Dashboard 월간 KPI API 연동
+
+- 홈 KPI 카드 계산 로직을 `src/app/(dashboard)/_lib/monthly-kpi.ts`로 분리해 UI와 외부 API가 같은 성과금액/투입금액/손익 계산을 재사용하도록 변경.
+- `GET /api/kpi/monthly-performance` 추가: `DASHBOARD_API_KEY` Bearer 인증 후 서비스 롤 Supabase 클라이언트로 월간 KPI JSON 반환.
+- API 응답은 Dashboard 프록시가 바로 쓰기 좋게 `label`, `amounts`, `formatted`, `updatedAt` 구조로 제공.
+- 기존 `KpiCards.tsx`는 분리된 KPI 계산 함수를 호출하도록 정리해 화면 표시값과 API 값의 불일치 가능성 제거.
+- Dashboard `home.html`의 월별 총 공정률 영역에서 ERP 월간 성과금액이 정상 표시되는 것 확인.
+- 검증: `npm run build` 통과.
 
 ---
 
@@ -87,6 +98,7 @@
 | 50 | 카카오 단일 로그인 + 화이트리스트 — 이메일/비번 로그인 제거, `signInWithOAuth({provider:'kakao'})` 단일 방식. `whitelist` 테이블(kakao_id)로 외부 접근 차단: `/auth/callback`에서 명단 대조 후 미등록자 거부, 대시보드 레이아웃 매 요청 재확인(퇴사자 차단), `/auth/signout` 쿠키정리 라우트(무한루프 방지). `kakao_whitelist.json`→DB 동기화 스크립트(`npm run sync:whitelist`, reconcile). **함정 3종**: ①kakao_id는 카카오 앱마다 다름 → 명단 공유하는 다른 사내 프로그램과 **동일 카카오 앱**을 Supabase 공급자에 연결 ②GoTrue가 `account_email`+`profile_image`+`profile_nickname` 스코프 강제 → 동의항목 3개 활성화 ③`handle_new_user` 트리거가 카카오 유저 NULL 이메일에서 실패 → 합성 이메일 폴백(`supabase/handle-new-user.sql`) | ✅ |
 | 51 | 투입실적 상세 테이블 전환 — `투입실적상세` 추가, 기존 고정 컬럼 백필, 입력/현황/수정 화면을 공사단가 `투입구분` 기반 동적 행으로 전환. `재료비/인`은 상용직 수량 기반 계산 정책 유지, 외주1/외주2는 헤더 유지 | ✅ |
 | 52 | 상세 기반 투입금액/손익 계산 + 관리자 권한 보호 — `calc투입금액상세` 추가, 기존 `calc합계` 호출부는 상세 우선·레거시 fallback으로 호환. 매출손익/KPI/차트 반영. `/admin/*`는 `whitelist.role = 'admin'`만 접근, 공사단가 CRUD는 관리자 전용으로 복구 | ✅ |
+| 53 | Dashboard 월간 KPI API — 홈 KPI 계산을 `monthly-kpi.ts`로 분리하고 `GET /api/kpi/monthly-performance` Bearer 인증 API 추가. Dashboard 홈의 월별 총 공정률 영역이 ERP 월간 성과금액을 실시간 반영하도록 연동 확인 | ✅ |
 
 ---
 
