@@ -15,7 +15,15 @@ function parseDate(name: string): Date | null {
   const m = FILE_RE.exec(name)
   if (!m) return null
   const [, y, mo, d] = m
-  return new Date(Number(y), Number(mo) - 1, Number(d))
+  const yr = Number(y)
+  const month = Number(mo) - 1
+  const day = Number(d)
+  const date = new Date(yr, month, day)
+  // 달력상 유효하지 않은 날짜(예: 13월, 32일)는 오버플로되므로 파싱 불가로 처리
+  if (date.getFullYear() !== yr || date.getMonth() !== month || date.getDate() !== day) {
+    return null
+  }
+  return date
 }
 
 function dayDiff(now: Date, then: Date): number {

@@ -31,6 +31,7 @@ describe('selectForRetention', () => {
   it('주간(일요일) 백업은 최신 N개만 보관한다', () => {
     const now = new Date(2026, 5, 19)
     const sundays = ['2026-06-07', '2026-05-31', '2026-05-24', '2026-05-17', '2026-05-10'].map(f)
+    // keep는 정렬 후 최신순(newest-first)이어야 한다 — 입력 순서 보존이 아님
     const { keep, delete: del } = selectForRetention(sundays, now, POLICY)
     expect(keep).toEqual(sundays.slice(0, 4))
     expect(del).toEqual([sundays[4]])
@@ -46,5 +47,20 @@ describe('selectForRetention', () => {
 
   it('빈 입력은 빈 결과를 반환한다', () => {
     expect(selectForRetention([], new Date(), POLICY)).toEqual({ keep: [], delete: [] })
+  })
+
+  it('dailyDays 경계(정확히 7일 전)는 일별 윈도우에 포함되지 않는다', () => {
+    const now = new Date(2026, 5, 19)
+    const edge = f('2026-06-12') // diff=7, 금요일 → 일별 윈도우 밖, 비일요일 → 삭제
+    const { delete: del } = selectForRetention([edge], now, POLICY)
+    expect(del).toContain(edge)
+  })
+
+  it('정규식엔 맞지만 달력상 불가능한 날짜는 파싱 불가로 보존한다', () => {
+    const now = new Date(2026, 5, 19)
+    const bogus = '2026-13-40-030000-db.sql.gz'
+    const { keep, delete: del } = selectForRetention([bogus], now, POLICY)
+    expect(del).toEqual([])
+    expect(keep).toEqual([bogus])
   })
 })
