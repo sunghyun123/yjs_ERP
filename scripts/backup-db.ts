@@ -30,6 +30,8 @@ const RETENTION = { dailyDays: 7, weeklyCount: 4 }
 const PRIVATE_DIR = path.join(ROOT, 'backups', 'private')
 
 const DB_URL = process.env.SUPABASE_DB_URL
+// NEXT_PUBLIC_ 접두사가 맞다 — 프로젝트 URL은 비밀이 아니며(브라우저에도 노출됨)
+// 코드베이스에 정의된 유일한 Supabase URL 변수다. SUPABASE_URL 로 바꾸지 말 것.
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
