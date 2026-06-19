@@ -1,0 +1,10 @@
+# yjs-erp DB 백업 cron 예시
+# 적용: 아래 한 줄을 `crontab -e` 에 추가하거나 /etc/cron.d/ 에 배치.
+#
+# 주의:
+#  - VPS 타임존을 확인하세요(`timedatectl`). UTC면 KST 03:00은 18 0 * * * 입니다.
+#  - npm 절대경로는 `which npm` 으로 확인 후 교체하세요(예: /usr/bin/npm 또는 nvm 경로).
+#  - 로그 디렉터리(/var/log/yjs-erp)는 미리 생성: sudo mkdir -p /var/log/yjs-erp
+#
+# 매일 03:00(서버 로컬시간) DB 백업
+0 3 * * * cd /var/www/yjs_erp && /usr/bin/npm run backup:db >> /var/log/yjs-erp/db-backup.cron.log 2>&1

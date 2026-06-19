@@ -105,6 +105,24 @@ Register the daily Windows scheduled task:
 The task runs `npm run backup:data` once per day and writes a new timestamped
 folder under `backups/private/`.
 
+## Automated Supabase DB Backup
+
+라이브 Supabase DB는 별도로 매일 백업한다(소스 엑셀 백업과 무관).
+
+```bash
+npm run backup:db
+```
+
+- 방식: `supabase db dump` → gzip → `backups/private/<ts>-db-backup/<ts>-db.sql.gz`
+- 이중 보관: VPS 로컬 + Supabase Storage `db-backups`(비공개) 버킷
+- 보관주기: 일 7개 + 일요일자 주간 4개(로컬·Storage 동일)
+- 필요 env: `SUPABASE_DB_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+- 스케줄: VPS cron(`deploy/backup-db.cron.example`)
+- 복원: `docs/runbook-db-restore.md`
+- 로그: `backups/private/db-backup.log`
+
+`supabase/storage-db-backups.sql` 을 Supabase SQL Editor에서 1회 실행해 버킷을 만들어야 한다.
+
 ## Minimum Evidence Set
 
 For a complete private audit trail:
