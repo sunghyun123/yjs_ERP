@@ -55,6 +55,14 @@ function logLine(line: string): void {
   fs.appendFileSync(path.join(PRIVATE_DIR, 'db-backup.log'), line + '\n', 'utf8')
 }
 
+function cleanupDir(dir: string): void {
+  try {
+    fs.rmSync(dir, { recursive: true, force: true })
+  } catch {
+    // 정리 실패는 무시 — 백업 실패가 이미 비0 종료로 보고됨
+  }
+}
+
 function pruneLocal(): void {
   if (!fs.existsSync(PRIVATE_DIR)) return
   const dirs = fs
@@ -119,9 +127,11 @@ async function main(): Promise<void> {
         '❌ supabase CLI를 찾을 수 없습니다. 설치: npm i -g supabase  (문서: https://supabase.com/docs/guides/cli)',
       )
     } else {
-      console.error('❌ supabase db dump 실패:', err.message)
+      // err.message 에는 전체 명령줄(= SUPABASE_DB_URL 비밀번호)이 포함되므로 출력 금지.
+      console.error('❌ supabase db dump 실패 (exit code:', err.errno ?? (err as { status?: number }).status ?? 'unknown', ')')
     }
     logLine(`[${nowStamp()}] FAIL | ${gzName} | dump-error | - | ${Date.now() - started}ms | upload:N`)
+    cleanupDir(dir)
     process.exit(1)
   }
 
@@ -130,6 +140,7 @@ async function main(): Promise<void> {
   if (sqlStat.size === 0) {
     console.error('❌ dump 결과가 0바이트입니다.')
     logLine(`[${nowStamp()}] FAIL | ${gzName} | empty-dump | 0 | ${Date.now() - started}ms | upload:N`)
+    cleanupDir(dir)
     process.exit(1)
   }
 
