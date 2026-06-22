@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CheckCircle2, AlertCircle, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { todayKST } from '@/lib/kst'
 import type { 공사단가Row } from '@/types/database'
 
 type EditValues = { 주간단가: string; 야간단가: string; 적용시작일: string }
 type AddValues  = { 투입구분: string; 주간단가: string; 야간단가: string; 적용시작일: string }
 
-function today() { return new Date().toISOString().slice(0, 10) }
+function today() { return todayKST() }
 
 function getCurrentRows(rows: 공사단가Row[]) {
   const seen = new Set<string>()

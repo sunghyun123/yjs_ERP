@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, 공사단가Row } from '@/types/database'
 import { formatEok } from '@/lib/format'
+import { partsKST } from '@/lib/kst'
 import { calc합계, type 투입실적With상세 } from './calc'
 import { sumMonthlyRevenue, type RevenueHistoryRow } from './revenue'
 
@@ -33,8 +34,9 @@ export type MonthlyKpiData = {
 }
 
 function getMonthlyPeriod(now: Date) {
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
+  // 서버 런타임은 UTC라 now.getMonth()/getDate()가 KST와 어긋날 수 있다(자정 무렵 하루/한 달 밀림).
+  // KST 기준 연/월/일로 고정한다.
+  const { year, month, day } = partsKST(now)
   const mm = String(month).padStart(2, '0')
 
   const monthStart = `${year}-${mm}-01`
@@ -54,7 +56,7 @@ function getMonthlyPeriod(now: Date) {
     monthStart,
     monthEnd,
     prevMonthStart,
-    comparisonDay: now.getDate(),
+    comparisonDay: day,
     prevMonthDays,
   }
 }

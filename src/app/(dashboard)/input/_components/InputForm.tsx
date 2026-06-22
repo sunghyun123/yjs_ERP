@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
+import { todayKST } from '@/lib/kst'
 import {
   calc투입금액상세,
   get동적투입구분목록,
@@ -41,7 +42,7 @@ type 상세Map = Record<string, { 주간수량: number; 야간수량: number }>
 type 투입실적조회Row = 투입실적Row & { 투입실적상세?: 투입상세수량[] | null }
 
 function today() {
-  return new Date().toISOString().slice(0, 10)
+  return todayKST()
 }
 
 function n(v: unknown): number {

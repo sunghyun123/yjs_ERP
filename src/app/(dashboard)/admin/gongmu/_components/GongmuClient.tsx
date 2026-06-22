@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CheckCircle2, AlertCircle, X, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { todayKST } from '@/lib/kst'
 import type { 공무담당자Row } from '@/types/database'
 
 export function GongmuClient({ initialRows }: { initialRows: 공무담당자Row[] }) {
@@ -36,7 +37,7 @@ export function GongmuClient({ initialRows }: { initialRows: 공무담당자Row[
     return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }
   }, [])
 
-  const today = () => new Date().toISOString().slice(0, 10)
+  const today = () => todayKST()
 
   const openNew = () => {
     setEditRow(null)

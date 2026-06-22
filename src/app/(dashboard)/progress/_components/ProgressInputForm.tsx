@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2, Save, Search, ChevronDown, X as XIcon, CheckCircle2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
+import { todayKST } from '@/lib/kst'
 import type { 수주목록항목 } from '../_types'
 import type { 공사이력Row } from '@/types/database'
 
@@ -171,7 +172,7 @@ function MoneyInput({
 
 export function ProgressInputForm({ 수주목록, 공무담당자목록, default수주Id, default날짜 }: Props) {
   const [선택수주Id, set선택수주Id] = useState<number | null>(default수주Id ?? null)
-  const [작업일자, set작업일자] = useState(() => default날짜 ?? new Date().toISOString().slice(0, 10))
+  const [작업일자, set작업일자] = useState(() => default날짜 ?? todayKST())
   const [성과금액, set성과금액] = useState<number | null>(null)
   const [누계성과금액, set누계성과금액] = useState<number>(0)
   const [최근작업일자, set최근작업일자] = useState<string | null>(null)
@@ -264,7 +265,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     set누계성과금액((prev) => prev + (성과금액 ?? 0))
     set최근작업일자(작업일자)
     set성과금액(null)
-    set작업일자(new Date().toISOString().slice(0, 10))
+    set작업일자(todayKST())
     set작업내용('')
     set담당공무Id(null)
   }
