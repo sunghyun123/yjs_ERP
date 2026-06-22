@@ -16,6 +16,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -83,6 +84,20 @@ function SortHeader({
       )}
     </button>
   )
+}
+
+// ── 금액 계산 헬퍼 (컬럼 · 합계에서 공용) ──────────────────────────────────
+function 하도적용수주금액(row: 수주행): number {
+  const 공급가 = row.수주금액_공급가 ?? 0
+  const 보험료율 = row.보험료율 ?? null
+  const 하도전용율 = row.하도전용율 ?? null
+  if (보험료율 === null && 하도전용율 === null) return 공급가
+  const 보험료제외 = 보험료율 !== null ? 공급가 * (1 - 보험료율) : 공급가
+  return 하도전용율 !== null ? 보험료제외 * 하도전용율 : 보험료제외
+}
+
+function 누적기성액(row: 수주행): number {
+  return row.기성.reduce((s, g) => s + (g.기성액_공급가 ?? 0), 0)
 }
 
 // ── 컬럼 정의 ─────────────────────────────────────────────────────────────
@@ -166,14 +181,7 @@ export function OrdersTable({
       ),
     }),
     ch.accessor(
-      (row) => {
-        const 공급가 = row.수주금액_공급가 ?? 0
-        const 보험료율 = row.보험료율 ?? null
-        const 하도전용율 = row.하도전용율 ?? null
-        if (보험료율 === null && 하도전용율 === null) return 공급가
-        const 보험료제외 = 보험료율 !== null ? 공급가 * (1 - 보험료율) : 공급가
-        return 하도전용율 !== null ? 보험료제외 * 하도전용율 : 보험료제외
-      },
+      (row) => 하도적용수주금액(row),
       {
         id: '수주금액_하도적용',
         header: ({ column }) => (
@@ -190,7 +198,7 @@ export function OrdersTable({
       },
     ),
     ch.accessor(
-      (row) => row.기성.reduce((s, g) => s + (g.기성액_공급가 ?? 0), 0),
+      (row) => 누적기성액(row),
       {
         id: '누적기성액',
         header: ({ column }) => (
@@ -265,6 +273,14 @@ export function OrdersTable({
   })
 
   const total = filteredData.length
+  const 수주금액합계 = useMemo(
+    () => filteredData.reduce((s, row) => s + 하도적용수주금액(row), 0),
+    [filteredData],
+  )
+  const 누적기성액합계 = useMemo(
+    () => filteredData.reduce((s, row) => s + 누적기성액(row), 0),
+    [filteredData],
+  )
   const { pageIndex, pageSize } = pagination
   const rangeStart = total === 0 ? 0 : pageIndex * pageSize + 1
   const rangeEnd = Math.min((pageIndex + 1) * pageSize, total)
@@ -399,6 +415,25 @@ export function OrdersTable({
               ))
             )}
           </TableBody>
+          {total > 0 && (
+            <TableFooter>
+              <TableRow className="bg-gray-50/80 hover:bg-gray-50/80 border-t border-gray-200">
+                <TableCell colSpan={3} className="px-3 py-2.5 text-sm font-bold text-gray-600">
+                  합계 ({total.toLocaleString('ko-KR')}건)
+                  {검색어.trim() && data.length !== total && (
+                    <span className="font-normal text-gray-400 ml-1">/ 전체 {data.length.toLocaleString('ko-KR')}건</span>
+                  )}
+                </TableCell>
+                <TableCell className="px-3 py-2.5 text-right font-bold text-[#1e2d5a] tabular-nums">
+                  {formatKRW(수주금액합계)}
+                </TableCell>
+                <TableCell className="px-3 py-2.5 text-right font-bold text-[#1e2d5a] tabular-nums">
+                  {formatKRW(누적기성액합계)}
+                </TableCell>
+                <TableCell colSpan={3} />
+              </TableRow>
+            </TableFooter>
+          )}
         </Table>
 
         {/* 페이지네이션 */}

@@ -1,57 +1,6 @@
 # 영전사 ERP 개발 진행 기록
 
-> 최종 업데이트: 2026-06-18 (성과금액 일별 증분 정본화 — 매출손익 정합성 복구)
-
----
-
-## 2026-06-18 성과금액 일별 증분 정본화 — 매출손익 정합성 복구
-
-- **배경**: 공사이력을 일별 증분(`Δ달성률 × 하도적용금액`)으로 재마이그레이션하면서, 읽기 측에 남아 있던 `isMonthEndDate()` 월말 필터가 일별 증분 중 월말 행(약 18%)만 골라 합산 → 성과금액이 82% 누락(실제 1,952M인데 349M만 표시).
-- **수정**: 월말 필터를 전부 제거하고 기간 내 *전체 행*을 합산하도록 통일.
-  - `sales/page.tsx`, `_components/ProfitChartSection.tsx`, `_lib/revenue.ts`(`sumMonthlyRevenue`)에서 `isMonthEndDate` 제거. `_lib/monthly-kpi.ts`는 주석만 정리(전월 동기간 환산 로직 유지).
-  - `scripts/migrate-공사이력.ts`도 월말 스킵/예약 로직 제거 — 공사현황.xlsx 단일 정본을 월말까지 동일하게 일별 증분으로 적재.
-  - 더 이상 쓰지 않는 `scripts/migrate-매출손익.ts` 삭제(이중적재 사고의 원인 스크립트).
-- **검증**: 신ERP 누적 성과 1,952,265,227원으로 복구, `check-신구비교.ts` 전체-행 합산값과 일치. 구ERP 매출손익.xlsx와의 잔여 약 7.7M 차이는 **신ERP 버그 아님** — 구ERP 월별 인식 방식 차이(연도경계 누적 재인식, 연초 증분 귀속, 일부 단월 과다적재)에서 발생. 신ERP 하도적용금액은 수주대장조회.xlsx `수주금액(하도적용)`과 원 단위 일치.
-- **동기화 방침**: 배포 전까지 구ERP 값 반영은 수기 전사 금지(이중적재 회귀 위험). 공사현황.xlsx 최신본을 받아 공사이력 전체 삭제 후 `migrate-공사이력.ts` 재실행 → `check-신구비교.ts`로 대조.
-- 검증: `npx tsc --noEmit` 통과.
-
----
-
-## 2026-06-18 Dashboard 월간 KPI API 연동
-
-- 홈 KPI 카드 계산 로직을 `src/app/(dashboard)/_lib/monthly-kpi.ts`로 분리해 UI와 외부 API가 같은 성과금액/투입금액/손익 계산을 재사용하도록 변경.
-- `GET /api/kpi/monthly-performance` 추가: `DASHBOARD_API_KEY` Bearer 인증 후 서비스 롤 Supabase 클라이언트로 월간 KPI JSON 반환.
-- API 응답은 Dashboard 프록시가 바로 쓰기 좋게 `label`, `amounts`, `formatted`, `updatedAt` 구조로 제공.
-- 기존 `KpiCards.tsx`는 분리된 KPI 계산 함수를 호출하도록 정리해 화면 표시값과 API 값의 불일치 가능성 제거.
-- Dashboard `home.html`의 월별 총 공정률 영역에서 ERP 월간 성과금액이 정상 표시되는 것 확인.
-- 검증: `npm run build` 통과.
-
----
-
-## 2026-06-18 투입실적 상세 구조 + 관리자 권한 보호
-
-- `투입실적상세` 테이블 마이그레이션 추가: `투입실적_id + 투입구분` 단위로 주간/야간 수량 저장, 기존 `투입실적` 고정 컬럼은 호환용으로 유지.
-- 기존 고정 컬럼(`상용직`, `일용직`, `모범신호수`, `6W`, `3W`, `덤프15T`, `크레인`, `물청소차`, `MCM`, `접속`)을 `투입실적상세`로 백필하는 SQL 포함. `재료비/인`은 별도 상세 row를 만들지 않고 상용직 수량 기반 계산 정책 유지.
-- 투입실적 입력/현황을 공사단가의 `투입구분` 목록 기반 동적 행으로 전환. 새 단가 항목 추가 시 코드 수정 없이 입력/수정 화면에 표시.
-- 매출손익, 홈 KPI, 손익 차트의 투입금액 계산을 상세 기반으로 전환하되, 기존 데이터 호환을 위해 레거시 고정 컬럼 fallback 유지.
-- `/admin/*` 전체를 `whitelist.role = 'admin'` 사용자만 접근 가능하도록 서버 layout 보호 추가. 사이드바 관리자 메뉴도 admin에게만 표시.
-- 공사단가 관리(`/admin/rates`)는 관리자 전용 CRUD로 유지하고, 수정/삭제 시 기존 투입실적 금액이 재계산될 수 있다는 안내와 삭제 확인창 추가.
-- 운영 DB 백필 확인: `select count(*) from "투입실적상세";` 결과 3,530건, 신규 `test` 투입구분 저장 확인.
-- 검증: `npm run build` 통과, `npm test` 10개 통과.
-
----
-
-## 2026-06-17 백업/포트폴리오 증거 체계
-
-- 원천 Excel 복구용 private 백업 체계 추가: `npm run backup:data`가 `backups/private/<timestamp>-data-backup/<yyyy-mm-dd>.backup.xlsx` 단일 workbook 생성.
-- 일일 백업 대상은 `공사현황`, `매출손익`, `수주대장조회`, `투입실적현황` 4개 시트로 제한. `거래처 데이터.xlsx`는 정적 reference 성격이라 daily backup에서 제외하고 manifest에 제외 사유 기록.
-- Windows 작업 스케줄러 `YJS ERP Daily Data Backup` 등록: 매일 02:00 `npm run backup:data` 실행.
-- 최신 private 백업 위치 추적용 `backups/private/LATEST_BACKUP.txt` 생성.
-- public portfolio용 합성 데이터 생성 스크립트 추가: `npm run backup:portfolio`가 실제 원본을 읽지 않고 `backups/portfolio/generated/<yyyy-mm-dd>.portfolio-sample.xlsx` 생성.
-- 백업/검증/포트폴리오 문서 추가: `docs/backup-inventory.md`, `docs/data-validation-report-template.md`, `docs/anonymized-sample-data-plan.md`, `docs/portfolio-case-study.md`.
-- PostHog 제품 분석 기반 포트폴리오 증거 체계 초안 구현: production-only 초기화, URL 원문 미전송, hashed distinctId, allowlist property sanitizer, manual page view capture, Excel export event capture.
-- 문서화: `docs/posthog-analytics.md`. 당장은 운영 수집을 보류하고, 필요 시 env 설정 후 이어서 사용.
-- 검증: `npm test` 10개 통과, `npx tsc --noEmit` 통과.
+> 최종 업데이트: 2026-06-22 (수주대장·투입실적 현황 검색 금액 합계 footer)
 
 ---
 
@@ -113,6 +62,8 @@
 | 52 | 상세 기반 투입금액/손익 계산 + 관리자 권한 보호 — `calc투입금액상세` 추가, 기존 `calc합계` 호출부는 상세 우선·레거시 fallback으로 호환. 매출손익/KPI/차트 반영. `/admin/*`는 `whitelist.role = 'admin'`만 접근, 공사단가 CRUD는 관리자 전용으로 복구 | ✅ |
 | 53 | Dashboard 월간 KPI API — 홈 KPI 계산을 `monthly-kpi.ts`로 분리하고 `GET /api/kpi/monthly-performance` Bearer 인증 API 추가. Dashboard 홈의 월별 총 공정률 영역이 ERP 월간 성과금액을 실시간 반영하도록 연동 확인 | ✅ |
 | 54 | 성과금액 일별 증분 정본화 — 읽기 측 `isMonthEndDate()` 월말 필터 제거(성과 82% 누락 버그), 전체 행 합산으로 통일(sales·ProfitChart·revenue·monthly-kpi). `migrate-공사이력.ts` 월말 스킵 제거, `migrate-매출손익.ts` 삭제. 신ERP 1,952,265,227원 복구, 구ERP 잔여 차이는 인식 방식 차이로 확인(신ERP 정확) | ✅ |
+| 55 | 수주대장·투입실적 현황 검색 금액 합계 footer — 공사이력 현황탭 패턴 통일. 검색·필터된 전체 행 합산(페이지 무관, 상단 건수와 일치), `합계 (N건) / 전체 M건` 표기. 수주대장=수주금액(하도적용)·누적기성액, 투입실적=투입금액·합계. 계산 로직 헬퍼 추출로 컬럼·합계 공유 | ✅ |
+| 56 | 백업/포트폴리오 증거 체계 — `npm run backup:data`(매일 02:00 작업 스케줄러, 4개 시트 단일 workbook)·`npm run backup:portfolio`(합성 데이터) 추가, 백업/검증/포트폴리오 문서화. PostHog 제품 분석 초안(production-only·hashed distinctId·allowlist sanitizer·수동 page view/export 캡처), 운영 수집은 보류 | ✅ |
 
 ---
 

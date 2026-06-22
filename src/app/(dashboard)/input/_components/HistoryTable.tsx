@@ -13,7 +13,7 @@ import {
   type PaginationState,
 } from '@tanstack/react-table'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
@@ -339,6 +339,16 @@ export function HistoryTable({
     showToast(true, '삭제되었습니다')
   }
 
+  const 투입금액합계 = useMemo(
+    () => filteredData.reduce((s, row) => s + calc투입금액상세(row, getRow상세(row), 단가목록), 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredData, 단가목록, 투입구분목록],
+  )
+  const 합계합계 = useMemo(
+    () => filteredData.reduce((s, row) => s + calc합계(row, 단가목록), 0),
+    [filteredData, 단가목록],
+  )
+
   const { pageIndex, pageSize } = pagination
   const total = filteredData.length
   const rangeStart = total === 0 ? 0 : pageIndex * pageSize + 1
@@ -421,6 +431,24 @@ export function HistoryTable({
               ))
             )}
           </TableBody>
+          {total > 0 && (
+            <TableFooter>
+              <TableRow className="bg-gray-50/80 hover:bg-gray-50/80 border-t border-gray-200">
+                <TableCell colSpan={2} className="px-3 py-2.5 text-sm font-bold text-gray-600">
+                  합계 ({total.toLocaleString('ko-KR')}건)
+                  {검색어.trim() && data.length !== total && (
+                    <span className="font-normal text-gray-400 ml-1">/ 전체 {data.length.toLocaleString('ko-KR')}건</span>
+                  )}
+                </TableCell>
+                <TableCell className="px-3 py-2.5 text-right font-bold text-[#1e2d5a] tabular-nums">
+                  {formatKRW(투입금액합계)}
+                </TableCell>
+                <TableCell className="px-3 py-2.5 text-right font-bold text-[#1e2d5a] tabular-nums">
+                  {formatKRW(합계합계)}
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          )}
         </Table>
         <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
           <p className="text-sm text-gray-500 tabular-nums">
