@@ -67,6 +67,7 @@
 | 57 | 안정성 개선 5종 (최적화 감사, `aac5811`) — ①검색어 PostgREST `.or()` 값 quote+escape(예약문자로 필터 깨짐/인젝션 방지) ②공무 Server Action DB 에러 미확인 → throw(조용한 실패·거짓 success 로그 제거) ③매출/대시보드 쿼리 실패 시 0 폴백 대신 에러 표면화 ④잘못된 `?year=`(NaN) 폴백 가드 ⑤`dashboard-sync` N+1 insert → 단일 배치 upsert(`onConflict: 지중no,진행날짜`) | ✅ |
 | 58 | 날짜 KST 고정 (`74048af`) — `src/lib/kst.ts`(todayKST·formatKST·partsKST, Asia/Seoul 고정) 추가. 입력/공무/단가/공정 폼의 `today()` 기본값·`formatDate`·`monthly-kpi` 기간 계산을 KST로 통일해 UTC 변환 하루 밀림 버그 제거(서버 UTC 런타임 포함). 함정: `week.ts`(UTC Date 전용)·수정일/updatedAt 타임스탬프는 의도적으로 ISO 유지 | ✅ |
 | 59 | RLS 화이트리스트 강제 (방향 A, `c3d0abf`, **DB 적용 완료**) — 모든 업무 테이블 정책이 `using(true)`라 anon key+세션으로 앱 우회 직접 호출 시 전 테이블 읽기/변조 가능하던 구멍 차단. `is_whitelisted()` SECURITY DEFINER 함수가 `auth.identities`(GoTrue 관리·위조 불가)에서 kakao_id 읽어 whitelist 대조 → 14개 업무 테이블 정책을 `(select is_whitelisted())`로 교체. 비상 롤백 스크립트 동봉. 함정: `user_metadata`는 사용자 위조 가능→RLS 신뢰 금지, `whitelist` 테이블 select 정책은 유지(콜백/레이아웃 본인 조회), service role 경로는 RLS 우회라 무영향. 플랜=`docs/superpowers/plans/2026-06-22-rls-whitelist-enforcement.md` | ✅ |
+| 60 | RLS admin 쓰기 제한 (방향 A Task 5, `0e803fb`, **DB 적용 완료**) — `is_admin()`(role='admin', `auth.identities` 기준) 함수 추가, `거래처`·`공사단가`의 insert/update/delete를 `_admin` 정책으로 교체(읽기 `_whitelisted` 유지). 화이트리스트 직원이라도 단가·거래처 쓰기는 admin만 → 앱 레이어(`/admin/*` admin 전용)에 DB 레벨 방어 한 겹 추가. is_admin() true/false 검증 통과 | ✅ |
 
 ---
 
