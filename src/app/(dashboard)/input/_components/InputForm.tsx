@@ -421,7 +421,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
                             step="0.01"
                             min="0"
                             max="99"
-                            value={row.주간수량}
+                            value={row.주간수량 === 0 ? '' : row.주간수량}
                             onChange={(e) => set상세값(투입구분, '주간수량', Number(e.target.value))}
                             className={cn(
                               'w-[68px] h-10 text-center rounded-md border text-sm tabular-nums outline-none transition-colors',
@@ -437,7 +437,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
                             step="0.01"
                             min="0"
                             max="99"
-                            value={row.야간수량}
+                            value={row.야간수량 === 0 ? '' : row.야간수량}
                             onChange={(e) => set상세값(투입구분, '야간수량', Number(e.target.value))}
                             className={cn(
                               'w-[68px] h-10 text-center rounded-md border text-sm tabular-nums outline-none transition-colors',
