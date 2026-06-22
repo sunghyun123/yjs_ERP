@@ -18,6 +18,10 @@ export async function ProfitChartSection() {
     supabase.from('공사이력').select('작업일자, 성과금액').gte('작업일자', yearStart).lt('작업일자', yearEnd),
   ])
 
+  // 쿼리 실패 시 0으로 폴백돼 손익이 0처럼 보이는 것을 막는다.
+  const firstError = 투입실적결과.error ?? 단가결과.error ?? 공사이력결과.error
+  if (firstError) throw new Error(`월별 매출손익 조회 실패: ${firstError.message}`)
+
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
   const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적With상세[]
 

@@ -18,11 +18,14 @@ export async function UnregisteredProjects() {
   const supabase = await createClient()
 
   // 미삭제 항목 전체
-  const { data: pending } = await supabase
+  const { data: pending, error: pendingError } = await supabase
     .from('dashboard_공사')
     .select('id, 지중no, 공사명, 진행날짜')
     .eq('삭제됨', false)
     .order('진행날짜', { ascending: true })
+
+  // 조회 실패를 "미입력 공사 없음"으로 오인하지 않도록 에러를 던진다.
+  if (pendingError) throw new Error(`미입력 공사 조회 실패: ${pendingError.message}`)
 
   if (!pending || pending.length === 0) {
     return (

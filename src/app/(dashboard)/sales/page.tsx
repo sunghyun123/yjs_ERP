@@ -15,7 +15,12 @@ export default async function SalesPage({
   searchParams: Promise<{ year?: string }>
 }) {
   const { year: yearParam } = await searchParams
-  const year = parseInt(yearParam ?? String(new Date().getFullYear()), 10)
+  const parsedYear = parseInt(yearParam ?? '', 10)
+  // ?year=abc 같은 잘못된 입력이면 NaN → 날짜 범위가 깨지므로 올해로 폴백
+  const year =
+    Number.isFinite(parsedYear) && parsedYear >= 2000 && parsedYear <= 2100
+      ? parsedYear
+      : new Date().getFullYear()
   const yearStart = `${year}-01-01`
   const yearEnd = `${year + 1}-01-01`
 
@@ -31,6 +36,11 @@ export default async function SalesPage({
       .lt('작업일자', yearEnd),
     supabase.from('수주').select('id, 지중no, 공사명').order('지중no'),
   ])
+
+  // 쿼리 실패 시 0/빈 데이터를 정상처럼 표시하지 않도록 명시적으로 에러를 던진다.
+  const firstError =
+    투입실적결과.error ?? 단가결과.error ?? 공사이력결과.error ?? 수주결과.error
+  if (firstError) throw new Error(`매출손익 데이터 조회 실패: ${firstError.message}`)
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
   const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적With상세[]

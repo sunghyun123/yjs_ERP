@@ -169,10 +169,13 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
     if (!q.trim()) { set검색결과([]); set드롭다운(false); return }
     검색타이머.current = setTimeout(async () => {
       const supabase = createClient()
+      // PostgREST or() 필터는 값에 , . () 같은 예약문자가 들어가면 파싱이 깨진다.
+      // 값을 큰따옴표로 감싸고 백슬래시·큰따옴표만 이스케이프해 안전하게 전달한다.
+      const safe = q.replace(/[\\"]/g, (m) => `\\${m}`)
       const { data: raw } = await supabase
         .from('수주')
         .select('id, 지중no, 공사명')
-        .or(`지중no.ilike.%${q}%,공사명.ilike.%${q}%`)
+        .or(`지중no.ilike."%${safe}%",공사명.ilike."%${safe}%"`)
         .order('지중no', { ascending: false })
         .limit(10)
       const results = (raw ?? []) as 수주검색결과[]
