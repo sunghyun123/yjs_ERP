@@ -1,6 +1,6 @@
 # 영전사 ERP 개발 진행 기록
 
-> 최종 업데이트: 2026-06-22 (수주대장·투입실적 현황 검색 금액 합계 footer)
+> 최종 업데이트: 2026-06-22 (안정성·타임존·RLS 보안 강화 — 최적화 감사 후속)
 
 ---
 
@@ -64,6 +64,9 @@
 | 54 | 성과금액 일별 증분 정본화 — 읽기 측 `isMonthEndDate()` 월말 필터 제거(성과 82% 누락 버그), 전체 행 합산으로 통일(sales·ProfitChart·revenue·monthly-kpi). `migrate-공사이력.ts` 월말 스킵 제거, `migrate-매출손익.ts` 삭제. 신ERP 1,952,265,227원 복구, 구ERP 잔여 차이는 인식 방식 차이로 확인(신ERP 정확) | ✅ |
 | 55 | 수주대장·투입실적 현황 검색 금액 합계 footer — 공사이력 현황탭 패턴 통일. 검색·필터된 전체 행 합산(페이지 무관, 상단 건수와 일치), `합계 (N건) / 전체 M건` 표기. 수주대장=수주금액(하도적용)·누적기성액, 투입실적=투입금액·합계. 계산 로직 헬퍼 추출로 컬럼·합계 공유 | ✅ |
 | 56 | 백업/포트폴리오 증거 체계 — `npm run backup:data`(매일 02:00 작업 스케줄러, 4개 시트 단일 workbook)·`npm run backup:portfolio`(합성 데이터) 추가, 백업/검증/포트폴리오 문서화. PostHog 제품 분석 초안(production-only·hashed distinctId·allowlist sanitizer·수동 page view/export 캡처), 운영 수집은 보류 | ✅ |
+| 57 | 안정성 개선 5종 (최적화 감사, `aac5811`) — ①검색어 PostgREST `.or()` 값 quote+escape(예약문자로 필터 깨짐/인젝션 방지) ②공무 Server Action DB 에러 미확인 → throw(조용한 실패·거짓 success 로그 제거) ③매출/대시보드 쿼리 실패 시 0 폴백 대신 에러 표면화 ④잘못된 `?year=`(NaN) 폴백 가드 ⑤`dashboard-sync` N+1 insert → 단일 배치 upsert(`onConflict: 지중no,진행날짜`) | ✅ |
+| 58 | 날짜 KST 고정 (`74048af`) — `src/lib/kst.ts`(todayKST·formatKST·partsKST, Asia/Seoul 고정) 추가. 입력/공무/단가/공정 폼의 `today()` 기본값·`formatDate`·`monthly-kpi` 기간 계산을 KST로 통일해 UTC 변환 하루 밀림 버그 제거(서버 UTC 런타임 포함). 함정: `week.ts`(UTC Date 전용)·수정일/updatedAt 타임스탬프는 의도적으로 ISO 유지 | ✅ |
+| 59 | RLS 화이트리스트 강제 (방향 A, `c3d0abf`, **DB 적용 완료**) — 모든 업무 테이블 정책이 `using(true)`라 anon key+세션으로 앱 우회 직접 호출 시 전 테이블 읽기/변조 가능하던 구멍 차단. `is_whitelisted()` SECURITY DEFINER 함수가 `auth.identities`(GoTrue 관리·위조 불가)에서 kakao_id 읽어 whitelist 대조 → 14개 업무 테이블 정책을 `(select is_whitelisted())`로 교체. 비상 롤백 스크립트 동봉. 함정: `user_metadata`는 사용자 위조 가능→RLS 신뢰 금지, `whitelist` 테이블 select 정책은 유지(콜백/레이아웃 본인 조회), service role 경로는 RLS 우회라 무영향. 플랜=`docs/superpowers/plans/2026-06-22-rls-whitelist-enforcement.md` | ✅ |
 
 ---
 
