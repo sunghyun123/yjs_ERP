@@ -240,6 +240,7 @@ export type Database = {
           성과금액: number | null
           작업내용: string | null
           담당공무_id: number | null
+          준공정산: boolean
         }
         Insert: {
           id?: number
@@ -248,6 +249,7 @@ export type Database = {
           성과금액?: number | null
           작업내용?: string | null
           담당공무_id?: number | null
+          준공정산?: boolean
         }
         Update: {
           id?: number
@@ -256,6 +258,7 @@ export type Database = {
           성과금액?: number | null
           작업내용?: string | null
           담당공무_id?: number | null
+          준공정산?: boolean
         }
       }
       투입실적: {
@@ -384,6 +387,11 @@ export type Database = {
           야간수량?: number
           생성일?: string
         }
+      }
+      공사현장: {
+        Row: { id: number; 현장명: string; 생성일: string }
+        Insert: { id?: number; 현장명: string; 생성일?: string }
+        Update: { id?: number; 현장명?: string; 생성일?: string }
       }
       시스템설정: {
         Row: {
@@ -522,6 +530,7 @@ export type 투입실적Row    = Database['public']['Tables']['투입실적']['R
 export type 투입실적상세Row = Database['public']['Tables']['투입실적상세']['Row']
 export type 시스템설정Row  = Database['public']['Tables']['시스템설정']['Row']
 export type 계획금액Row    = Database['public']['Tables']['계획금액']['Row']
+export type 공사현장Row    = Database['public']['Tables']['공사현장']['Row']
 export type dashboard_공사Row = Database['public']['Tables']['dashboard_공사']['Row']
 export type whitelistRow = Database['public']['Tables']['whitelist']['Row']
 
