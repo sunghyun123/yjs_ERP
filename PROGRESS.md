@@ -1,6 +1,6 @@
 # 영전사 ERP 개발 진행 기록
 
-> 최종 업데이트: 2026-06-22 (안정성·타임존·RLS 보안 강화 — 최적화 감사 후속)
+> 최종 업데이트: 2026-06-23 (에러 모니터링 도입 — 공무팀 7명 파일럿 배포)
 
 ---
 
@@ -68,6 +68,7 @@
 | 58 | 날짜 KST 고정 (`74048af`) — `src/lib/kst.ts`(todayKST·formatKST·partsKST, Asia/Seoul 고정) 추가. 입력/공무/단가/공정 폼의 `today()` 기본값·`formatDate`·`monthly-kpi` 기간 계산을 KST로 통일해 UTC 변환 하루 밀림 버그 제거(서버 UTC 런타임 포함). 함정: `week.ts`(UTC Date 전용)·수정일/updatedAt 타임스탬프는 의도적으로 ISO 유지 | ✅ |
 | 59 | RLS 화이트리스트 강제 (방향 A, `c3d0abf`, **DB 적용 완료**) — 모든 업무 테이블 정책이 `using(true)`라 anon key+세션으로 앱 우회 직접 호출 시 전 테이블 읽기/변조 가능하던 구멍 차단. `is_whitelisted()` SECURITY DEFINER 함수가 `auth.identities`(GoTrue 관리·위조 불가)에서 kakao_id 읽어 whitelist 대조 → 14개 업무 테이블 정책을 `(select is_whitelisted())`로 교체. 비상 롤백 스크립트 동봉. 함정: `user_metadata`는 사용자 위조 가능→RLS 신뢰 금지, `whitelist` 테이블 select 정책은 유지(콜백/레이아웃 본인 조회), service role 경로는 RLS 우회라 무영향. 플랜=`docs/superpowers/plans/2026-06-22-rls-whitelist-enforcement.md` | ✅ |
 | 60 | RLS admin 쓰기 제한 (방향 A Task 5, `0e803fb`, **DB 적용 완료**) — `is_admin()`(role='admin', `auth.identities` 기준) 함수 추가, `거래처`·`공사단가`의 insert/update/delete를 `_admin` 정책으로 교체(읽기 `_whitelisted` 유지). 화이트리스트 직원이라도 단가·거래처 쓰기는 admin만 → 앱 레이어(`/admin/*` admin 전용)에 DB 레벨 방어 한 겹 추가. is_admin() true/false 검증 통과 | ✅ |
+| 61 | 에러 모니터링 도입 (`bc4af3d`) — 기존 PostHog 인프라 재사용(신규 도구 0). 3계층 캡처: ①`instrumentation-client.ts` `capture_exceptions:true`(클라 미처리 예외/Promise 거부) ②`instrumentation.ts` 신규 `onRequestError`(서버 컴포넌트·라우트·서버액션, posthog-node, Edge 런타임 가드) ③`global-error.tsx` 신규(경계가 삼키는 React 렌더 에러 명시 캡처). `safe-properties.ts`에 `$exception` 예외 통로 격리 — 분석 이벤트 허용목록 정책은 불변, 에러만 메시지·스택 전체 보존(사내 한정 환경 PII 정책). **운영 검증**: 프로덕션 배포 후 의도적 에러(`배포 검증`) 발생 → PostHog `$exception` 도착 확인(클라 경로). 미검증=서버·렌더 경로, 미설정=소스맵 업로드(스택 압축 상태) | ✅ |
 
 ---
 
