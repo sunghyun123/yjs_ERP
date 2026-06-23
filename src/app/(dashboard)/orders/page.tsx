@@ -5,7 +5,7 @@ import { OrdersTable } from './_components/OrdersTable'
 export default async function 수주대장Page() {
   const supabase = await createClient()
 
-  const [{ data }, { data: 거래처data }, { data: 공무담당자raw }] = await Promise.all([
+  const [{ data }, { data: 거래처data }, { data: 공무담당자raw }, { data: 공사현장raw }] = await Promise.all([
     supabase
       .from('수주')
       .select(`
@@ -28,11 +28,16 @@ export default async function 수주대장Page() {
       .from('공무담당자')
       .select('id, 이름')
       .order('이름'),
+    supabase
+      .from('공사현장')
+      .select('현장명')
+      .order('현장명'),
   ])
 
   const orders = (data ?? []) as 수주행[]
   const 거래처목록 = (거래처data ?? []) as 거래처목록항목[]
   const 공무담당자목록 = (공무담당자raw ?? []) as { id: number; 이름: string }[]
+  const 공사현장목록 = ((공사현장raw ?? []) as { 현장명: string }[]).map((r) => r.현장명)
 
   return (
     <div className="p-4 md:p-6 max-w-screen-2xl mx-auto">
@@ -44,7 +49,7 @@ export default async function 수주대장Page() {
           전체 {orders.length.toLocaleString('ko-KR')}건
         </p>
       </div>
-      <OrdersTable data={orders} 거래처목록={거래처목록} 공무담당자목록={공무담당자목록} />
+      <OrdersTable data={orders} 거래처목록={거래처목록} 공무담당자목록={공무담당자목록} 공사현장목록={공사현장목록} />
     </div>
   )
 }

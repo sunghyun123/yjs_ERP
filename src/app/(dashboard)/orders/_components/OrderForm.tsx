@@ -64,6 +64,7 @@ type Props = {
   row?: 수주행
   거래처목록: 거래처목록항목[]
   공무담당자목록: 공무담당자목록항목[]
+  공사현장목록: string[]
   onSuccess: () => void
 }
 
@@ -269,7 +270,7 @@ function Field({ label, required, children, error }: {
 }
 
 // ── 메인 컴포넌트 ───────────────────────────────────────────────────────────
-export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, onSuccess }: Props) {
+export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, 공사현장목록, onSuccess }: Props) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'info' | '기성' | '준공'>('info')
 
@@ -661,7 +662,28 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, o
                   />
                 </Field>
                 <Field label="공사현장">
-                  <Input className="h-9 text-sm" placeholder="광명" {...register('공사현장')} />
+                  <Controller
+                    name="공사현장"
+                    control={control}
+                    render={({ field }) => {
+                      // edit 모드에서 과거 자유입력 값이 목록에 없으면 임시 옵션으로 노출
+                      const opts = field.value && !공사현장목록.includes(field.value)
+                        ? [field.value, ...공사현장목록]
+                        : 공사현장목록
+                      return (
+                        <Select
+                          value={field.value || '__none__'}
+                          onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}
+                        >
+                          <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="선택" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">—</SelectItem>
+                            {opts.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )
+                    }}
+                  />
                 </Field>
               </div>
 
