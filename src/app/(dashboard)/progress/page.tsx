@@ -32,6 +32,7 @@ export default async function Page({
   const { data: 수주raw } = await supabase
     .from('수주')
     .select('id, 지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율')
+    .eq('준공여부', false)
     .order('지중no', { ascending: true })
   const 수주목록 = (수주raw ?? []) as 수주목록항목[]
 
