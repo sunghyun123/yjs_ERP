@@ -461,6 +461,35 @@ export type Database = {
         Insert: { id?: number; 이름: string; 생성일?: string }
         Update: { id?: number; 이름?: string; 생성일?: string }
       }
+      audit_log: {
+        Row: {
+          id: number
+          table_name: string
+          operation: 'INSERT' | 'UPDATE' | 'DELETE'
+          row_id: number | null
+          old_data: Record<string, unknown> | null
+          new_data: Record<string, unknown> | null
+          changed_at: string
+        }
+        Insert: {
+          id?: number
+          table_name: string
+          operation: 'INSERT' | 'UPDATE' | 'DELETE'
+          row_id?: number | null
+          old_data?: Record<string, unknown> | null
+          new_data?: Record<string, unknown> | null
+          changed_at?: string
+        }
+        Update: {
+          id?: number
+          table_name?: string
+          operation?: 'INSERT' | 'UPDATE' | 'DELETE'
+          row_id?: number | null
+          old_data?: Record<string, unknown> | null
+          new_data?: Record<string, unknown> | null
+          changed_at?: string
+        }
+      }
       공무_월간계획: {
         Row: { id: number; 공무_id: number; year: number; month: number; 구분: '공사' | '공무'; 월간계획금액: number }
         Insert: { id?: number; 공무_id: number; year: number; month: number; 구분: '공사' | '공무'; 월간계획금액?: number }
