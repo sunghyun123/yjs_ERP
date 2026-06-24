@@ -6,7 +6,7 @@ export const metadata = { title: '공사현장 관리 | 영전사 ERP' }
 
 export default async function Page() {
   const supabase = await createClient()
-  const { data } = await supabase.from('공사현장').select().order('현장명')
+  const { data } = await supabase.from('공사현장').select().order('id')  // 생성순(드롭다운과 동일)
   const rows = (data ?? []) as 공사현장Row[]
   return (
     <div className="p-4 md:p-6">

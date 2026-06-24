@@ -23,9 +23,6 @@ export function SitesClient({ initialRows }: { initialRows: 공사현장Row[] })
     toastTimerRef.current = setTimeout(() => setToast(null), 3000)
   }
 
-  const sortRows = (list: 공사현장Row[]) =>
-    [...list].sort((a, b) => a.현장명.localeCompare(b.현장명, 'ko'))
-
   const handleAdd = async () => {
     const name = 현장명.trim()
     if (!name) { showToast(false, '현장명을 입력하세요.'); return }
@@ -35,7 +32,7 @@ export function SitesClient({ initialRows }: { initialRows: 공사현장Row[] })
       .insert({ 현장명: name }).select().single()
     setSaving(false)
     if (error) { showToast(false, '추가에 실패했습니다.'); return }
-    setRows((prev) => sortRows([...prev, data as 공사현장Row]))
+    setRows((prev) => [...prev, data as 공사현장Row])  // 생성순: 새 현장은 맨 뒤
     set현장명('')
     showToast(true, '추가되었습니다.')
   }

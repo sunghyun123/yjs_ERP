@@ -31,7 +31,7 @@ export default async function 수주대장Page() {
     supabase
       .from('공사현장')
       .select('현장명')
-      .order('현장명'),
+      .order('id'),  // 생성순: 관리자가 추가한 순서대로(기타 등 맨 뒤 고정)
   ])
 
   const orders = (data ?? []) as 수주행[]
