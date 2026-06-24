@@ -480,10 +480,12 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
           <p className="text-2xl font-bold text-amber-500">
             {delta달성율 != null ? `+${delta달성율.toFixed(2)}%` : '—'}
           </p>
-          {delta달성율 != null && 하도적용금액 != null && (
-            <p className="text-[10px] text-gray-400 mt-1">
-              {formatKRW(성과금액!)} ÷ {formatKRW(하도적용금액)} × 100
-            </p>
+          {/* 이번 증분 금액: % 입력 시 보고서에 복붙할 환산 금액을 또렷이 노출(원·% 모드 공통) */}
+          {성과금액 != null && (
+            <div className="mt-2 pt-2 border-t border-gray-100">
+              <p className="text-[10px] text-gray-400 mb-0.5">이번 증분 금액</p>
+              <p className="text-base font-semibold text-gray-800">{formatKRW(성과금액)}</p>
+            </div>
           )}
         </div>
 
