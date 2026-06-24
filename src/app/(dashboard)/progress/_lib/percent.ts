@@ -12,3 +12,12 @@ export function wonToPercent(won: number, base: number | null): number | null {
   if (base == null || base <= 0) return null
   return (won / base) * 100
 }
+
+// 누적 목표 달성률(%)을 저장 정본인 "이번 증분(원)"으로 환산한다.
+// 증분 = 누적목표원 − 현재누계. 목표 < 누계면 음수(하향 정정)를 그대로 반환한다(현실 수용).
+// base 없거나 0 이하, pct 가 유한수 아니면 환산 불가 → null.
+export function 누적목표를증분으로(누적목표pct: number, base: number | null, 누계: number): number | null {
+  const 누적목표원 = percentToWon(누적목표pct, base)
+  if (누적목표원 == null) return null
+  return 누적목표원 - 누계
+}

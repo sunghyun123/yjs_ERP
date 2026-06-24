@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { percentToWon, wonToPercent } from './percent'
+import { percentToWon, wonToPercent, 누적목표를증분으로 } from './percent'
 
 describe('percentToWon', () => {
   it('입력% × base ÷ 100 을 반올림해 원으로 환산한다', () => {
@@ -41,5 +41,36 @@ describe('라운드트립 (정본=원, % 표시 떨림이 정본을 훼손하지
     const won = 262_056
     const pct = wonToPercent(won, base)!
     expect(percentToWon(pct, base)).toBe(won)
+  })
+})
+
+describe('누적목표를증분으로 (% 모드 = 누적 목표 → 저장 정본인 증분 역산)', () => {
+  const base = 10_000_000 // 하도적용금액 1천만원 → 1% = 10만원
+
+  it('누계 10%(100만)에서 누적 50% 입력 → 증분 40%(400만)', () => {
+    expect(누적목표를증분으로(50, base, percentToWon(10, base)!)).toBe(4_000_000)
+  })
+
+  it('누계 65%에서 100% 입력 → 증분 35%(공사 완료를 깔끔하게 100으로)', () => {
+    expect(누적목표를증분으로(100, base, percentToWon(65, base)!)).toBe(3_500_000)
+  })
+
+  it('현재보다 낮은 목표(하향 정정)는 음수 증분으로 그대로 반환', () => {
+    expect(누적목표를증분으로(50, base, percentToWon(60, base)!)).toBe(-1_000_000)
+  })
+
+  it('100% 초과 목표도 환산만 하고 막지 않는다 (차단은 UI 경고 담당)', () => {
+    expect(누적목표를증분으로(120, base, percentToWon(100, base)!)).toBe(2_000_000)
+  })
+
+  it('base 없거나 0 이하이면 환산 불가 → null', () => {
+    expect(누적목표를증분으로(50, null, 0)).toBeNull()
+    expect(누적목표를증분으로(50, 0, 0)).toBeNull()
+  })
+
+  it('증분 환산 후 (누계+증분)을 %로 되돌리면 입력한 누적%와 일치', () => {
+    const 누계 = percentToWon(30, base)!
+    const 증분 = 누적목표를증분으로(75, base, 누계)!
+    expect(wonToPercent(누계 + 증분, base)).toBe(75)
   })
 })

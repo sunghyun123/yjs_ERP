@@ -13,7 +13,7 @@ import { formatKRW } from '@/lib/format'
 import { todayKST } from '@/lib/kst'
 import type { 수주목록항목 } from '../_types'
 import type { 공사이력Row } from '@/types/database'
-import { percentToWon, wonToPercent } from '../_lib/percent'
+import { wonToPercent, 누적목표를증분으로 } from '../_lib/percent'
 
 type Props = {
   수주목록: 수주목록항목[]
@@ -175,30 +175,36 @@ function PercentInput({
   value,
   onChange,
   base,
+  누계,
   className,
 }: {
   value: number | null
   onChange: (v: number | null) => void
   base: number // 환산 가능할 때만 렌더되므로 호출부에서 > 0 보장
+  누계: number // 현재까지 누계 성과금액(원). %는 "누적 목표"라 증분 역산의 기준점이 된다.
   className?: string
 }) {
-  // display 는 사용자가 입력한 % 문자열. 정본(value, 원)과 분리해 타이핑 중 반올림 떨림을 막는다.
+  // display 는 사용자가 입력한 "누적 달성률 %" 문자열. value(정본)는 이번 증분(원)이라
+  // 의미가 달라(누적 vs 증분) 둘을 분리해 타이핑 중 반올림 떨림을 막는다.
   const [display, setDisplay] = useState('')
 
   useEffect(() => {
     if (value == null) { setDisplay(''); return }
-    // 현재 표시값이 이미 value(원)을 나타내면 덮어쓰지 않는다 (타이핑 떨림 방지).
-    if (percentToWon(parseFloat(display), base) === value) return
-    const pct = wonToPercent(value, base)
+    // 현재 display(누적%)가 이미 value(증분원)을 나타내면 덮어쓰지 않는다 (타이핑 떨림 방지).
+    const implied = display === '' || display === '.' ? null : 누적목표를증분으로(parseFloat(display), base, 누계)
+    if (implied === value) return
+    // value는 증분 → 화면에는 누적%로 환원: (누계 + 증분) / base.
+    const pct = wonToPercent(누계 + value, base)
     setDisplay(pct == null ? '' : String(Math.round(pct * 100) / 100))
-  }, [value, base]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [value, base, 누계]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // 숫자와 소수점 1개만 허용
     const raw = e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')
     setDisplay(raw)
     if (raw === '' || raw === '.') { onChange(null); return }
-    onChange(percentToWon(parseFloat(raw), base))
+    // 입력은 "누적 목표"이므로 저장 정본(증분) = 누적목표 − 현재누계. (음수=하향 정정도 그대로 허용)
+    onChange(누적목표를증분으로(parseFloat(raw), base, 누계))
   }
 
   return (
@@ -219,10 +225,12 @@ function 성과Input({
   value,
   onChange,
   하도적용금액,
+  누계성과금액,
 }: {
   value: number | null
   onChange: (v: number | null) => void
   하도적용금액: number | null
+  누계성과금액: number
 }) {
   const 환산가능 = 하도적용금액 != null && 하도적용금액 > 0
   const [모드, set모드] = useState<'원' | '%'>('%')
@@ -232,7 +240,10 @@ function 성과Input({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <Label className="text-xs text-gray-600">성과 (이번 증분)</Label>
+        {/* %는 "누적 목표 달성률", 원은 "이번 증분" — 모드마다 입력 의미가 달라 라벨도 분기한다. */}
+        <Label className="text-xs text-gray-600">
+          {effective모드 === '%' ? '성과 (누적 달성률)' : '성과 (이번 증분)'}
+        </Label>
         <div className="inline-flex rounded-md border border-gray-200 overflow-hidden text-xs">
           {(['원', '%'] as const).map((m) => {
             const disabled = m === '%' && !환산가능
@@ -256,12 +267,15 @@ function 성과Input({
         </div>
       </div>
       {effective모드 === '%' ? (
-        <PercentInput value={value} onChange={onChange} base={하도적용금액 as number} className="h-10 text-sm" />
+        <PercentInput value={value} onChange={onChange} base={하도적용금액 as number} 누계={누계성과금액} className="h-10 text-sm" />
       ) : (
         <MoneyInput value={value} onChange={onChange} className="h-10 text-sm" placeholder="0" />
       )}
       {!환산가능 && (
         <p className="text-[10px] text-gray-400 mt-1">공사단가 정보가 없어 % 입력은 사용할 수 없습니다.</p>
+      )}
+      {환산가능 && effective모드 === '%' && (
+        <p className="text-[10px] text-gray-400 mt-1">이번 작업 후 <b>누적</b> 달성률을 입력하세요. 증분 금액은 자동 계산됩니다.</p>
       )}
     </div>
   )
@@ -338,6 +352,16 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     ? (누계성과금액 / 하도적용금액) * 100
     : null
 
+  // 차단이 아닌 "마찰 한 번": 초과/음수만 시각적으로 경고하고 저장은 허용한다(현실 수용 결정).
+  const 저장후경고 =
+    성과금액 != null && 저장후달성율 != null
+      ? 저장후달성율 > 100
+        ? '저장 후 누계가 100%를 넘습니다 (초과 달성으로 저장됩니다).'
+        : 저장후달성율 < 0
+          ? '저장 후 누계가 음수가 됩니다 — 입력값을 확인하세요.'
+          : null
+      : null
+
   const handleSave = async () => {
     if (!선택수주Id || !작업일자 || 성과금액 == null) {
       showToast(false, '공사, 작업일자, 성과금액을 모두 입력해주세요.')
@@ -345,6 +369,8 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     }
     set저장중(true)
     const supabase = createClient()
+    // 성과금액은 증분(원) 정본. % 모드의 하향 정정은 음수로 들어오며, 매출손익은 증분을 월별 합산하므로
+    // 정정이 일어난 달의 매출이 그만큼 차감된다(총 누계는 정확). 의도된 동작.
     const { error } = await (supabase.from('공사이력') as any).insert({
       수주_id: 선택수주Id,
       작업일자,
@@ -429,6 +455,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
             value={성과금액}
             onChange={set성과금액}
             하도적용금액={하도적용금액}
+            누계성과금액={누계성과금액}
           />
         </div>
 
@@ -460,6 +487,13 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
             ))}
           </select>
         </div>
+
+        {저장후경고 && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm border bg-amber-50 text-amber-800 border-amber-200">
+            <AlertCircle className="size-4 shrink-0" />
+            {저장후경고}
+          </div>
+        )}
 
         <Button
           type="button"
