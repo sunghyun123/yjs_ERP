@@ -29,10 +29,11 @@ export default async function Page({
 
   const supabase = await createClient()
 
+  // 준공 공사도 포함한다: 실무 피드백상 준공된 공사의 이력도 입력탭에서 확인·입력해야 함.
+  // (과거엔 준공여부=false로 걸렀으나, 끝난 공사 이력 조회 요구가 들어와 필터 제거)
   const { data: 수주raw } = await supabase
     .from('수주')
     .select('id, 지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율')
-    .eq('준공여부', false)
     .order('지중no', { ascending: true })
   const 수주목록 = (수주raw ?? []) as 수주목록항목[]
 

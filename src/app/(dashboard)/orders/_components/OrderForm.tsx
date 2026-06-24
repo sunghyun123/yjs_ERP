@@ -524,6 +524,15 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
   const 기성누계공급가 = 기성목록.reduce((sum, g) => sum + (g.기성액_공급가 ?? 0), 0)
   const 다음차수 = 기성목록.length > 0 ? Math.max(...기성목록.map((g) => g.차수)) + 1 : 1
 
+  // 달성률 표시값. 준공이면 공정·기성 모두 100% 고정(준공=완료 확정, 기준금액=준공액).
+  // 미준공은 하도적용(수주금액 기준) 대비 실측. 분모 없으면 null → 패널 숨김.
+  const 공정달성률표시 = 준공여부Local
+    ? '100.00'
+    : 하도적용 != null && 하도적용 > 0 ? ((공정누계 / 하도적용) * 100).toFixed(2) : null
+  const 기성달성률표시 = 준공여부Local
+    ? '100.00'
+    : 하도적용 != null && 하도적용 > 0 ? ((기성누계공급가 / 하도적용) * 100).toFixed(2) : null
+
   const handle기성추가시작 = () => {
     set기성폼모드('add')
     set기성폼값({ 기성일: '', 기성액_공급가: null, 작업내용: '', 담당공무_id: null })
@@ -962,22 +971,26 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
                 </div>
               )}
 
-              {mode === 'edit' && 하도적용 != null && 하도적용 > 0 && (
+              {mode === 'edit' && 공정달성률표시 != null && (
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">달성률</p>
                   <div className="rounded-lg px-3 py-2 bg-amber-50 border border-amber-100">
                     <p className="text-[10px] text-gray-400">공정 달성률</p>
                     <p className="text-lg font-bold text-amber-600">
-                      {((공정누계 / 하도적용) * 100).toFixed(2)}%
+                      {공정달성률표시}%
                     </p>
-                    <p className="text-[10px] text-gray-400">공사이력 누계</p>
+                    <p className="text-[10px] text-gray-400">
+                      {준공여부Local ? '준공 확정 · 준공액 기준' : '공사이력 누계'}
+                    </p>
                   </div>
                   <div className="rounded-lg px-3 py-2 bg-blue-50 border border-blue-100">
                     <p className="text-[10px] text-gray-400">기성 달성률</p>
                     <p className="text-lg font-bold text-[#1e2d5a]">
-                      {((기성누계공급가 / 하도적용) * 100).toFixed(2)}%
+                      {기성달성률표시}%
                     </p>
-                    <p className="text-[10px] text-gray-400">기성 청구 누계</p>
+                    <p className="text-[10px] text-gray-400">
+                      {준공여부Local ? '준공 확정 · 준공액 기준' : '기성 청구 누계'}
+                    </p>
                   </div>
                 </div>
               )}
