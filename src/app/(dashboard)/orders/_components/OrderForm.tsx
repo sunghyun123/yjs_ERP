@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import type { 수주행, 거래처목록항목, 기성항목, 공무담당자목록항목 } from '../_types'
+import { calc준공정산delta, calc달성율, calc하도적용금액 } from '../_lib/completion'
 
 // ── 옵션 목록 ──────────────────────────────────────────────────────────────
 const 공사구분옵션 = ['총가', '단가', '민수', '관급']
@@ -64,6 +65,7 @@ type Props = {
   row?: 수주행
   거래처목록: 거래처목록항목[]
   공무담당자목록: 공무담당자목록항목[]
+  공사현장목록: string[]
   onSuccess: () => void
 }
 
@@ -269,7 +271,7 @@ function Field({ label, required, children, error }: {
 }
 
 // ── 메인 컴포넌트 ───────────────────────────────────────────────────────────
-export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, onSuccess }: Props) {
+export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, 공사현장목록, onSuccess }: Props) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'info' | '기성' | '준공'>('info')
 
@@ -421,21 +423,101 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, o
     setTimeout(onSuccess, 1200)
   }
 
-  // 준공 저장 핸들러
+  // 준공 저장/해제 핸들러
+  // - 완료: 수주.달성율=100 세팅 + 준공정산 행(준공정산=true) upsert (성과=준공액공급가−기존누계)
+  // - 해제: 자동 준공정산 행만 삭제(사용자 공사이력 보존) + 달성율 재계산
   const handleJunGongSave = async () => {
     if (!row) return
-    set준공저장중(true)
     const supabase = createClient()
-    const { error } = await (supabase.from('수주') as any)
-      .update({
-        준공여부: 준공여부Local,
-        준공일: 준공여부Local ? 준공일Local || null : null,
-        준공액_공급가: 준공여부Local ? 준공액Local : null,
-      })
+
+    // ── 준공 완료 ──────────────────────────────────────────────
+    if (준공여부Local) {
+      if (!준공일Local || 준공액Local == null) {
+        showToast(false, '준공일과 준공액을 모두 입력하세요.')
+        return
+      }
+      set준공저장중(true)
+
+      // 기존 성과 누계(준공정산 행 제외) + 기존 정산행 식별
+      const { data: 이력, error: 조회err } = await (supabase.from('공사이력') as any)
+        .select('id, 성과금액, 준공정산')
+        .eq('수주_id', row.id)
+      if (조회err) { set준공저장중(false); showToast(false, '공사이력 조회에 실패했습니다.'); return }
+
+      const 이력목록 = (이력 ?? []) as { id: number; 성과금액: number | null; 준공정산: boolean }[]
+      const 기존누계 = 이력목록
+        .filter((r) => !r.준공정산)
+        .reduce((s, r) => s + (r.성과금액 ?? 0), 0)
+      const 기존정산행 = 이력목록.find((r) => r.준공정산) ?? null
+
+      const delta = calc준공정산delta(준공액Local, 기존누계)
+
+      // 하향 정산(기존 누계 > 준공액) 경고
+      if (delta < 0 && !window.confirm(
+        `기존 성과 누계(${formatKRW(기존누계)})가 준공액(${formatKRW(준공액Local)})보다 큽니다.\n` +
+        `성과가 ${formatKRW(delta)}원 하향 조정됩니다. 계속할까요?`
+      )) { set준공저장중(false); return }
+
+      // 1) 수주 업데이트 — 달성율 100 플래그
+      const { error: 수주err } = await (supabase.from('수주') as any)
+        .update({ 준공여부: true, 준공일: 준공일Local, 준공액_공급가: 준공액Local, 달성율: 100 })
+        .eq('id', row.id)
+      if (수주err) { set준공저장중(false); showToast(false, '준공 저장에 실패했습니다.'); return }
+
+      // 2) 준공정산 행 upsert (작업일자=준공일)
+      let 정산err: { message?: string } | null = null
+      if (기존정산행) {
+        ;({ error: 정산err } = await (supabase.from('공사이력') as any)
+          .update({ 작업일자: 준공일Local, 성과금액: delta })
+          .eq('id', 기존정산행.id))
+      } else {
+        ;({ error: 정산err } = await (supabase.from('공사이력') as any)
+          .insert({
+            수주_id: row.id,
+            작업일자: 준공일Local,
+            성과금액: delta,
+            작업내용: '준공정산(자동)',
+            준공정산: true,
+            담당공무_id: row.공무담당자_id ?? null,
+          }))
+      }
+      set준공저장중(false)
+      if (정산err) { showToast(false, '준공정산 적재에 실패했습니다.'); return }
+
+      showToast(true, '준공 처리 완료 — 달성률 100%·매출손익 반영됨.')
+      router.refresh()
+      return
+    }
+
+    // ── 준공 해제 ──────────────────────────────────────────────
+    if (row.준공여부) {
+      if (!window.confirm(
+        '준공을 해제하면 자동 생성된 준공정산 성과 1건이 제거되고 달성률이 재계산됩니다.\n' +
+        '직접 입력하신 공사이력은 그대로 보존됩니다. 계속할까요?'
+      )) return
+    }
+    set준공저장중(true)
+
+    // 1) 자동 준공정산 행만 삭제 (eq 준공정산=true 보장 → 사용자 데이터 손실 경로 없음)
+    const { error: 삭제err } = await (supabase.from('공사이력') as any)
+      .delete().eq('수주_id', row.id).eq('준공정산', true)
+    if (삭제err) { set준공저장중(false); showToast(false, '준공 해제에 실패했습니다.'); return }
+
+    // 2) 남은 성과 누계로 달성율 재계산
+    const { data: 남은이력 } = await (supabase.from('공사이력') as any)
+      .select('성과금액').eq('수주_id', row.id)
+    const 남은누계 = ((남은이력 ?? []) as { 성과금액: number | null }[])
+      .reduce((s, r) => s + (r.성과금액 ?? 0), 0)
+    const 하도적용 = calc하도적용금액(row.수주금액_공급가, row.보험료율, row.하도전용율)
+    const 재계산달성율 = calc달성율(남은누계, 하도적용)
+
+    const { error: 수주err } = await (supabase.from('수주') as any)
+      .update({ 준공여부: false, 준공일: null, 준공액_공급가: null, 달성율: 재계산달성율 })
       .eq('id', row.id)
     set준공저장중(false)
-    if (error) { showToast(false, '저장에 실패했습니다.'); return }
-    showToast(true, '준공 정보가 저장되었습니다.')
+    if (수주err) { showToast(false, '준공 해제에 실패했습니다.'); return }
+
+    showToast(true, '준공이 해제되었습니다.')
     router.refresh()
   }
 
@@ -661,7 +743,28 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, o
                   />
                 </Field>
                 <Field label="공사현장">
-                  <Input className="h-9 text-sm" placeholder="광명" {...register('공사현장')} />
+                  <Controller
+                    name="공사현장"
+                    control={control}
+                    render={({ field }) => {
+                      // edit 모드에서 과거 자유입력 값이 목록에 없으면 임시 옵션으로 노출
+                      const opts = field.value && !공사현장목록.includes(field.value)
+                        ? [field.value, ...공사현장목록]
+                        : 공사현장목록
+                      return (
+                        <Select
+                          value={field.value || '__none__'}
+                          onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}
+                        >
+                          <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="선택" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">—</SelectItem>
+                            {opts.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )
+                    }}
+                  />
                 </Field>
               </div>
 

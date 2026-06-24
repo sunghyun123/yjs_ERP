@@ -35,6 +35,7 @@ const adminNav = [
   { href: '/admin/clients', label: '거래처 관리' },
   { href: '/admin/rates', label: '공사단가 관리' },
   { href: '/admin/gongmu', label: '공무담당자 관리' },
+  { href: '/admin/sites', label: '공사현장 관리' },
 ] as const
 
 interface SidebarProps {
