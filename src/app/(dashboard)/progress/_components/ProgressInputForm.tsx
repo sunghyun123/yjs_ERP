@@ -13,6 +13,7 @@ import { formatKRW } from '@/lib/format'
 import { todayKST } from '@/lib/kst'
 import type { 수주목록항목 } from '../_types'
 import type { 공사이력Row } from '@/types/database'
+import { percentToWon, wonToPercent } from '../_lib/percent'
 
 type Props = {
   수주목록: 수주목록항목[]
@@ -167,6 +168,102 @@ function MoneyInput({
       inputMode="numeric"
       className={className}
     />
+  )
+}
+
+function PercentInput({
+  value,
+  onChange,
+  base,
+  className,
+}: {
+  value: number | null
+  onChange: (v: number | null) => void
+  base: number // 환산 가능할 때만 렌더되므로 호출부에서 > 0 보장
+  className?: string
+}) {
+  // display 는 사용자가 입력한 % 문자열. 정본(value, 원)과 분리해 타이핑 중 반올림 떨림을 막는다.
+  const [display, setDisplay] = useState('')
+
+  useEffect(() => {
+    if (value == null) { setDisplay(''); return }
+    // 현재 표시값이 이미 value(원)을 나타내면 덮어쓰지 않는다 (타이핑 떨림 방지).
+    if (percentToWon(parseFloat(display), base) === value) return
+    const pct = wonToPercent(value, base)
+    setDisplay(pct == null ? '' : String(Math.round(pct * 100) / 100))
+  }, [value, base]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 숫자와 소수점 1개만 허용
+    const raw = e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')
+    setDisplay(raw)
+    if (raw === '' || raw === '.') { onChange(null); return }
+    onChange(percentToWon(parseFloat(raw), base))
+  }
+
+  return (
+    <div className="relative">
+      <Input
+        value={display}
+        onChange={handleChange}
+        placeholder="0"
+        inputMode="decimal"
+        className={cn('pr-7', className)}
+      />
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">%</span>
+    </div>
+  )
+}
+
+function 성과Input({
+  value,
+  onChange,
+  하도적용금액,
+}: {
+  value: number | null
+  onChange: (v: number | null) => void
+  하도적용금액: number | null
+}) {
+  const 환산가능 = 하도적용금액 != null && 하도적용금액 > 0
+  const [모드, set모드] = useState<'원' | '%'>('%')
+  // 환산 불가(공사단가 정보 없음)면 % 입력 불가 → 원 모드 강제.
+  const effective모드 = 환산가능 ? 모드 : '원'
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <Label className="text-xs text-gray-600">성과 (이번 증분)</Label>
+        <div className="inline-flex rounded-md border border-gray-200 overflow-hidden text-xs">
+          {(['원', '%'] as const).map((m) => {
+            const disabled = m === '%' && !환산가능
+            return (
+              <button
+                key={m}
+                type="button"
+                disabled={disabled}
+                onClick={() => set모드(m)}
+                title={disabled ? '공사단가 정보가 없어 % 입력 불가' : undefined}
+                className={cn(
+                  'px-2.5 py-1 transition-colors',
+                  effective모드 === m ? 'bg-[#1e2d5a] text-white' : 'bg-white text-gray-500 hover:bg-gray-50',
+                  disabled && 'opacity-40 cursor-not-allowed hover:bg-white',
+                )}
+              >
+                {m}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      {effective모드 === '%' ? (
+        <PercentInput value={value} onChange={onChange} base={하도적용금액 as number} className="h-10 text-sm" />
+      ) : (
+        <MoneyInput value={value} onChange={onChange} className="h-10 text-sm" placeholder="0" />
+      )}
+      {!환산가능 && (
+        <p className="text-[10px] text-gray-400 mt-1">공사단가 정보가 없어 % 입력은 사용할 수 없습니다.</p>
+      )}
+    </div>
   )
 }
 
@@ -328,15 +425,11 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
               onChange={(e) => set작업일자(e.target.value)}
             />
           </div>
-          <div>
-            <Label className="text-xs text-gray-600 mb-1.5 block">성과금액 (이번 증분)</Label>
-            <MoneyInput
-              value={성과금액}
-              onChange={set성과금액}
-              className="h-10 text-sm"
-              placeholder="0"
-            />
-          </div>
+          <성과Input
+            value={성과금액}
+            onChange={set성과금액}
+            하도적용금액={하도적용금액}
+          />
         </div>
 
         <div>
@@ -387,10 +480,12 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
           <p className="text-2xl font-bold text-amber-500">
             {delta달성율 != null ? `+${delta달성율.toFixed(2)}%` : '—'}
           </p>
-          {delta달성율 != null && 하도적용금액 != null && (
-            <p className="text-[10px] text-gray-400 mt-1">
-              {formatKRW(성과금액!)} ÷ {formatKRW(하도적용금액)} × 100
-            </p>
+          {/* 이번 증분 금액: % 입력 시 보고서에 복붙할 환산 금액을 또렷이 노출(원·% 모드 공통) */}
+          {성과금액 != null && (
+            <div className="mt-2 pt-2 border-t border-gray-100">
+              <p className="text-[10px] text-gray-400 mb-0.5">이번 증분 금액</p>
+              <p className="text-base font-semibold text-gray-800">{formatKRW(성과금액)}</p>
+            </div>
           )}
         </div>
 
