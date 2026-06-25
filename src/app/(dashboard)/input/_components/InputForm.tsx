@@ -24,6 +24,7 @@ import {
   type 투입상세수량,
 } from '@/app/(dashboard)/_lib/calc'
 import type { 공사단가Row, 투입실적Row, 투입실적Insert, 투입실적Update } from '@/types/database'
+import { useWorkspaceSlice } from '../../_components/WorkspaceProvider'
 
 const qty = z.number().min(0).max(99)
 const amt = z.number().min(0)
@@ -38,6 +39,7 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 type 수주검색결과 = { id: number; 지중no: string; 공사명: string }
+type InputWorkspace = { 선택수주: 수주검색결과 | null; 검색어: string; 투입일: string }
 type 상세Map = Record<string, { 주간수량: number; 야간수량: number }>
 type 투입실적조회Row = 투입실적Row & { 투입실적상세?: 투입상세수량[] | null }
 
@@ -91,6 +93,9 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
   const 드롭다운Ref = useRef<HTMLDivElement>(null)
   // 실적 조회 요청 순번 — 늦게 도착한 응답이 최신 입력을 덮어쓰지 못하게 막는다.
   const 조회Seq = useRef(0)
+
+  const { value: wsValue, save: wsSave, hydrated: wsHydrated } = useWorkspaceSlice<InputWorkspace>('inputForm')
+  const wsRestored = useRef(false)
 
   const {
     register,
@@ -229,6 +234,26 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
         if (raw) handleSelect(raw as 수주검색결과)
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 네비게이션 복귀 시 신원 복원: hydrated 이후 1회. URL 딥링크가 있으면 그쪽이 우선이라 건너뛴다.
+  useEffect(() => {
+    if (!wsHydrated || wsRestored.current) return
+    wsRestored.current = true
+    if (default수주Id != null) return
+    const saved = wsValue
+    if (saved?.선택수주) {
+      handleSelect(saved.선택수주)        // 선택수주·검색어 세팅 + 최근투입일 재조회
+      setValue('투입일', saved.투입일)     // 이후 실적 effect가 (수주, 투입일)로 수량/외주 재구성
+    } else if (saved?.검색어) {
+      set검색어(saved.검색어)             // 선택은 안 했고 검색어만 있던 경우
+    }
+  }, [wsHydrated]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 신원이 바뀔 때마다 슬라이스에 저장 (hydrated 전에는 기본값으로 저장본을 덮지 않도록 가드)
+  useEffect(() => {
+    if (!wsHydrated) return
+    wsSave({ 선택수주, 검색어, 투입일 })
+  }, [wsHydrated, wsSave, 선택수주, 검색어, 투입일])
 
   function 초기화() {
     reset({ 수주_id: 수주id, 투입일, 외주1: 0, 외주2: 0 })

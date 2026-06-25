@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { extractKakaoId, getWhitelistEntry } from '@/lib/whitelist'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { MobileTabBar } from '@/components/sidebar/MobileTabBar'
+import { WorkspaceProvider } from './_components/WorkspaceProvider'
 
 export default async function DashboardLayout({
   children,
@@ -34,7 +35,9 @@ export default async function DashboardLayout({
     <div className="flex min-h-screen" style={{ backgroundColor: '#f1f4fb' }}>
       <Sidebar userName={displayName} isAdmin={isAdmin} />
       <main className="flex-1 min-w-0 pb-16 md:pb-0">
-        {children}
+        <WorkspaceProvider>
+          {children}
+        </WorkspaceProvider>
       </main>
       <MobileTabBar />
     </div>
