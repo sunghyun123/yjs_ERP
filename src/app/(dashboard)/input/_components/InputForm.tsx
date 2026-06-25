@@ -89,6 +89,8 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
   const 검색타이머 = useRef<ReturnType<typeof setTimeout> | null>(null)
   const 토스트타이머 = useRef<ReturnType<typeof setTimeout> | null>(null)
   const 드롭다운Ref = useRef<HTMLDivElement>(null)
+  // 실적 조회 요청 순번 — 늦게 도착한 응답이 최신 입력을 덮어쓰지 못하게 막는다.
+  const 조회Seq = useRef(0)
 
   const {
     register,
@@ -128,27 +130,38 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
 
   useEffect(() => {
     if (!수주id || 수주id < 1 || !투입일) return
-    set실적로딩(true)
-    const supabase = createClient()
-    supabase
-      .from('투입실적')
-      .select('*, 투입실적상세(투입구분, 주간수량, 야간수량)')
-      .eq('수주_id', 수주id)
-      .eq('투입일', 투입일)
-      .maybeSingle()
-      .then(({ data: raw }) => {
-        if (raw) {
-          const row = raw as 투입실적조회Row
-          set기존Id(row.id)
-          fillRow(row)
-        } else {
-          set기존Id(null)
-          reset({ 수주_id: 수주id, 투입일, 외주1: 0, 외주2: 0 })
-          set상세(기본상세)
-        }
-        set실적로딩(false)
-      })
-  }, [수주id, 투입일, fillRow, reset, 기본상세])
+    // ① 날짜를 키보드로 치면 세그먼트(년/월/일)마다 effect가 돈다.
+    //    디바운스로 입력이 멈춘 뒤 한 번만 조회한다. 입력이 이어지면 cleanup이 타이머를 취소.
+    const timer = setTimeout(() => {
+      // ② 이 요청의 순번을 발급. 응답이 돌아왔을 때 여전히 최신인지 확인해 stale 응답을 버린다.
+      const seq = ++조회Seq.current
+      set실적로딩(true)
+      const supabase = createClient()
+      supabase
+        .from('투입실적')
+        .select('*, 투입실적상세(투입구분, 주간수량, 야간수량)')
+        .eq('수주_id', 수주id)
+        .eq('투입일', 투입일)
+        .maybeSingle()
+        .then(({ data: raw }) => {
+          if (seq !== 조회Seq.current) return // 더 최신 조회가 시작됨 → 이 응답은 버린다
+          if (raw) {
+            const row = raw as 투입실적조회Row
+            set기존Id(row.id)
+            fillRow(row)
+          } else {
+            set기존Id(null)
+            // ③ reset()은 투입일 input까지 다시 써서 타이핑 중 커서를 앞으로 튕긴다.
+            //    사용자가 직접 잡고 있는 투입일은 건드리지 말고 데이터 필드만 초기화한다.
+            setValue('외주1', 0)
+            setValue('외주2', 0)
+            set상세(기본상세)
+          }
+          set실적로딩(false)
+        })
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [수주id, 투입일, fillRow, setValue, 기본상세])
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
