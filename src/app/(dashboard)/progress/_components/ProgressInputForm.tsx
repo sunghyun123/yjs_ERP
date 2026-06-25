@@ -14,6 +14,7 @@ import { todayKST } from '@/lib/kst'
 import type { 수주목록항목 } from '../_types'
 import type { 공사이력Row } from '@/types/database'
 import { wonToPercent, 누적목표를증분으로 } from '../_lib/percent'
+import { useWorkspaceSlice } from '../../_components/WorkspaceProvider'
 
 type Props = {
   수주목록: 수주목록항목[]
@@ -21,6 +22,8 @@ type Props = {
   default수주Id?: number | null
   default날짜?: string | null
 }
+
+type ProgressWorkspace = { 선택수주Id: number | null; 작업일자: string }
 
 function 공사SearchableSelect({
   options,
@@ -294,6 +297,9 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
   const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const { value: wsValue, save: wsSave, hydrated: wsHydrated } = useWorkspaceSlice<ProgressWorkspace>('progressForm')
+  const wsRestored = useRef(false)
+
   const showToast = (ok: boolean, msg: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current)
     setToast({ ok, msg })
@@ -340,6 +346,26 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
       handle공사선택(default수주Id)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 네비게이션 복귀 시 신원 복원: hydrated 이후 1회. URL 딥링크가 있으면 그쪽이 우선.
+  useEffect(() => {
+    if (!wsHydrated || wsRestored.current) return
+    wsRestored.current = true
+    if (default수주Id != null) return
+    const saved = wsValue
+    if (saved?.선택수주Id != null) {
+      // 1회성 복원 로드(set상태 후 fetch). 반복 cascade가 아니므로 set-state-in-effect 규칙 부적용.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      handle공사선택(saved.선택수주Id)     // 누계·하도적용금액·담당공무 재조회
+      if (saved.작업일자) set작업일자(saved.작업일자)
+    }
+  }, [wsHydrated]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 신원이 바뀔 때마다 저장 (hydrated 전 기본값으로 저장본 덮어쓰기 방지)
+  useEffect(() => {
+    if (!wsHydrated) return
+    wsSave({ 선택수주Id, 작업일자 })
+  }, [wsHydrated, wsSave, 선택수주Id, 작업일자])
 
   const delta달성율 = (성과금액 != null && 하도적용금액 != null && 하도적용금액 > 0)
     ? (성과금액 / 하도적용금액) * 100
