@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
+import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 import type { 수주행, 거래처목록항목, 기성항목, 공무담당자목록항목 } from '../_types'
 import { calc준공정산delta, calc달성율, calc하도적용금액 } from '../_lib/completion'
 
@@ -95,13 +96,28 @@ function SearchableSelect({
     ? options.filter((o) => o.거래처명.toLowerCase().includes(deferredQuery.toLowerCase()))
     : options
 
-  const openDrop = () => {
+  // 위치 계산만 분리 — onFocus(query 초기화)와 onChange(query 보존) 양쪽에서 재사용
+  const positionDrop = () => {
     if (!inputRef.current) return
     const r = inputRef.current.getBoundingClientRect()
     setPos({ top: r.bottom + 4, left: r.left, width: r.width })
+  }
+
+  const openDrop = () => {
+    positionDrop()
     setOpen(true)
     setQuery('')
   }
+
+  // 키보드 ↑↓/Enter/Esc 선택 — 항목은 index로만 다루므로 filtered에서 꺼내 호출부가 선택한다
+  const { activeIndex, setActiveIndex, onKeyDown } = useComboboxKeyboard({
+    open,
+    itemCount: filtered.length,
+    onSelect: (i) => { onChange(filtered[i].id); setOpen(false) },
+    onClose: () => setOpen(false),
+    onOpen: openDrop,
+    listRef: dropRef,
+  })
 
   useEffect(() => {
     if (!open) return
@@ -121,7 +137,13 @@ function SearchableSelect({
           ref={inputRef}
           type="text"
           value={open ? query : (selected?.거래처명 ?? '')}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            // 선택 직후엔 포커스가 남은 채 open=false라 onFocus가 다시 안 터진다.
+            // 타이핑이 곧 "편집 시작"이므로 닫혀 있으면 드롭다운을 되살린다(query는 보존).
+            if (!open) { positionDrop(); setOpen(true) }
+          }}
+          onKeyDown={onKeyDown}
           onFocus={openDrop}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder={placeholder}
@@ -158,15 +180,18 @@ function SearchableSelect({
               {filtered.length === 0 ? (
                 <div className="px-3 py-2 text-sm text-gray-400">검색 결과 없음</div>
               ) : (
-                filtered.map((o) => (
+                filtered.map((o, i) => (
                   <button
                     key={o.id}
                     type="button"
+                    data-combobox-item
                     onMouseDown={(e) => e.preventDefault()}
+                    onMouseEnter={() => setActiveIndex(i)} // 마우스와 키보드 하이라이트를 한 상태로 동기화
                     onClick={() => { onChange(o.id); setOpen(false) }}
                     className={cn(
-                      'w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 transition-colors',
-                      o.id === value && 'bg-blue-50 text-blue-700 font-medium',
+                      'w-full px-3 py-1.5 text-sm text-left transition-colors',
+                      i === activeIndex && 'bg-blue-50',                       // 키보드 커서
+                      o.id === value && 'bg-blue-50 text-blue-700 font-medium', // 현재 선택값
                     )}
                   >
                     {o.거래처명}

@@ -25,6 +25,7 @@ import {
 } from '@/app/(dashboard)/_lib/calc'
 import type { 공사단가Row, 투입실적Row, 투입실적Insert, 투입실적Update } from '@/types/database'
 import { useWorkspaceSlice } from '../../_components/WorkspaceProvider'
+import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 
 const qty = z.number().min(0).max(99)
 const amt = z.number().min(0)
@@ -91,6 +92,8 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
   const 검색타이머 = useRef<ReturnType<typeof setTimeout> | null>(null)
   const 토스트타이머 = useRef<ReturnType<typeof setTimeout> | null>(null)
   const 드롭다운Ref = useRef<HTMLDivElement>(null)
+  // 실적 조회 요청 순번 — 늦게 도착한 응답이 최신 입력을 덮어쓰지 못하게 막는다.
+  const 조회Seq = useRef(0)
 
   const { value: wsValue, save: wsSave, hydrated: wsHydrated } = useWorkspaceSlice<InputWorkspace>('inputForm')
   const wsRestored = useRef(false)
@@ -133,27 +136,38 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
 
   useEffect(() => {
     if (!수주id || 수주id < 1 || !투입일) return
-    set실적로딩(true)
-    const supabase = createClient()
-    supabase
-      .from('투입실적')
-      .select('*, 투입실적상세(투입구분, 주간수량, 야간수량)')
-      .eq('수주_id', 수주id)
-      .eq('투입일', 투입일)
-      .maybeSingle()
-      .then(({ data: raw }) => {
-        if (raw) {
-          const row = raw as 투입실적조회Row
-          set기존Id(row.id)
-          fillRow(row)
-        } else {
-          set기존Id(null)
-          reset({ 수주_id: 수주id, 투입일, 외주1: 0, 외주2: 0 })
-          set상세(기본상세)
-        }
-        set실적로딩(false)
-      })
-  }, [수주id, 투입일, fillRow, reset, 기본상세])
+    // ① 날짜를 키보드로 치면 세그먼트(년/월/일)마다 effect가 돈다.
+    //    디바운스로 입력이 멈춘 뒤 한 번만 조회한다. 입력이 이어지면 cleanup이 타이머를 취소.
+    const timer = setTimeout(() => {
+      // ② 이 요청의 순번을 발급. 응답이 돌아왔을 때 여전히 최신인지 확인해 stale 응답을 버린다.
+      const seq = ++조회Seq.current
+      set실적로딩(true)
+      const supabase = createClient()
+      supabase
+        .from('투입실적')
+        .select('*, 투입실적상세(투입구분, 주간수량, 야간수량)')
+        .eq('수주_id', 수주id)
+        .eq('투입일', 투입일)
+        .maybeSingle()
+        .then(({ data: raw }) => {
+          if (seq !== 조회Seq.current) return // 더 최신 조회가 시작됨 → 이 응답은 버린다
+          if (raw) {
+            const row = raw as 투입실적조회Row
+            set기존Id(row.id)
+            fillRow(row)
+          } else {
+            set기존Id(null)
+            // ③ reset()은 투입일 input까지 다시 써서 타이핑 중 커서를 앞으로 튕긴다.
+            //    사용자가 직접 잡고 있는 투입일은 건드리지 말고 데이터 필드만 초기화한다.
+            setValue('외주1', 0)
+            setValue('외주2', 0)
+            set상세(기본상세)
+          }
+          set실적로딩(false)
+        })
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [수주id, 투입일, fillRow, setValue, 기본상세])
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -208,6 +222,16 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
     set최근투입로딩(false)
     set최근투입일((data as { 투입일: string } | null)?.투입일 ?? null)
   }
+
+  // 키보드 ↑↓/Enter/Esc 선택 — 비동기 검색결과도 index로만 다루면 동일 훅으로 처리된다
+  const { activeIndex, setActiveIndex, onKeyDown: onSearchKeyDown } = useComboboxKeyboard({
+    open: 드롭다운,
+    itemCount: 검색결과.length,
+    onSelect: (i) => handleSelect(검색결과[i]),
+    onClose: () => set드롭다운(false),
+    onOpen: () => { if (검색결과.length > 0) set드롭다운(true) },
+    listRef: 드롭다운Ref,
+  })
 
   useEffect(() => {
     if (default수주Id == null) return
@@ -354,6 +378,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
                     type="text"
                     value={검색어}
                     onChange={(e) => handleSearch(e.target.value)}
+                    onKeyDown={onSearchKeyDown}
                     onFocus={() => 검색결과.length > 0 && set드롭다운(true)}
                     placeholder="지중No 또는 공사명으로 검색..."
                     className={cn(
@@ -368,12 +393,17 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
                 </div>
                 {드롭다운 && 검색결과.length > 0 && (
                   <div className="absolute top-full mt-1 w-full z-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto">
-                    {검색결과.map((order) => (
+                    {검색결과.map((order, i) => (
                       <button
                         key={order.id}
                         type="button"
+                        data-combobox-item
                         onMouseDown={(e) => { e.preventDefault(); handleSelect(order) }}
-                        className="w-full px-3 py-2.5 text-left hover:bg-blue-50 transition-colors flex items-baseline gap-2"
+                        onMouseEnter={() => setActiveIndex(i)} // 마우스와 키보드 하이라이트를 한 상태로 동기화
+                        className={cn(
+                          'w-full px-3 py-2.5 text-left transition-colors flex items-baseline gap-2',
+                          i === activeIndex && 'bg-blue-50', // 키보드 커서
+                        )}
                       >
                         <span className="font-mono text-xs text-gray-400 shrink-0">{order.지중no}</span>
                         <span className="text-sm text-gray-800 truncate">{order.공사명}</span>
