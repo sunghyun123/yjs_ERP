@@ -50,10 +50,15 @@ function 공사SearchableSelect({
       )
     : options
 
-  const openDrop = () => {
+  // 위치 계산만 분리 — onFocus(query 초기화)와 onChange(query 보존) 양쪽에서 재사용
+  const positionDrop = () => {
     if (!inputRef.current) return
     const r = inputRef.current.getBoundingClientRect()
     setPos({ top: r.bottom + 4, left: r.left, width: r.width })
+  }
+
+  const openDrop = () => {
+    positionDrop()
     setOpen(true)
     setQuery('')
   }
@@ -76,7 +81,12 @@ function 공사SearchableSelect({
           ref={inputRef}
           type="text"
           value={open ? query : (selected ? `${selected.지중no} · ${selected.공사명}` : '')}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            // 선택 직후엔 포커스가 남은 채 open=false라 onFocus가 다시 안 터진다.
+            // 타이핑이 곧 "편집 시작"이므로 닫혀 있으면 드롭다운을 되살린다(query는 보존).
+            if (!open) { positionDrop(); setOpen(true) }
+          }}
           onFocus={openDrop}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder="지중No 또는 공사명으로 검색..."
