@@ -12,6 +12,7 @@
     "backup:data": "ts-node --project scripts/tsconfig.json scripts/backup-data.ts",
     "backup:inventory": "ts-node --project scripts/tsconfig.json scripts/backup-inventory.ts",
     "backup:portfolio": "ts-node --project scripts/tsconfig.json scripts/backup-portfolio.ts",
+    "backup:db": "ts-node --project scripts/tsconfig.json scripts/backup-db.ts",
     "sync:whitelist": "ts-node --project scripts/tsconfig.json scripts/sync-whitelist.ts"
   },
   "dependencies": {
