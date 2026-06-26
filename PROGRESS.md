@@ -102,7 +102,7 @@
 
 모든 업무 테이블 정책이 `using(true)`라, anon key + 세션만 있으면 앱을 우회해 PostgREST를 직접 호출하면 전 테이블 읽기/변조가 가능한 구멍이 있었다. `is_whitelisted()` SECURITY DEFINER 함수가 **`auth.identities`**(GoTrue 관리·위조 불가)에서 `kakao_id`를 읽어 whitelist와 대조 → 14개 업무 테이블 정책을 `(select is_whitelisted())`로 교체. 쓰기 한 겹 더: `is_admin()`(role='admin')으로 `거래처`·`공사단가`의 insert/update/delete를 admin 전용으로 제한(#60).
 
-**핵심 판단:** `user_metadata`는 사용자가 위조할 수 있으므로 RLS에서 신뢰 금지 — 반드시 `auth.identities` 기준. `whitelist` select 정책은 유지(콜백/레이아웃 본인 조회), service role 경로는 RLS 우회라 무영향. 비상 롤백 스크립트 동봉. 플랜=`docs/superpowers/plans/2026-06-22-rls-whitelist-enforcement.md`.
+**핵심 판단:** `user_metadata`는 사용자가 위조할 수 있으므로 RLS에서 신뢰 금지 — 반드시 `auth.identities` 기준. `whitelist` select 정책은 유지(콜백/레이아웃 본인 조회), service role 경로는 RLS 우회라 무영향. 비상 롤백 스크립트 동봉.
 
 ### 데이터 정합성 — 성과금액 일별 증분 정본화
 
