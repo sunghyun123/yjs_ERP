@@ -25,6 +25,7 @@ import {
 } from '@/app/(dashboard)/_lib/calc'
 import type { 공사단가Row, 투입실적Row, 투입실적Insert, 투입실적Update } from '@/types/database'
 import { useWorkspaceSlice } from '../../_components/WorkspaceProvider'
+import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 
 const qty = z.number().min(0).max(99)
 const amt = z.number().min(0)
@@ -222,6 +223,16 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
     set최근투입일((data as { 투입일: string } | null)?.투입일 ?? null)
   }
 
+  // 키보드 ↑↓/Enter/Esc 선택 — 비동기 검색결과도 index로만 다루면 동일 훅으로 처리된다
+  const { activeIndex, setActiveIndex, onKeyDown: onSearchKeyDown } = useComboboxKeyboard({
+    open: 드롭다운,
+    itemCount: 검색결과.length,
+    onSelect: (i) => handleSelect(검색결과[i]),
+    onClose: () => set드롭다운(false),
+    onOpen: () => { if (검색결과.length > 0) set드롭다운(true) },
+    listRef: 드롭다운Ref,
+  })
+
   useEffect(() => {
     if (default수주Id == null) return
     const supabase = createClient()
@@ -367,6 +378,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
                     type="text"
                     value={검색어}
                     onChange={(e) => handleSearch(e.target.value)}
+                    onKeyDown={onSearchKeyDown}
                     onFocus={() => 검색결과.length > 0 && set드롭다운(true)}
                     placeholder="지중No 또는 공사명으로 검색..."
                     className={cn(
@@ -381,12 +393,17 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
                 </div>
                 {드롭다운 && 검색결과.length > 0 && (
                   <div className="absolute top-full mt-1 w-full z-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto">
-                    {검색결과.map((order) => (
+                    {검색결과.map((order, i) => (
                       <button
                         key={order.id}
                         type="button"
+                        data-combobox-item
                         onMouseDown={(e) => { e.preventDefault(); handleSelect(order) }}
-                        className="w-full px-3 py-2.5 text-left hover:bg-blue-50 transition-colors flex items-baseline gap-2"
+                        onMouseEnter={() => setActiveIndex(i)} // 마우스와 키보드 하이라이트를 한 상태로 동기화
+                        className={cn(
+                          'w-full px-3 py-2.5 text-left transition-colors flex items-baseline gap-2',
+                          i === activeIndex && 'bg-blue-50', // 키보드 커서
+                        )}
                       >
                         <span className="font-mono text-xs text-gray-400 shrink-0">{order.지중no}</span>
                         <span className="text-sm text-gray-800 truncate">{order.공사명}</span>
