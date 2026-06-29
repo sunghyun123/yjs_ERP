@@ -21,3 +21,17 @@ export function 누적목표를증분으로(누적목표pct: number, base: numbe
   if (누적목표원 == null) return null
   return 누적목표원 - 누계
 }
+
+// 기준일 '직전'까지의 누계 증분(원). strict < 기준일.
+// 날짜당 1건(unique 제약)이라 기준일과 같은 날 레코드는 자동 제외된다.
+// 폼 백필(아직 없는 날짜)·수정 Sheet(자기 자신 제외) 양쪽이 같은 함수를 쓴다.
+// ISO(YYYY-MM-DD) 문자열은 사전순 비교가 곧 날짜순이라 별도 파싱 없이 비교한다.
+export function 직전누계(
+  records: { 작업일자: string; 성과금액: number | null }[],
+  기준일: string,
+): number {
+  return records.reduce(
+    (sum, r) => (r.작업일자 < 기준일 ? sum + (r.성과금액 ?? 0) : sum),
+    0,
+  )
+}
