@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useDeferredValue } from 'react'
+import { useState, useRef, useEffect, useDeferredValue, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { DismissableLayerBranch } from '@radix-ui/react-dismissable-layer'
 import { createClient } from '@/lib/supabase/client'
@@ -15,6 +15,7 @@ import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 import type { 수주목록항목 } from '../_types'
 import type { 공사이력Row } from '@/types/database'
 import { 성과Input } from './성과Input'
+import { 직전누계 } from '../_lib/percent'
 import { useWorkspaceSlice } from '../../_components/WorkspaceProvider'
 
 type Props = {
@@ -166,8 +167,19 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
   const [선택수주Id, set선택수주Id] = useState<number | null>(default수주Id ?? null)
   const [작업일자, set작업일자] = useState(() => default날짜 ?? todayKST())
   const [성과금액, set성과금액] = useState<number | null>(null)
-  const [누계성과금액, set누계성과금액] = useState<number>(0)
-  const [최근작업일자, set최근작업일자] = useState<string | null>(null)
+  const [이력목록, set이력목록] = useState<Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[]>([])
+
+  // 이력목록 단일 소스에서 파생 — 누계·최근일·직전누계 동기화 버그를 구조적으로 제거.
+  const 누계성과금액 = useMemo(
+    () => 이력목록.reduce((s, r) => s + (r.성과금액 ?? 0), 0),
+    [이력목록],
+  )
+  const 최근작업일자 = useMemo(
+    () => 이력목록.reduce<string | null>((max, r) => (max == null || r.작업일자 > max ? r.작업일자 : max), null),
+    [이력목록],
+  )
+  // % 입력 기준: "이 작업일자 직전"까지의 누계. 최신 날짜면 총계와 같고, 백필이면 그 날짜 전까지만.
+  const 직전누계값 = useMemo(() => 직전누계(이력목록, 작업일자), [이력목록, 작업일자])
   const [작업내용, set작업내용] = useState('')
   const [담당공무Id, set담당공무Id] = useState<number | null>(null)
   const [로딩중, set로딩중] = useState(false)
@@ -196,8 +208,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
   const handle공사선택 = async (id: number | null) => {
     set선택수주Id(id)
     set성과금액(null)
-    set누계성과금액(0)
-    set최근작업일자(null)
+    set이력목록([])
     if (id == null) return
 
     set로딩중(true)
@@ -211,10 +222,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     ])
     set로딩중(false)
 
-    const records = 이력결과.data ?? []
-    const 누계 = records.reduce((sum, r) => sum + (r.성과금액 ?? 0), 0)
-    set누계성과금액(누계)
-    if (records.length > 0) set최근작업일자(records[0].작업일자)
+    set이력목록(이력결과.data ?? [])
     const 수주data = (수주결과 as any).data as { 공무담당자_id: number | null } | null
     if (수주data?.공무담당자_id) set담당공무Id(수주data.공무담당자_id)
   }
@@ -275,13 +283,13 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     const supabase = createClient()
     // 성과금액은 증분(원) 정본. % 모드의 하향 정정은 음수로 들어오며, 매출손익은 증분을 월별 합산하므로
     // 정정이 일어난 달의 매출이 그만큼 차감된다(총 누계는 정확). 의도된 동작.
-    const { error } = await (supabase.from('공사이력') as any).insert({
+    const { data: inserted, error } = await (supabase.from('공사이력') as any).insert({
       수주_id: 선택수주Id,
       작업일자,
       성과금액,
       작업내용: 작업내용 || null,
       담당공무_id: 담당공무Id,
-    })
+    }).select('id, 작업일자, 성과금액').single()
     set저장중(false)
     if (error) {
       const msg = error.message?.includes('unique') ? '해당 날짜에 이미 등록된 이력이 있습니다.' : '저장에 실패했습니다.'
@@ -289,8 +297,8 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
       return
     }
     showToast(true, '저장되었습니다.')
-    set누계성과금액((prev) => prev + (성과금액 ?? 0))
-    set최근작업일자(작업일자)
+    // 반환행을 이력목록에 추가 → 누계·최근·직전 자동 재파생(백필 시 최근일 덮어쓰기 버그 없음).
+    if (inserted) set이력목록((prev) => [...prev, inserted as Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>])
     set성과금액(null)
     set작업일자(todayKST())
     set작업내용('')
@@ -359,7 +367,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
             value={성과금액}
             onChange={set성과금액}
             하도적용금액={하도적용금액}
-            직전누계={누계성과금액}
+            직전누계={직전누계값}
           />
         </div>
 
@@ -428,7 +436,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
         </div>
 
         <div className="bg-[#1e2d5a] rounded-xl p-4">
-          <p className="text-[10px] text-blue-300 mb-3">저장 후 누계</p>
+          <p className="text-[10px] text-blue-300 mb-3">저장 후 전체 누계</p>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-blue-200">성과금액</span>
             <span className="text-white font-semibold">{formatKRW(저장후누계)}</span>
