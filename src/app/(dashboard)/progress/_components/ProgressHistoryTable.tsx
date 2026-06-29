@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
@@ -12,19 +12,8 @@ import { Loader2, Save, Trash2, CheckCircle2, AlertCircle, Search, X } from 'luc
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import type { 공사이력행 } from '../_types'
-
-function MoneyInput({
-  value, onChange, className,
-}: { value: number | null; onChange: (v: number | null) => void; className?: string }) {
-  const [display, setDisplay] = useState(value != null ? value.toLocaleString('ko-KR') : '')
-  useEffect(() => { setDisplay(value != null ? value.toLocaleString('ko-KR') : '') }, [value])
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/[^0-9]/g, '')
-    if (raw === '') { setDisplay(''); onChange(null) }
-    else { const n = parseInt(raw, 10); setDisplay(n.toLocaleString('ko-KR')); onChange(n) }
-  }
-  return <Input value={display} onChange={handleChange} inputMode="numeric" className={className} />
-}
+import { 성과Input } from './성과Input'
+import { 직전누계 } from '../_lib/percent'
 
 type Props = { date_from: string; date_to: string }
 
@@ -38,6 +27,8 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
   const [editRow, setEditRow]       = useState<공사이력행 | null>(null)
   const [editDate, setEditDate]     = useState('')
   const [editAmount, setEditAmount] = useState<number | null>(null)
+  const [editRecords, setEditRecords] = useState<{ id: number; 작업일자: string; 성과금액: number | null }[]>([])
+  const [editLoading, setEditLoading] = useState(false)
   const [saving, setSaving]         = useState(false)
   const [deleting, setDeleting]     = useState(false)
   const [toast, setToast]           = useState<{ ok: boolean; msg: string } | null>(null)
@@ -51,7 +42,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
     setLoading(true)
     const supabase = createClient()
     const { data } = await (supabase.from('공사이력') as any)
-      .select('id, 작업일자, 성과금액, 수주_id, 수주!수주_id(지중no, 공사명)')
+      .select('id, 작업일자, 성과금액, 수주_id, 수주!수주_id(지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율)')
       .gte('작업일자', dateFrom)
       .lte('작업일자', dateTo)
       .order('작업일자', { ascending: false }) as { data: 공사이력행[] | null }
@@ -73,11 +64,34 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
 
   const total = filteredRows.reduce((sum, r) => sum + (r.성과금액 ?? 0), 0)
 
-  const openEdit = (row: 공사이력행) => {
+  const openEdit = async (row: 공사이력행) => {
     setEditRow(row)
     setEditDate(row.작업일자)
     setEditAmount(row.성과금액)
+    setEditLoading(true)
+    setEditRecords([])
+    const supabase = createClient()
+    const { data, error } = await (supabase.from('공사이력') as any)
+      .select('id, 작업일자, 성과금액')
+      .eq('수주_id', row.수주_id) as { data: { id: number; 작업일자: string; 성과금액: number | null }[] | null; error: unknown }
+    setEditLoading(false)
+    if (error) { showToast(false, '이력을 불러오지 못했습니다. 원 단위로만 수정할 수 있습니다.'); return }
+    setEditRecords(data ?? [])
   }
+
+  // 수정 대상 수주의 하도적용금액(=환산 base). 조인된 원자료로 계산.
+  const editBase = useMemo(() => {
+    const s = editRow?.수주
+    if (!s || s.수주금액_공급가 == null || s.보험료율 == null || s.하도전용율 == null) return null
+    return s.수주금액_공급가 * (1 - s.보험료율) * s.하도전용율
+  }, [editRow])
+
+  // 수정 중 레코드의 % 기준: 자기 자신을 뺀 "그 작업일자 직전" 누계.
+  // strict <(직전누계) + id 필터 이중안전. editDate를 바꾸면 재계산된다.
+  const edit직전누계 = useMemo(
+    () => 직전누계(editRecords.filter((r) => r.id !== editRow?.id), editDate),
+    [editRecords, editDate, editRow],
+  )
 
   const handleSave = async () => {
     if (!editRow) return
@@ -235,8 +249,18 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
               <Input type="date" className="h-9 text-sm" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs text-gray-600 mb-1.5 block">성과금액</Label>
-              <MoneyInput value={editAmount} onChange={setEditAmount} className="h-9 text-sm" />
+              {editLoading ? (
+                <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                  <Loader2 className="size-4 animate-spin" /> 이력 불러오는 중...
+                </div>
+              ) : (
+                <성과Input
+                  value={editAmount}
+                  onChange={setEditAmount}
+                  하도적용금액={editRecords.length > 0 ? editBase : null}
+                  직전누계={edit직전누계}
+                />
+              )}
             </div>
             <Button className="w-full bg-[#1e2d5a] hover:bg-[#2d45a8]" onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}
