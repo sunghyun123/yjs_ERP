@@ -1,19 +1,14 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Loader2, Save, Trash2, CheckCircle2, AlertCircle, Search, X } from 'lucide-react'
+import { Loader2, CheckCircle2, AlertCircle, Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import type { 공사이력행 } from '../_types'
-import { 성과Input } from './성과Input'
-import { 직전누계 } from '../_lib/percent'
+import { 이력수정Sheet, type 이력레코드 } from './이력수정Sheet'
 
 type Props = { date_from: string; date_to: string }
 
@@ -25,12 +20,8 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
   const [searchQuery, setSearchQuery] = useState('')
 
   const [editRow, setEditRow]       = useState<공사이력행 | null>(null)
-  const [editDate, setEditDate]     = useState('')
-  const [editAmount, setEditAmount] = useState<number | null>(null)
-  const [editRecords, setEditRecords] = useState<{ id: number; 작업일자: string; 성과금액: number | null }[]>([])
+  const [editRecords, setEditRecords] = useState<이력레코드[]>([])
   const [editLoading, setEditLoading] = useState(false)
-  const [saving, setSaving]         = useState(false)
-  const [deleting, setDeleting]     = useState(false)
   const [toast, setToast]           = useState<{ ok: boolean; msg: string } | null>(null)
 
   const showToast = (ok: boolean, msg: string) => {
@@ -66,57 +57,15 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
 
   const openEdit = async (row: 공사이력행) => {
     setEditRow(row)
-    setEditDate(row.작업일자)
-    setEditAmount(row.성과금액)
     setEditLoading(true)
     setEditRecords([])
     const supabase = createClient()
     const { data, error } = await (supabase.from('공사이력') as any)
       .select('id, 작업일자, 성과금액')
-      .eq('수주_id', row.수주_id) as { data: { id: number; 작업일자: string; 성과금액: number | null }[] | null; error: unknown }
+      .eq('수주_id', row.수주_id) as { data: 이력레코드[] | null; error: unknown }
     setEditLoading(false)
     if (error) { showToast(false, '이력을 불러오지 못했습니다. 원 단위로만 수정할 수 있습니다.'); return }
     setEditRecords(data ?? [])
-  }
-
-  // 수정 대상 수주의 하도적용금액(=환산 base). 조인된 원자료로 계산.
-  const editBase = useMemo(() => {
-    const s = editRow?.수주
-    if (!s || s.수주금액_공급가 == null || s.보험료율 == null || s.하도전용율 == null) return null
-    return s.수주금액_공급가 * (1 - s.보험료율) * s.하도전용율
-  }, [editRow])
-
-  // 수정 중 레코드의 % 기준: 자기 자신을 뺀 "그 작업일자 직전" 누계.
-  // strict <(직전누계) + id 필터 이중안전. editDate를 바꾸면 재계산된다.
-  const edit직전누계 = useMemo(
-    () => 직전누계(editRecords.filter((r) => r.id !== editRow?.id), editDate),
-    [editRecords, editDate, editRow],
-  )
-
-  const handleSave = async () => {
-    if (!editRow) return
-    setSaving(true)
-    const supabase = createClient()
-    const { error } = await (supabase.from('공사이력') as any)
-      .update({ 작업일자: editDate, 성과금액: editAmount })
-      .eq('id', editRow.id)
-    setSaving(false)
-    if (error) { showToast(false, '저장에 실패했습니다.'); return }
-    showToast(true, '수정되었습니다.')
-    setEditRow(null)
-    fetchData()
-  }
-
-  const handleDelete = async () => {
-    if (!editRow) return
-    setDeleting(true)
-    const supabase = createClient()
-    const { error } = await (supabase.from('공사이력') as any).delete().eq('id', editRow.id)
-    setDeleting(false)
-    if (error) { showToast(false, '삭제에 실패했습니다.'); return }
-    showToast(true, '삭제되었습니다.')
-    setEditRow(null)
-    fetchData()
   }
 
   return (
@@ -233,46 +182,17 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
         </table>
       </div>
 
-      {/* 수정 Sheet */}
-      <Sheet open={editRow != null} onOpenChange={(open) => { if (!open) setEditRow(null) }}>
-        <SheetContent>
-          <SheetHeader>
-            <div className="flex items-start gap-2 pr-8">
-              <span className="font-mono text-xs text-gray-400 mt-0.5 shrink-0">{editRow?.수주?.지중no}</span>
-              <SheetTitle className="text-base font-semibold text-left leading-snug">{editRow?.수주?.공사명}</SheetTitle>
-            </div>
-            <SheetDescription className="text-left">공사이력 수정</SheetDescription>
-          </SheetHeader>
-          <div className="mt-6 space-y-4">
-            <div>
-              <Label className="text-xs text-gray-600 mb-1.5 block">작업일자</Label>
-              <Input type="date" className="h-9 text-sm" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
-            </div>
-            <div>
-              {editLoading ? (
-                <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
-                  <Loader2 className="size-4 animate-spin" /> 이력 불러오는 중...
-                </div>
-              ) : (
-                <성과Input
-                  value={editAmount}
-                  onChange={setEditAmount}
-                  하도적용금액={editRecords.length > 0 ? editBase : null}
-                  직전누계={edit직전누계}
-                />
-              )}
-            </div>
-            <Button className="w-full bg-[#1e2d5a] hover:bg-[#2d45a8]" onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}
-              저장
-            </Button>
-            <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50" onClick={handleDelete} disabled={deleting}>
-              {deleting ? <Loader2 className="size-4 animate-spin mr-2" /> : <Trash2 className="size-4 mr-2" />}
-              삭제
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* 수정 Sheet (공용 컴포넌트) */}
+      <이력수정Sheet
+        open={editRow != null}
+        onOpenChange={(open) => { if (!open) setEditRow(null) }}
+        row={editRow}
+        records={editRecords}
+        loading={editLoading}
+        onSaved={() => { setEditRow(null); fetchData() }}
+        onDeleted={() => { setEditRow(null); fetchData() }}
+        showToast={showToast}
+      />
     </>
   )
 }
