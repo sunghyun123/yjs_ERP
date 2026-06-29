@@ -424,7 +424,8 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
         <div className="bg-white border border-gray-200 rounded-lg p-3">
           <p className="text-[10px] text-gray-400 mb-1">Δ공정 달성률</p>
           <p className="text-2xl font-bold text-amber-500">
-            {delta달성율 != null ? `+${delta달성율.toFixed(2)}%` : '—'}
+            {/* %는 toFixed가 음수면 '-'를 직접 붙이므로, 양수일 때만 '+'를 수동으로 더한다(하향 정정 시 +- 중복 방지). */}
+            {delta달성율 != null ? `${delta달성율 >= 0 ? '+' : ''}${delta달성율.toFixed(2)}%` : '—'}
           </p>
           {/* 이번 증분 금액: % 입력 시 보고서에 복붙할 환산 금액을 또렷이 노출(원·% 모드 공통) */}
           {성과금액 != null && (
