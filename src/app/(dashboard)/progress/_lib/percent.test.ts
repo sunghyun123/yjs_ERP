@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { percentToWon, wonToPercent, 누적목표를증분으로 } from './percent'
+import { percentToWon, wonToPercent, 누적목표를증분으로, 직전누계 } from './percent'
 
 describe('percentToWon', () => {
   it('입력% × base ÷ 100 을 반올림해 원으로 환산한다', () => {
@@ -72,5 +72,38 @@ describe('누적목표를증분으로 (% 모드 = 누적 목표 → 저장 정�
     const 누계 = percentToWon(30, base)!
     const 증분 = 누적목표를증분으로(75, base, 누계)!
     expect(wonToPercent(누계 + 증분, base)).toBe(75)
+  })
+})
+
+describe('직전누계 (기준일 직전까지의 누계 증분, strict <)', () => {
+  const recs = [
+    { 작업일자: '2026-06-25', 성과금액: 100 },
+    { 작업일자: '2026-06-26', 성과금액: 200 },
+    { 작업일자: '2026-06-28', 성과금액: 400 },
+  ]
+
+  it('빈 배열이면 0', () => {
+    expect(직전누계([], '2026-06-27')).toBe(0)
+  })
+
+  it('모든 레코드가 기준일 이전이면 전부 합산', () => {
+    expect(직전누계(recs, '2026-06-29')).toBe(700)
+  })
+
+  it('기준일보다 이전인 레코드만 합산한다 (백필 27 → 25·26만)', () => {
+    expect(직전누계(recs, '2026-06-27')).toBe(300)
+  })
+
+  it('기준일과 같은 날 레코드는 제외한다 (strict <, 수정 시 자기 제외 근거)', () => {
+    expect(직전누계(recs, '2026-06-26')).toBe(100)
+  })
+
+  it('정렬 안 된 입력에서도 정확하다', () => {
+    const unsorted = [recs[2], recs[0], recs[1]]
+    expect(직전누계(unsorted, '2026-06-27')).toBe(300)
+  })
+
+  it('성과금액이 null인 레코드는 0으로 취급', () => {
+    expect(직전누계([{ 작업일자: '2026-06-25', 성과금액: null }], '2026-06-27')).toBe(0)
   })
 })

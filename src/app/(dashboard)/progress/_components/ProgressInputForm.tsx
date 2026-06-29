@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useDeferredValue } from 'react'
+import { useState, useRef, useEffect, useDeferredValue, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { DismissableLayerBranch } from '@radix-ui/react-dismissable-layer'
 import { createClient } from '@/lib/supabase/client'
@@ -12,9 +12,11 @@ import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import { todayKST } from '@/lib/kst'
 import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
-import type { 수주목록항목 } from '../_types'
+import type { 수주목록항목, 공사이력행 } from '../_types'
 import type { 공사이력Row } from '@/types/database'
-import { wonToPercent, 누적목표를증분으로 } from '../_lib/percent'
+import { 성과Input } from './성과Input'
+import { 이력수정Sheet, type 이력레코드 } from './이력수정Sheet'
+import { 선택공사이력목록 } from './선택공사이력목록'
 import { useWorkspaceSlice } from '../../_components/WorkspaceProvider'
 
 type Props = {
@@ -162,159 +164,22 @@ function 공사SearchableSelect({
   )
 }
 
-function MoneyInput({
-  value,
-  onChange,
-  placeholder,
-  className,
-}: {
-  value: number | null
-  onChange: (v: number | null) => void
-  placeholder?: string
-  className?: string
-}) {
-  const [display, setDisplay] = useState(value != null ? value.toLocaleString('ko-KR') : '')
-  useEffect(() => {
-    setDisplay(value != null ? value.toLocaleString('ko-KR') : '')
-  }, [value])
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/[^0-9]/g, '')
-    if (raw === '') { setDisplay(''); onChange(null) }
-    else {
-      const num = parseInt(raw, 10)
-      setDisplay(num.toLocaleString('ko-KR'))
-      onChange(num)
-    }
-  }
-
-  return (
-    <Input
-      value={display}
-      onChange={handleChange}
-      placeholder={placeholder ?? '0'}
-      inputMode="numeric"
-      className={className}
-    />
-  )
-}
-
-function PercentInput({
-  value,
-  onChange,
-  base,
-  누계,
-  className,
-}: {
-  value: number | null
-  onChange: (v: number | null) => void
-  base: number // 환산 가능할 때만 렌더되므로 호출부에서 > 0 보장
-  누계: number // 현재까지 누계 성과금액(원). %는 "누적 목표"라 증분 역산의 기준점이 된다.
-  className?: string
-}) {
-  // display 는 사용자가 입력한 "누적 달성률 %" 문자열. value(정본)는 이번 증분(원)이라
-  // 의미가 달라(누적 vs 증분) 둘을 분리해 타이핑 중 반올림 떨림을 막는다.
-  const [display, setDisplay] = useState('')
-
-  useEffect(() => {
-    if (value == null) { setDisplay(''); return }
-    // 현재 display(누적%)가 이미 value(증분원)을 나타내면 덮어쓰지 않는다 (타이핑 떨림 방지).
-    const implied = display === '' || display === '.' ? null : 누적목표를증분으로(parseFloat(display), base, 누계)
-    if (implied === value) return
-    // value는 증분 → 화면에는 누적%로 환원: (누계 + 증분) / base.
-    const pct = wonToPercent(누계 + value, base)
-    setDisplay(pct == null ? '' : String(Math.round(pct * 100) / 100))
-  }, [value, base, 누계]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // 숫자와 소수점 1개만 허용
-    const raw = e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')
-    setDisplay(raw)
-    if (raw === '' || raw === '.') { onChange(null); return }
-    // 입력은 "누적 목표"이므로 저장 정본(증분) = 누적목표 − 현재누계. (음수=하향 정정도 그대로 허용)
-    onChange(누적목표를증분으로(parseFloat(raw), base, 누계))
-  }
-
-  return (
-    <div className="relative">
-      <Input
-        value={display}
-        onChange={handleChange}
-        placeholder="0"
-        inputMode="decimal"
-        className={cn('pr-7', className)}
-      />
-      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">%</span>
-    </div>
-  )
-}
-
-function 성과Input({
-  value,
-  onChange,
-  하도적용금액,
-  누계성과금액,
-}: {
-  value: number | null
-  onChange: (v: number | null) => void
-  하도적용금액: number | null
-  누계성과금액: number
-}) {
-  const 환산가능 = 하도적용금액 != null && 하도적용금액 > 0
-  const [모드, set모드] = useState<'원' | '%'>('%')
-  // 환산 불가(공사단가 정보 없음)면 % 입력 불가 → 원 모드 강제.
-  const effective모드 = 환산가능 ? 모드 : '원'
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1.5">
-        {/* %는 "누적 목표 달성률", 원은 "이번 증분" — 모드마다 입력 의미가 달라 라벨도 분기한다. */}
-        <Label className="text-xs text-gray-600">
-          {effective모드 === '%' ? '성과 (누적 달성률)' : '성과 (이번 증분)'}
-        </Label>
-        <div className="inline-flex rounded-md border border-gray-200 overflow-hidden text-xs">
-          {(['원', '%'] as const).map((m) => {
-            const disabled = m === '%' && !환산가능
-            return (
-              <button
-                key={m}
-                type="button"
-                disabled={disabled}
-                onClick={() => set모드(m)}
-                title={disabled ? '공사단가 정보가 없어 % 입력 불가' : undefined}
-                className={cn(
-                  'px-2.5 py-1 transition-colors',
-                  effective모드 === m ? 'bg-[#1e2d5a] text-white' : 'bg-white text-gray-500 hover:bg-gray-50',
-                  disabled && 'opacity-40 cursor-not-allowed hover:bg-white',
-                )}
-              >
-                {m}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-      {effective모드 === '%' ? (
-        <PercentInput value={value} onChange={onChange} base={하도적용금액 as number} 누계={누계성과금액} className="h-10 text-sm" />
-      ) : (
-        <MoneyInput value={value} onChange={onChange} className="h-10 text-sm" placeholder="0" />
-      )}
-      {!환산가능 && (
-        <p className="text-[10px] text-gray-400 mt-1">공사단가 정보가 없어 % 입력은 사용할 수 없습니다.</p>
-      )}
-      {환산가능 && effective모드 === '%' && (
-        <p className="text-[10px] text-gray-400 mt-1">이번 작업 후 <b>누적</b> 달성률을 입력하세요. 증분 금액은 자동 계산됩니다.</p>
-      )}
-    </div>
-  )
-}
-
 export function ProgressInputForm({ 수주목록, 공무담당자목록, default수주Id, default날짜 }: Props) {
   const [선택수주Id, set선택수주Id] = useState<number | null>(default수주Id ?? null)
   const [작업일자, set작업일자] = useState(() => default날짜 ?? todayKST())
   const [성과금액, set성과금액] = useState<number | null>(null)
-  const [누계성과금액, set누계성과금액] = useState<number>(0)
-  const [최근작업일자, set최근작업일자] = useState<string | null>(null)
+  const [editRow, setEditRow] = useState<공사이력행 | null>(null)
+  const [이력목록, set이력목록] = useState<Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[]>([])
+
+  // 이력목록 단일 소스에서 파생 — 누계·최근일·직전누계 동기화 버그를 구조적으로 제거.
+  const 누계성과금액 = useMemo(
+    () => 이력목록.reduce((s, r) => s + (r.성과금액 ?? 0), 0),
+    [이력목록],
+  )
+  const 최근작업일자 = useMemo(
+    () => 이력목록.reduce<string | null>((max, r) => (max == null || r.작업일자 > max ? r.작업일자 : max), null),
+    [이력목록],
+  )
   const [작업내용, set작업내용] = useState('')
   const [담당공무Id, set담당공무Id] = useState<number | null>(null)
   const [로딩중, set로딩중] = useState(false)
@@ -340,11 +205,39 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     return 공급가 * (1 - 보험료율) * 하도전용율
   })()
 
+  // 수정/삭제 후 이력만 다시 가져온다. handle공사선택은 담당공무까지 리셋하므로 재사용하지 않고 분리.
+  const reload이력목록 = async () => {
+    if (선택수주Id == null) return
+    const supabase = createClient()
+    const { data } = await (supabase.from('공사이력') as any)
+      .select('id, 작업일자, 성과금액')
+      .eq('수주_id', 선택수주Id)
+      .order('작업일자', { ascending: false }) as { data: Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[] | null }
+    set이력목록(data ?? [])
+  }
+
+  // 목록 행 클릭 → 선택수주 원자료로 공사이력행을 구성해 수정 Sheet를 연다.
+  const openRow = (rec: 이력레코드) => {
+    if (선택수주Id == null || 선택수주 == null) return
+    setEditRow({
+      id: rec.id,
+      작업일자: rec.작업일자,
+      성과금액: rec.성과금액,
+      수주_id: 선택수주Id,
+      수주: {
+        지중no: 선택수주.지중no,
+        공사명: 선택수주.공사명,
+        수주금액_공급가: 선택수주.수주금액_공급가,
+        보험료율: 선택수주.보험료율,
+        하도전용율: 선택수주.하도전용율,
+      },
+    })
+  }
+
   const handle공사선택 = async (id: number | null) => {
     set선택수주Id(id)
     set성과금액(null)
-    set누계성과금액(0)
-    set최근작업일자(null)
+    set이력목록([])
     if (id == null) return
 
     set로딩중(true)
@@ -358,10 +251,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     ])
     set로딩중(false)
 
-    const records = 이력결과.data ?? []
-    const 누계 = records.reduce((sum, r) => sum + (r.성과금액 ?? 0), 0)
-    set누계성과금액(누계)
-    if (records.length > 0) set최근작업일자(records[0].작업일자)
+    set이력목록(이력결과.data ?? [])
     const 수주data = (수주결과 as any).data as { 공무담당자_id: number | null } | null
     if (수주data?.공무담당자_id) set담당공무Id(수주data.공무담당자_id)
   }
@@ -422,13 +312,13 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     const supabase = createClient()
     // 성과금액은 증분(원) 정본. % 모드의 하향 정정은 음수로 들어오며, 매출손익은 증분을 월별 합산하므로
     // 정정이 일어난 달의 매출이 그만큼 차감된다(총 누계는 정확). 의도된 동작.
-    const { error } = await (supabase.from('공사이력') as any).insert({
+    const { data: inserted, error } = await (supabase.from('공사이력') as any).insert({
       수주_id: 선택수주Id,
       작업일자,
       성과금액,
       작업내용: 작업내용 || null,
       담당공무_id: 담당공무Id,
-    })
+    }).select('id, 작업일자, 성과금액').single()
     set저장중(false)
     if (error) {
       const msg = error.message?.includes('unique') ? '해당 날짜에 이미 등록된 이력이 있습니다.' : '저장에 실패했습니다.'
@@ -436,8 +326,8 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
       return
     }
     showToast(true, '저장되었습니다.')
-    set누계성과금액((prev) => prev + (성과금액 ?? 0))
-    set최근작업일자(작업일자)
+    // 반환행을 이력목록에 추가 → 누계·최근·직전 자동 재파생(백필 시 최근일 덮어쓰기 버그 없음).
+    if (inserted) set이력목록((prev) => [...prev, inserted as Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>])
     set성과금액(null)
     set작업일자(todayKST())
     set작업내용('')
@@ -506,7 +396,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
             value={성과금액}
             onChange={set성과금액}
             하도적용금액={하도적용금액}
-            누계성과금액={누계성과금액}
+            직전누계={누계성과금액}
           />
         </div>
 
@@ -555,6 +445,10 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
           {저장중 ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}
           저장
         </Button>
+
+        {선택수주Id != null && (
+          <선택공사이력목록 key={선택수주Id} records={이력목록} onRowClick={openRow} />
+        )}
       </div>
 
       <div className="w-full lg:w-60 shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 pt-5 lg:pt-0 lg:pl-6 space-y-4">
@@ -563,7 +457,8 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
         <div className="bg-white border border-gray-200 rounded-lg p-3">
           <p className="text-[10px] text-gray-400 mb-1">Δ공정 달성률</p>
           <p className="text-2xl font-bold text-amber-500">
-            {delta달성율 != null ? `+${delta달성율.toFixed(2)}%` : '—'}
+            {/* %는 toFixed가 음수면 '-'를 직접 붙이므로, 양수일 때만 '+'를 수동으로 더한다(하향 정정 시 +- 중복 방지). */}
+            {delta달성율 != null ? `${delta달성율 >= 0 ? '+' : ''}${delta달성율.toFixed(2)}%` : '—'}
           </p>
           {/* 이번 증분 금액: % 입력 시 보고서에 복붙할 환산 금액을 또렷이 노출(원·% 모드 공통) */}
           {성과금액 != null && (
@@ -575,7 +470,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
         </div>
 
         <div className="bg-[#1e2d5a] rounded-xl p-4">
-          <p className="text-[10px] text-blue-300 mb-3">저장 후 누계</p>
+          <p className="text-[10px] text-blue-300 mb-3">저장 후 전체 누계</p>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-blue-200">성과금액</span>
             <span className="text-white font-semibold">{formatKRW(저장후누계)}</span>
@@ -603,6 +498,17 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
           </div>
         )}
       </div>
+
+      <이력수정Sheet
+        open={editRow != null}
+        onOpenChange={(open) => { if (!open) setEditRow(null) }}
+        row={editRow}
+        records={이력목록}
+        loading={false}
+        onSaved={() => { setEditRow(null); reload이력목록() }}
+        onDeleted={() => { setEditRow(null); reload이력목록() }}
+        showToast={showToast}
+      />
     </div>
   )
 }
