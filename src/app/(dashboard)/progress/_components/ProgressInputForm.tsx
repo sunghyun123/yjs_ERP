@@ -15,7 +15,6 @@ import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 import type { 수주목록항목 } from '../_types'
 import type { 공사이력Row } from '@/types/database'
 import { 성과Input } from './성과Input'
-import { 직전누계 } from '../_lib/percent'
 import { useWorkspaceSlice } from '../../_components/WorkspaceProvider'
 
 type Props = {
@@ -178,8 +177,6 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     () => 이력목록.reduce<string | null>((max, r) => (max == null || r.작업일자 > max ? r.작업일자 : max), null),
     [이력목록],
   )
-  // % 입력 기준: "이 작업일자 직전"까지의 누계. 최신 날짜면 총계와 같고, 백필이면 그 날짜 전까지만.
-  const 직전누계값 = useMemo(() => 직전누계(이력목록, 작업일자), [이력목록, 작업일자])
   const [작업내용, set작업내용] = useState('')
   const [담당공무Id, set담당공무Id] = useState<number | null>(null)
   const [로딩중, set로딩중] = useState(false)
@@ -367,7 +364,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
             value={성과금액}
             onChange={set성과금액}
             하도적용금액={하도적용금액}
-            직전누계={직전누계값}
+            직전누계={누계성과금액}
           />
         </div>
 
