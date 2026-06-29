@@ -12,9 +12,11 @@ import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import { todayKST } from '@/lib/kst'
 import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
-import type { 수주목록항목 } from '../_types'
+import type { 수주목록항목, 공사이력행 } from '../_types'
 import type { 공사이력Row } from '@/types/database'
 import { 성과Input } from './성과Input'
+import { 이력수정Sheet, type 이력레코드 } from './이력수정Sheet'
+import { 선택공사이력목록 } from './선택공사이력목록'
 import { useWorkspaceSlice } from '../../_components/WorkspaceProvider'
 
 type Props = {
@@ -166,6 +168,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
   const [선택수주Id, set선택수주Id] = useState<number | null>(default수주Id ?? null)
   const [작업일자, set작업일자] = useState(() => default날짜 ?? todayKST())
   const [성과금액, set성과금액] = useState<number | null>(null)
+  const [editRow, setEditRow] = useState<공사이력행 | null>(null)
   const [이력목록, set이력목록] = useState<Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[]>([])
 
   // 이력목록 단일 소스에서 파생 — 누계·최근일·직전누계 동기화 버그를 구조적으로 제거.
@@ -201,6 +204,35 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     if (공급가 == null || 보험료율 == null || 하도전용율 == null) return null
     return 공급가 * (1 - 보험료율) * 하도전용율
   })()
+
+  // 수정/삭제 후 이력만 다시 가져온다. handle공사선택은 담당공무까지 리셋하므로 재사용하지 않고 분리.
+  const reload이력목록 = async () => {
+    if (선택수주Id == null) return
+    const supabase = createClient()
+    const { data } = await (supabase.from('공사이력') as any)
+      .select('id, 작업일자, 성과금액')
+      .eq('수주_id', 선택수주Id)
+      .order('작업일자', { ascending: false }) as { data: Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[] | null }
+    set이력목록(data ?? [])
+  }
+
+  // 목록 행 클릭 → 선택수주 원자료로 공사이력행을 구성해 수정 Sheet를 연다.
+  const openRow = (rec: 이력레코드) => {
+    if (선택수주Id == null || 선택수주 == null) return
+    setEditRow({
+      id: rec.id,
+      작업일자: rec.작업일자,
+      성과금액: rec.성과금액,
+      수주_id: 선택수주Id,
+      수주: {
+        지중no: 선택수주.지중no,
+        공사명: 선택수주.공사명,
+        수주금액_공급가: 선택수주.수주금액_공급가,
+        보험료율: 선택수주.보험료율,
+        하도전용율: 선택수주.하도전용율,
+      },
+    })
+  }
 
   const handle공사선택 = async (id: number | null) => {
     set선택수주Id(id)
@@ -413,6 +445,10 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
           {저장중 ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}
           저장
         </Button>
+
+        {선택수주Id != null && (
+          <선택공사이력목록 key={선택수주Id} records={이력목록} onRowClick={openRow} />
+        )}
       </div>
 
       <div className="w-full lg:w-60 shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 pt-5 lg:pt-0 lg:pl-6 space-y-4">
@@ -462,6 +498,17 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
           </div>
         )}
       </div>
+
+      <이력수정Sheet
+        open={editRow != null}
+        onOpenChange={(open) => { if (!open) setEditRow(null) }}
+        row={editRow}
+        records={이력목록}
+        loading={false}
+        onSaved={() => { setEditRow(null); reload이력목록() }}
+        onDeleted={() => { setEditRow(null); reload이력목록() }}
+        showToast={showToast}
+      />
     </div>
   )
 }
