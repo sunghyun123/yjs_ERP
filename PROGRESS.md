@@ -1,6 +1,6 @@
 # 영전사 ERP 개발 진행 기록
 
-> 최종 업데이트: 2026-06-29 (입력 화면 선택 공사 이력 목록 + 입력칸 % 기준 전체 누계 정리)
+> 최종 업데이트: 2026-06-30 (DB 백업 운영 적용 — VPS cron 라이브 + 풀백업 확장)
 >
 > 이 문서는 2층 구조다.
 > - **완료된 작업** = 무엇을 했는지 한 줄씩, 전체 기록(검색·추적용).
@@ -79,6 +79,7 @@
 | 64 | 변경내역 추적 (`/admin/updates`) | → [audit_log 트리거 결정](#변경내역-추적--db-트리거-vs-앱레벨-로깅) |
 | 65 | 공사이력 % 입력 = 누적 달성률 | → [누적 입력 재해석](#공사이력--입력--누적-달성률로-재해석) |
 | 66 | 입력 화면 선택 공사 이력 목록 + % 기준 정리 | → [선택 공사 이력 목록·% 기준 정리](#선택-공사-이력-목록--입력칸--기준-정리) |
+| 67 | DB 백업 운영 적용 (cron 라이브) | → [DB 백업 운영 적용](#db-백업-운영-적용--ipv6-pooler-docker-풀백업) |
 
 > 표기: `→`는 아래 **주요 엔지니어링 결정** 섹션의 심층 설명을 가리킨다.
 
@@ -155,6 +156,22 @@
 2. 공사를 바꾸면 페이지 번호가 이전 공사 값으로 남는다 → `<선택공사이력목록 key={선택수주Id}>`로 remount해 page를 1로 리셋(prop 변경만으론 내부 `page` state가 안 리셋됨).
 
 **곁가지 버그 수정:** Δ공정 달성률이 하향 정정으로 음수일 때 `toFixed`의 `-`에 수동 `+`가 겹쳐 `+-64.09%`로 보이던 표기를 양수일 때만 `+`를 붙이도록 수정.
+
+### DB 백업 운영 적용 — IPv6 pooler Docker 풀백업
+
+백업 **코드**는 PR #7로 머지돼 있었지만 **운영에는 안 켜져 있었다**(버킷 0개·실제 백업 0건 = DB 무방비). 2026-06-30 5단계로 실제 가동: ①비공개 버킷 생성 SQL 실행 → ②③VPS `.env.production`에 접속 문자열 추가 → ④수동 1회 실행 검증(Storage 업로드 확인) → ⑤cron `0 3 * * *`(KST) 등록. 매일 새벽 3시 `supabase db dump → gzip → manifest(sha256) → 비공개 Storage 업로드 → 보관정리(일7+주4)`.
+
+**함정 4종(전부 운영 적용에서 처음 드러남):**
+1. **직접연결 호스트가 IPv6 전용** — `db.<ref>.supabase.co`가 AAAA 레코드만 응답. 로컬(Windows)·VPS 둘 다 IPv4-only라 연결 자체가 불가. → **Session pooler**(`...pooler.supabase.com:5432`, user `postgres.<ref>`)로 강제. ⚠️ Transaction pooler(6543) 아님 — `pg_dump`는 prepared statement를 써 세션 연결이 필수.
+2. **`supabase db dump`가 Docker 필수** — pg_dump를 컨테이너로 실행. VPS에 `docker.io` 설치 필요. CLI는 `npm i -g`가 막혀 **.deb로 `/usr/bin`에 설치**(cron 기본 PATH라 새벽 실행 시 바이너리를 찾음).
+3. **Node 20엔 전역 WebSocket이 없다** — supabase-js `createClient`가 realtime을 안 써도 `WebSocket` 생성자를 요구해 throw. `ws`를 `globalThis.WebSocket`에 주입해 회피(가드로 Node 22+ 내장은 안 덮음). `ws`는 **deps**에 둔다(prod install에서 필요).
+4. **백업 범위 착각** — 기존 `backup:data` 류는 DB가 아니라 Excel export라 DR과 무관했다. 즉 **DB 행 데이터 백업이 0이었다**. `backup:db`를 schema-only→풀백업으로 확장(schema→data 순서 단일 .sql)해 처음 메움.
+
+**핵심 보안 판단 — 데이터는 `--schema public` 한정:** 데이터 덤프를 public 스키마로 제한해 (a)복원 정합(스키마덤프가 제외하는 auth/storage 테이블에 COPY 시도 방지) (b)**`auth.users` 등 크리덴셜/PII가 백업에 섞이지 않게** 차단. 비번 노출 방지: dump 실패 시 `err.message`(=비번 포함 명령줄)를 절대 출력 안 함.
+
+**남은 공백 — 복원 훈련:** 덤프 *생성·업로드*는 검증됐으나(80KB 풀백업 Storage 확인), 그 `.sql.gz`가 *실제 복원*되는지는 미실시. "복원 안 해본 백업은 백업이 아니다"(`docs/runbook-db-restore.md` 5번) — staging에 `psql -f` 복원 후 행수 대조(`투입실적`/`수주`/`공사이력`)가 다음 액션.
+
+PR #9(머지): ws 주입 + 풀백업 확장. 코드=`scripts/backup-db.ts`, cron=`deploy/backup-db.cron.example`, 런북=`docs/runbook-db-restore.md`.
 
 ---
 
