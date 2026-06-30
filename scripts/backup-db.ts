@@ -124,12 +124,31 @@ async function main(): Promise<void> {
   fs.mkdirSync(dir, { recursive: true })
   const sqlPath = path.join(dir, `${base}-db.sql`)
   const gzPath = path.join(dir, gzName)
+  const schemaPath = path.join(dir, `${base}-schema.sql`)
+  const dataPath = path.join(dir, `${base}-data.sql`)
 
-  // 1. dump
+  // 1. dump — supabase db dump는 한 호출로 schema+data를 못 뜬다(기본 schema-only).
+  //    그래서 스키마/데이터를 각각 뜬 뒤 "스키마 → 데이터" 순서로 한 .sql로 합친다.
+  //    순서가 중요: 복원 시 테이블이 먼저 생성돼 있어야 데이터가 적재된다.
+  //    데이터는 --use-copy(INSERT 대신 COPY)로 떠서 더 작고 복원이 빠르다.
   try {
-    execFileSync('supabase', ['db', 'dump', '--db-url', DB_URL, '-f', sqlPath], {
+    execFileSync('supabase', ['db', 'dump', '--db-url', DB_URL, '-f', schemaPath], {
       stdio: 'inherit',
     })
+    // --schema public: 데이터는 우리 앱 스키마(public)만 뜬다. 스키마 덤프가 auth/storage 등
+    // 플랫폼 관리 스키마를 제외하므로, 데이터도 동일하게 맞춰야 (a) 복원 정합성(없는 테이블에 COPY
+    // 방지) (b) auth.users 등 크리덴셜/PII가 백업에 섞이지 않게 한다.
+    execFileSync(
+      'supabase',
+      ['db', 'dump', '--db-url', DB_URL, '--data-only', '--use-copy', '--schema', 'public', '-f', dataPath],
+      { stdio: 'inherit' },
+    )
+    // 단일 파일로 결합 — 이 .sql.gz 하나로 DB 전체(구조+데이터) 복원이 가능하다.
+    fs.writeFileSync(sqlPath, fs.readFileSync(schemaPath))
+    fs.appendFileSync(sqlPath, '\n')
+    fs.appendFileSync(sqlPath, fs.readFileSync(dataPath))
+    fs.unlinkSync(schemaPath)
+    fs.unlinkSync(dataPath)
   } catch (e) {
     const err = e as NodeJS.ErrnoException
     if (err.code === 'ENOENT') {
@@ -165,7 +184,7 @@ async function main(): Promise<void> {
     backupId: id,
     file: gzName,
     generatedAt: new Date().toISOString(),
-    dumpCommand: 'supabase db dump --db-url *** -f <sql>',
+    dumpCommand: 'supabase db dump (schema) + --data-only --use-copy (data) → 단일 .sql 결합',
     rawSqlBytes: sqlStat.size,
     gzBytes: gz.length,
     sha256: sha,
