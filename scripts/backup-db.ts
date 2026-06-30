@@ -18,7 +18,15 @@ import zlib from 'zlib'
 import crypto from 'crypto'
 import { execFileSync } from 'child_process'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import ws from 'ws'
 import { selectForRetention } from '../src/lib/backup/storage-retention'
+
+// Node 20엔 전역 WebSocket이 없다(Node 22+부터 내장). supabase-js의 SupabaseClient 생성자는
+// realtime을 안 써도 RealtimeClient를 만들며 WebSocket 생성자를 요구해 createClient가 throw한다.
+// realtime-js가 globalThis.WebSocket을 먼저 탐지하므로(websocket-factory) ws를 전역 주입해 회피한다.
+if (typeof (globalThis as { WebSocket?: unknown }).WebSocket === 'undefined') {
+  ;(globalThis as { WebSocket?: unknown }).WebSocket = ws
+}
 
 const ROOT = path.resolve(__dirname, '..')
 // .env.production 먼저 로드(운영). 이미 설정된 값은 .env.local 로드 시 덮어쓰지 않음(로컬 테스트 폴백).
