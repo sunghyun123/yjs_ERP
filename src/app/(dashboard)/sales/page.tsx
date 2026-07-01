@@ -32,6 +32,10 @@ export default async function SalesPage({
     supabase
       .from('공사이력')
       .select('작업일자, 수주_id, 성과금액')
+      // 준공정산 행(준공완료 시 자동 적재, 성과=준공액−기존누계)은 제외한다.
+      // 매출손익의 성과는 "공사가 실제로 얼마나 진행됐나"만 보여주는 진행 성과이며,
+      // 준공(정산)액을 여기 더하면 오히려 헷갈린다는 방침. → 이 페이지 전체(KPI·차트·피벗) 일관 제외.
+      .eq('준공정산', false)
       .gte('작업일자', yearStart)
       .lt('작업일자', yearEnd),
     supabase.from('수주').select('id, 지중no, 공사명').order('지중no'),
