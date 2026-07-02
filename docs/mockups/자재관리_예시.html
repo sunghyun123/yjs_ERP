@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>자재 관리 (예시 목업)</title>
+<style>
+  :root{
+    --navy:#1e2d5a; --navy-active:#2d45a8; --navy-text:#c8d3f0;
+    --bg:#f1f5f9; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+    --green:#16a34a; --red:#dc2626; --amber:#b45309; --blue:#2563eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",sans-serif;}
+  button{font-family:inherit;cursor:pointer}
+
+  /* ── 상단 데모 컨트롤 바 ── */
+  .demobar{position:sticky;top:0;z-index:100;background:#0f172a;color:#fff;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:10px 16px;flex-wrap:wrap}
+  .demobar .t{font-size:14px;font-weight:600}
+  .demobar .t .dim{color:#94a3b8;font-weight:400;margin-left:8px;font-size:12px}
+  .toggle{display:flex;background:#1e293b;border-radius:999px;padding:3px}
+  .toggle button{border:0;background:transparent;color:#94a3b8;font-size:13px;font-weight:600;
+    padding:6px 16px;border-radius:999px}
+  .toggle button.on{background:#2d45a8;color:#fff}
+  .badge{background:#fef3c7;color:#b45309;font-size:12px;font-weight:700;border-radius:999px;padding:4px 12px}
+
+  .stage{padding:20px}
+  .hide{display:none !important}
+
+  /* ══════════ PC 뷰 ══════════ */
+  .pc{display:flex;max-width:1200px;margin:0 auto;background:var(--card);
+    border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08);min-height:640px}
+  .side{width:220px;background:var(--navy);color:var(--navy-text);flex-shrink:0;padding:14px 0}
+  .side .logo{display:flex;align-items:center;gap:10px;padding:6px 18px 16px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:10px}
+  .side .logo .mk{width:34px;height:34px;border-radius:9px;background:var(--navy-active);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+  .side .logo b{color:#fff;font-size:14px;display:block;line-height:1}
+  .side .logo span{font-size:11px;opacity:.6}
+  .side a{display:flex;align-items:center;gap:11px;margin:2px 10px;padding:9px 12px;border-radius:8px;
+    font-size:14px;color:var(--navy-text);text-decoration:none}
+  .side a:hover{background:rgba(255,255,255,.08)}
+  .side a.on{background:var(--navy-active);color:#fff}
+  .side a .ic{width:16px;text-align:center;opacity:.9}
+  .side .divider{height:1px;background:rgba(255,255,255,.1);margin:10px 16px}
+
+  .main{flex:1;padding:22px 26px;overflow:auto}
+  .h1{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+
+  .tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:18px}
+  .tabs button{border:0;background:transparent;padding:10px 16px;font-size:14px;font-weight:600;color:var(--muted);
+    border-bottom:2px solid transparent;margin-bottom:-2px}
+  .tabs button.on{color:var(--navy-active);border-bottom-color:var(--navy-active)}
+
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid var(--line);
+    border-radius:9px;padding:9px 12px;color:var(--muted);font-size:14px}
+  .search input{border:0;background:transparent;outline:none;flex:1;font-size:14px;color:var(--ink)}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;font-size:13px;color:var(--muted)}
+  .chip.on{background:#fef2f2;border-color:#fecaca;color:var(--red);font-weight:600}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:10px 12px;
+    border-bottom:1px solid var(--line);background:#f8fafc}
+  tbody td{padding:11px 12px;border-bottom:1px solid #f1f5f9}
+  tbody tr:hover{background:#f8fafc}
+  tr.low{background:#fef2f2}
+  tr.low:hover{background:#fee2e2}
+  .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  .pill{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px}
+  .pill.ok{background:#dcfce7;color:var(--green)}
+  .pill.bad{background:#fee2e2;color:var(--red)}
+  .rowbtns{display:flex;gap:6px}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 12px;font-size:12.5px;font-weight:600;color:#334155}
+  .btn.out{border-color:#fecaca;color:var(--red);background:#fff}
+  .btn.in{border-color:#bbf7d0;color:var(--green);background:#fff}
+  .btn.primary{background:var(--navy-active);color:#fff;border-color:var(--navy-active)}
+
+  /* 입/출고 폼 카드 */
+  .formwrap{display:grid;grid-template-columns:1.3fr 1fr;gap:20px}
+  @media(max-width:1000px){.formwrap{grid-template-columns:1fr}}
+  .cardbox{border:1px solid var(--line);border-radius:12px;padding:18px}
+  .cardbox h3{margin:0 0 14px;font-size:15px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:6px}
+  .field label .star{color:var(--red)}
+  .select,.txt{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px 12px;font-size:14px;background:#fff;color:var(--ink);outline:none}
+  .stock-note{display:flex;align-items:center;justify-content:space-between;background:#f0f9ff;border:1px solid #bae6fd;
+    border-radius:9px;padding:10px 14px;font-size:13px;color:#0369a1;margin-bottom:14px}
+  .stock-note b{font-size:18px}
+  .stepper{display:flex;align-items:stretch;gap:0;max-width:220px}
+  .stepper button{width:48px;font-size:22px;font-weight:700;border:1px solid var(--line);background:#f8fafc;color:#334155}
+  .stepper button:first-child{border-radius:9px 0 0 9px}
+  .stepper button:last-child{border-radius:0 9px 9px 0}
+  .stepper input{width:90px;text-align:center;border:1px solid var(--line);border-left:0;border-right:0;
+    font-size:20px;font-weight:700;outline:none}
+  .savebtn{width:100%;padding:14px;border:0;border-radius:11px;font-size:16px;font-weight:700;color:#fff;margin-top:6px}
+  .savebtn.out{background:var(--red)}
+  .savebtn.in{background:var(--green)}
+  .warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:12.5px;border-radius:8px;padding:9px 12px;margin-top:10px}
+  .recent-title{font-size:13px;color:var(--muted);font-weight:600;margin:0 0 10px}
+
+  /* ══════════ 모바일 뷰 ══════════ */
+  .mobile{display:flex;justify-content:center}
+  .phone{width:390px;max-width:100%;background:#fff;border-radius:34px;box-shadow:0 10px 40px rgba(0,0,0,.18);
+    overflow:hidden;border:10px solid #0f172a;position:relative}
+  .m-appbar{background:var(--navy);color:#fff;padding:16px 18px 14px;display:flex;align-items:center;justify-content:space-between}
+  .m-appbar b{font-size:17px}
+  .m-appbar .u{width:28px;height:28px;border-radius:50%;background:var(--navy-active);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .seg{display:flex;background:#eef2f7;margin:12px;border-radius:11px;padding:4px}
+  .seg button{flex:1;border:0;background:transparent;padding:10px;font-size:14px;font-weight:700;color:var(--muted);border-radius:8px}
+  .seg button.on{background:#fff;color:var(--navy-active);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+  .m-body{padding:0 12px 90px;max-height:620px;overflow:auto}
+  .m-search{display:flex;align-items:center;gap:8px;background:#f1f5f9;border-radius:11px;padding:11px 14px;color:var(--muted);font-size:14px;margin-bottom:12px}
+  .m-search input{border:0;background:transparent;outline:none;flex:1;font-size:15px}
+  .m-card{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:11px}
+  .m-card.low{border-color:#fecaca;background:#fef2f2}
+  .m-card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .m-card .nm{font-size:16px;font-weight:700}
+  .m-card .spec{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .m-card .stk{text-align:right;flex-shrink:0}
+  .m-card .stk .n{font-size:26px;font-weight:800;line-height:1}
+  .m-card .stk .un{font-size:12px;color:var(--muted)}
+  .m-card .acts{display:flex;gap:8px;margin-top:12px}
+  .m-card .acts button{flex:1;padding:11px;border-radius:10px;font-size:14px;font-weight:700;border:1px solid}
+  .m-card .acts .o{border-color:#fecaca;color:var(--red);background:#fff}
+  .m-card .acts .i{border-color:#bbf7d0;color:var(--green);background:#fff}
+
+  .m-form label{display:block;font-size:13px;color:var(--muted);font-weight:700;margin:14px 2px 7px}
+  .m-form .big-select{width:100%;padding:15px;font-size:16px;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .m-stocknote{display:flex;justify-content:space-between;align-items:center;background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:14px;margin-top:14px;color:#0369a1;font-size:14px}
+  .m-stocknote b{font-size:22px}
+  .m-stepper{display:flex;margin-top:8px}
+  .m-stepper button{width:64px;height:64px;font-size:30px;font-weight:800;border:1px solid var(--line);background:#f8fafc;color:#334155}
+  .m-stepper button:first-child{border-radius:14px 0 0 14px}
+  .m-stepper button:last-child{border-radius:0 14px 14px 0}
+  .m-stepper input{flex:1;text-align:center;border:1px solid var(--line);border-left:0;border-right:0;font-size:30px;font-weight:800;outline:none;min-width:0}
+  .m-save{width:100%;padding:17px;border:0;border-radius:14px;font-size:18px;font-weight:800;color:#fff;margin-top:18px}
+  .m-save.out{background:var(--red)} .m-save.in{background:var(--green)}
+  .m-recent{font-size:13px;color:var(--muted);font-weight:700;margin:22px 2px 10px}
+  .m-recent-row{display:flex;justify-content:space-between;padding:11px 2px;border-bottom:1px solid #f1f5f9;font-size:14px}
+  .m-recent-row .r{color:var(--muted)}
+
+  .m-tabbar{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);
+    display:flex;height:64px}
+  .m-tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    font-size:11px;font-weight:600;color:#94a3b8;text-decoration:none}
+  .m-tabbar a.on{color:var(--navy-active)}
+  .m-tabbar .ic{font-size:19px}
+  .more-note{text-align:center;font-size:11px;color:#94a3b8;padding:8px}
+
+  .foot{text-align:center;font-size:12px;color:#94a3b8;margin:18px 0 4px}
+</style>
+</head>
+<body>
+
+<div class="demobar">
+  <div class="t">자재 관리 <span class="dim">간소화 코어 목업 — 재고 · 출고 · 입고</span></div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <div class="toggle">
+      <button id="tPc" class="on" onclick="setDevice('pc')">💻 PC</button>
+      <button id="tMo" onclick="setDevice('mo')">📱 모바일</button>
+    </div>
+    <span class="badge">예시 데이터</span>
+  </div>
+</div>
+
+<div class="stage">
+
+  <!-- ═══════════ PC ═══════════ -->
+  <div id="pcView" class="pc">
+    <aside class="side">
+      <div class="logo"><div class="mk">YEC</div><div><b>영전사</b><span>ERP 시스템</span></div></div>
+      <a><span class="ic">🏠</span>홈</a>
+      <a><span class="ic">📋</span>수주대장</a>
+      <a><span class="ic">✏️</span>투입실적</a>
+      <a><span class="ic">📈</span>공사이력</a>
+      <a><span class="ic">💹</span>매출손익 현황</a>
+      <a><span class="ic">📄</span>공무</a>
+      <div class="divider"></div>
+      <a class="on"><span class="ic">📦</span>자재 관리</a>
+      <a><span class="ic">🦺</span>안전보건 관리</a>
+      <div class="divider"></div>
+      <a><span class="ic">⚙️</span>관리자</a>
+    </aside>
+
+    <div class="main">
+      <div class="h1">📦 자재 관리</div>
+      <p class="sub">설비예비품 재고를 확인하고, 자재를 넣고 빼는 화면입니다.</p>
+
+      <div class="tabs">
+        <button class="on" onclick="pcTab('stock',this)">재고 현황</button>
+        <button onclick="pcTab('out',this)">출고 (자재 꺼내기)</button>
+        <button onclick="pcTab('in',this)">입고 (자재 넣기)</button>
+      </div>
+
+      <!-- 재고 현황 -->
+      <div id="pc-stock">
+        <div class="toolbar">
+          <div class="search">🔍<input placeholder="품목명 · 품목코드로 검색 (예: 케이블, C007)" /></div>
+          <button class="chip on">⚠ 부족만 보기</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th>품목코드</th><th>품목명</th><th>규격</th><th>단위</th>
+            <th style="text-align:right">현재고</th><th style="text-align:right">안전재고</th>
+            <th>상태</th><th>작업</th>
+          </tr></thead>
+          <tbody id="stockRows"></tbody>
+        </table>
+        <p class="foot" style="text-align:left;margin-top:12px">
+          안전재고 미만 품목은 <span style="color:var(--red);font-weight:700">빨간색</span>으로 즉시 눈에 띕니다 — 발주 타이밍을 놓치지 않게.
+        </p>
+      </div>
+
+      <!-- 출고 -->
+      <div id="pc-out" class="hide">
+        <div class="formwrap">
+          <div class="cardbox">
+            <h3>🔻 자재 출고 — 자재를 현장에 꺼내 씁니다</h3>
+            <div class="field">
+              <label>품목 <span class="star">*</span></label>
+              <select class="select" id="outSel" onchange="syncStock('out')">
+                <option>특고압 케이블 CN/CE  60SQ  (C001)</option>
+                <option>저압 케이블 CV  35SQ  (C007)</option>
+                <option>변압기 기초대/단상  T-1B  (B003)</option>
+                <option>난연커바  60SQ  (J009)</option>
+              </select>
+            </div>
+            <div class="stock-note">현재 재고 <b id="outStock">477 M</b></div>
+            <div class="field">
+              <label>출고 수량 <span class="star">*</span></label>
+              <div class="stepper">
+                <button onclick="step('outQty',-1)">−</button>
+                <input id="outQty" value="10" onchange="checkOut()"/>
+                <button onclick="step('outQty',1)">+</button>
+              </div>
+            </div>
+            <div class="field"><label>사용 현장 / 용도</label><input class="txt" placeholder="예: 초평동20-2 변전소 신설"/></div>
+            <div class="field"><label>비고</label><input class="txt" placeholder="선택 입력"/></div>
+            <div id="outWarn" class="warn hide">⚠ 출고 수량이 현재고보다 많습니다. 재고를 확인하세요.</div>
+            <button class="savebtn out">출고 저장</button>
+          </div>
+          <div class="cardbox">
+            <p class="recent-title">최근 출고 내역</p>
+            <table><tbody>
+              <tr><td>06-30</td><td>저압 케이블 CV 35SQ</td><td class="num">120 M</td></tr>
+              <tr><td>06-28</td><td>특고압 접속재 CU 60SQ</td><td class="num">8 EA</td></tr>
+              <tr><td>06-27</td><td>변압기 기초대 T-3U</td><td class="num">1 SET</td></tr>
+              <tr><td>06-25</td><td>난연커바 325SQ</td><td class="num">4 EA</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 입고 -->
+      <div id="pc-in" class="hide">
+        <div class="formwrap">
+          <div class="cardbox">
+            <h3>🔺 자재 입고 — 들어온 자재를 등록합니다</h3>
+            <div class="field">
+              <label>품목 <span class="star">*</span></label>
+              <select class="select" id="inSel" onchange="syncStock('in')">
+                <option>변압기 기초대/단상  T-1B  (B003)</option>
+                <option>특고압 케이블 CN/CE  60SQ  (C001)</option>
+                <option>난연커바  60SQ  (J009)</option>
+                <option>+ 새 품목 등록…</option>
+              </select>
+            </div>
+            <div class="stock-note">현재 재고 <b id="inStock">3 SET</b></div>
+            <div class="field">
+              <label>입고 수량 <span class="star">*</span></label>
+              <div class="stepper">
+                <button onclick="step('inQty',-1)">−</button>
+                <input id="inQty" value="5"/>
+                <button onclick="step('inQty',1)">+</button>
+              </div>
+            </div>
+            <div class="field"><label>매입처</label><input class="txt" placeholder="예: 에프아이"/></div>
+            <div class="field"><label>단가 (원)</label><input class="txt" placeholder="예: 100,000"/></div>
+            <div class="field"><label>비고 / Lot No</label><input class="txt" placeholder="선택 입력"/></div>
+            <button class="savebtn in">입고 저장</button>
+          </div>
+          <div class="cardbox">
+            <p class="recent-title">최근 입고 내역</p>
+            <table><tbody>
+              <tr><td>06-29</td><td>특고압 케이블 CN/CE 325SQ</td><td class="num">500 M</td></tr>
+              <tr><td>06-26</td><td>개폐기 기초대 SW-4</td><td class="num">5 SET</td></tr>
+              <tr><td>06-24</td><td>저압 케이블 CV 70SQ</td><td class="num">300 M</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════ 모바일 ═══════════ -->
+  <div id="moView" class="mobile hide">
+    <div class="phone">
+      <div class="m-appbar"><b>📦 자재 관리</b><div class="u">조</div></div>
+      <div class="seg">
+        <button class="on" onclick="moTab('stock',this)">재고</button>
+        <button onclick="moTab('out',this)">출고</button>
+        <button onclick="moTab('in',this)">입고</button>
+      </div>
+
+      <div class="m-body">
+        <!-- 재고 -->
+        <div id="mo-stock">
+          <div class="m-search">🔍<input placeholder="품목 검색"/></div>
+          <div id="mStockCards"></div>
+        </div>
+
+        <!-- 출고 -->
+        <div id="mo-out" class="hide">
+          <div class="m-form">
+            <label>품목</label>
+            <select class="big-select" onchange="moSyncStock()">
+              <option>특고압 케이블 CN/CE 60SQ</option>
+              <option>저압 케이블 CV 35SQ</option>
+              <option>변압기 기초대/단상 T-1B</option>
+            </select>
+            <div class="m-stocknote">현재 재고 <b id="mOutStock">477 M</b></div>
+            <label>출고 수량</label>
+            <div class="m-stepper">
+              <button onclick="step('mOutQty',-1)">−</button>
+              <input id="mOutQty" value="10"/>
+              <button onclick="step('mOutQty',1)">+</button>
+            </div>
+            <label>사용 현장</label>
+            <select class="big-select"><option>초평동20-2 변전소</option><option>JY25-098</option></select>
+            <button class="m-save out">출고 저장</button>
+            <p class="m-recent">최근 출고</p>
+            <div class="m-recent-row"><span>저압 케이블 CV 35SQ</span><span class="r">120 M · 06-30</span></div>
+            <div class="m-recent-row"><span>특고압 접속재 CU 60SQ</span><span class="r">8 EA · 06-28</span></div>
+          </div>
+        </div>
+
+        <!-- 입고 -->
+        <div id="mo-in" class="hide">
+          <div class="m-form">
+            <label>품목</label>
+            <select class="big-select"><option>변압기 기초대/단상 T-1B</option><option>+ 새 품목 등록…</option></select>
+            <div class="m-stocknote">현재 재고 <b>3 SET</b></div>
+            <label>입고 수량</label>
+            <div class="m-stepper">
+              <button onclick="step('mInQty',-1)">−</button>
+              <input id="mInQty" value="5"/>
+              <button onclick="step('mInQty',1)">+</button>
+            </div>
+            <label>매입처</label>
+            <select class="big-select"><option>에프아이</option><option>등신일렉</option></select>
+            <button class="m-save in">입고 저장</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="m-tabbar">
+        <a><span class="ic">🏠</span>홈</a>
+        <a><span class="ic">📋</span>수주</a>
+        <a><span class="ic">✏️</span>실적</a>
+        <a><span class="ic">📈</span>이력</a>
+        <a class="on"><span class="ic">⋯</span>더보기</a>
+      </div>
+    </div>
+  </div>
+
+  <p class="more-note" id="moreNote" style="display:none">
+    모바일 탭바가 이미 꽉 차서(홈·수주·실적·이력) <b>자재·안전보건·매출손익·공무·관리자는 "더보기(⋯)"</b> 안으로 넣는 방식입니다.
+  </p>
+
+  <p class="foot">※ 예시 데이터입니다 — 실제 수치가 아니며, 화면 구조·동작 확인용입니다.</p>
+</div>
+
+<script>
+  // ── 예시 재고 데이터 ──
+  var stock = [
+    {code:'C001', nm:'특고압 케이블 CN/CE', spec:'60 SQ',  unit:'M',   qty:477,  safe:1000},
+    {code:'C007', nm:'저압 케이블 CV',       spec:'35 SQ',  unit:'M',   qty:1996, safe:500},
+    {code:'B003', nm:'변압기 기초대/단상',   spec:'T-1B',   unit:'SET', qty:3,    safe:5},
+    {code:'B002', nm:'개폐기 기초대',        spec:'SW-4',   unit:'SET', qty:5,    safe:3},
+    {code:'J001', nm:'특고압 직선접속재/CU', spec:'60 SQ',  unit:'EA',  qty:23,   safe:20},
+    {code:'J009', nm:'난연커바',             spec:'60 SQ',  unit:'EA',  qty:9,    safe:20},
+    {code:'C010', nm:'저압 케이블 CV',       spec:'240 SQ', unit:'M',   qty:1608, safe:300},
+    {code:'B006', nm:'변압기 기초대',        spec:'T-3U',   unit:'SET', qty:2,    safe:4},
+  ];
+  var won = function(n){return n.toLocaleString('ko-KR')};
+
+  function renderStock(){
+    var t = document.getElementById('stockRows'); t.innerHTML='';
+    var m = document.getElementById('mStockCards'); m.innerHTML='';
+    stock.forEach(function(s){
+      var low = s.qty < s.safe;
+      t.insertAdjacentHTML('beforeend',
+        '<tr class="'+(low?'low':'')+'">'+
+        '<td>'+s.code+'</td><td style="font-weight:600">'+s.nm+'</td><td>'+s.spec+'</td><td>'+s.unit+'</td>'+
+        '<td class="num" style="color:'+(low?'var(--red)':'inherit')+'">'+won(s.qty)+'</td>'+
+        '<td class="num" style="color:var(--muted)">'+won(s.safe)+'</td>'+
+        '<td>'+(low?'<span class="pill bad">부족</span>':'<span class="pill ok">충분</span>')+'</td>'+
+        '<td><div class="rowbtns"><button class="btn out">출고</button><button class="btn in">입고</button></div></td>'+
+        '</tr>');
+      m.insertAdjacentHTML('beforeend',
+        '<div class="m-card '+(low?'low':'')+'">'+
+        '<div class="top"><div><div class="nm">'+s.nm+'</div><div class="spec">'+s.spec+' · '+s.code+'</div>'+
+        (low?'<span class="pill bad" style="margin-top:6px">⚠ 안전재고 미만</span>':'')+'</div>'+
+        '<div class="stk"><div class="n" style="color:'+(low?'var(--red)':'var(--ink)')+'">'+won(s.qty)+'</div><div class="un">'+s.unit+'</div></div></div>'+
+        '<div class="acts"><button class="o">🔻 출고</button><button class="i">🔺 입고</button></div>'+
+        '</div>');
+    });
+  }
+  renderStock();
+
+  function setDevice(d){
+    var pc = d==='pc';
+    document.getElementById('pcView').classList.toggle('hide',!pc);
+    document.getElementById('moView').classList.toggle('hide',pc);
+    document.getElementById('tPc').classList.toggle('on',pc);
+    document.getElementById('tMo').classList.toggle('on',!pc);
+    document.getElementById('moreNote').style.display = pc?'none':'block';
+  }
+  function pcTab(id,btn){
+    ['stock','out','in'].forEach(function(x){document.getElementById('pc-'+x).classList.toggle('hide',x!==id)});
+    document.querySelectorAll('.tabs button').forEach(function(b){b.classList.remove('on')}); btn.classList.add('on');
+  }
+  function moTab(id,btn){
+    ['stock','out','in'].forEach(function(x){document.getElementById('mo-'+x).classList.toggle('hide',x!==id)});
+    document.querySelectorAll('.seg button').forEach(function(b){b.classList.remove('on')}); btn.classList.add('on');
+  }
+  function step(id,d){var el=document.getElementById(id);var v=Math.max(0,(parseInt(el.value)||0)+d);el.value=v;if(id==='outQty')checkOut()}
+  function checkOut(){
+    var q=parseInt(document.getElementById('outQty').value)||0;
+    var cur=parseInt((document.getElementById('outStock').textContent||'0').replace(/[^0-9]/g,''))||0;
+    document.getElementById('outWarn').classList.toggle('hide', q<=cur);
+  }
+  var stockMapOut={0:'477 M',1:'1,996 M',2:'3 SET',3:'9 EA'};
+  var stockMapIn={0:'3 SET',1:'477 M',2:'9 EA'};
+  function syncStock(k){
+    if(k==='out'){document.getElementById('outStock').textContent=stockMapOut[document.getElementById('outSel').selectedIndex]||'—';checkOut();}
+    else{document.getElementById('inStock').textContent=stockMapIn[document.getElementById('inSel').selectedIndex]||'—';}
+  }
+  function moSyncStock(){document.getElementById('mOutStock').textContent=['477 M','1,996 M','3 SET'][event.target.selectedIndex]||'—';}
+</script>
+</body>
+</html>

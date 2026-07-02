@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>안전보건 관리 (예시 목업)</title>
+<style>
+  :root{
+    --navy:#1e2d5a; --navy-active:#2d45a8; --navy-text:#c8d3f0;
+    --bg:#f1f5f9; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+    --green:#16a34a; --red:#dc2626; --amber:#d97706; --blue:#2563eb; --purple:#7c3aed;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",sans-serif;}
+  button{font-family:inherit;cursor:pointer}
+
+  .demobar{position:sticky;top:0;z-index:100;background:#0f172a;color:#fff;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;flex-wrap:wrap}
+  .demobar .t{font-size:14px;font-weight:600}
+  .demobar .t .dim{color:#94a3b8;font-weight:400;margin-left:8px;font-size:12px}
+  .toggle{display:flex;background:#1e293b;border-radius:999px;padding:3px}
+  .toggle button{border:0;background:transparent;color:#94a3b8;font-size:13px;font-weight:600;padding:6px 16px;border-radius:999px}
+  .toggle button.on{background:#2d45a8;color:#fff}
+  .badge{background:#fef3c7;color:#b45309;font-size:12px;font-weight:700;border-radius:999px;padding:4px 12px}
+  .stage{padding:20px}
+  .hide{display:none !important}
+
+  /* PC */
+  .pc{display:flex;max-width:1200px;margin:0 auto;background:var(--card);border-radius:16px;overflow:hidden;
+    box-shadow:0 4px 20px rgba(0,0,0,.08);min-height:680px}
+  .side{width:220px;background:var(--navy);color:var(--navy-text);flex-shrink:0;padding:14px 0}
+  .side .logo{display:flex;align-items:center;gap:10px;padding:6px 18px 16px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:10px}
+  .side .logo .mk{width:34px;height:34px;border-radius:9px;background:var(--navy-active);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+  .side .logo b{color:#fff;font-size:14px;display:block;line-height:1}
+  .side .logo span{font-size:11px;opacity:.6}
+  .side a{display:flex;align-items:center;gap:11px;margin:2px 10px;padding:9px 12px;border-radius:8px;font-size:14px;color:var(--navy-text);text-decoration:none}
+  .side a:hover{background:rgba(255,255,255,.08)}
+  .side a.on{background:var(--navy-active);color:#fff}
+  .side a .ic{width:16px;text-align:center;opacity:.9}
+  .side .divider{height:1px;background:rgba(255,255,255,.1);margin:10px 16px}
+
+  .main{flex:1;padding:22px 26px;overflow:auto}
+  .h1{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+  .tabs{display:flex;gap:2px;border-bottom:2px solid var(--line);margin-bottom:18px;flex-wrap:wrap}
+  .tabs button{border:0;background:transparent;padding:10px 14px;font-size:13.5px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px}
+  .tabs button.on{color:var(--navy-active);border-bottom-color:var(--navy-active)}
+
+  /* KPI 카드 */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+  @media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{border:1px solid var(--line);border-radius:13px;padding:15px}
+  .kpi .lb{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:5px}
+  .kpi .v{font-size:27px;font-weight:800;margin-top:8px;line-height:1}
+  .kpi .v small{font-size:14px;font-weight:600;color:var(--muted)}
+  .kpi .d{font-size:11.5px;margin-top:6px;font-weight:600}
+  .up{color:var(--green)} .down{color:var(--red)} .flat{color:var(--muted)}
+  .bar{height:6px;border-radius:999px;background:#f1f5f9;margin-top:9px;overflow:hidden}
+  .bar>i{display:block;height:100%;border-radius:999px}
+
+  .grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}
+  @media(max-width:1000px){.grid2{grid-template-columns:1fr}}
+  .cardbox{border:1px solid var(--line);border-radius:13px;padding:18px}
+  .cardbox h3{margin:0 0 14px;font-size:15px;display:flex;align-items:center;justify-content:space-between}
+  .cardbox h3 .add{font-size:12.5px;font-weight:700;color:#fff;background:var(--navy-active);border:0;border-radius:8px;padding:7px 13px}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{text-align:left;color:var(--muted);font-weight:600;font-size:11.5px;padding:9px 10px;border-bottom:1px solid var(--line);background:#f8fafc}
+  tbody td{padding:10px;border-bottom:1px solid #f1f5f9}
+  tbody tr:hover{background:#f8fafc}
+  .pill{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px}
+  .pill.high{background:#fee2e2;color:var(--red)} .pill.mid{background:#fef3c7;color:var(--amber)}
+  .pill.low{background:#dcfce7;color:var(--green)} .pill.done{background:#dbeafe;color:var(--blue)}
+  .pill.wait{background:#f1f5f9;color:var(--muted)}
+
+  /* 우수기업 준비도 패널 */
+  .readiness .row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+  .readiness .row:last-child{border:0}
+  .readiness .nm{flex:1}
+  .readiness .mini{width:110px;height:7px;border-radius:999px;background:#f1f5f9;overflow:hidden}
+  .readiness .mini>i{display:block;height:100%;border-radius:999px;background:var(--green)}
+  .readiness .pct{width:40px;text-align:right;font-weight:700;font-size:12.5px}
+  .callout{background:#eff6ff;border:1px solid #bfdbfe;border-radius:11px;padding:14px;font-size:13px;color:#1e40af;margin-bottom:18px;line-height:1.6}
+  .callout b{color:#1e3a8a}
+
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:6px}
+  .select,.txt{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:14px;background:#fff;color:var(--ink);outline:none}
+
+  /* 모바일 */
+  .mobile{display:flex;justify-content:center}
+  .phone{width:390px;max-width:100%;background:#fff;border-radius:34px;box-shadow:0 10px 40px rgba(0,0,0,.18);overflow:hidden;border:10px solid #0f172a;position:relative}
+  .m-appbar{background:var(--navy);color:#fff;padding:16px 18px 14px;display:flex;align-items:center;justify-content:space-between}
+  .m-appbar b{font-size:17px}
+  .m-appbar .u{width:28px;height:28px;border-radius:50%;background:var(--navy-active);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .seg{display:flex;background:#eef2f7;margin:12px;border-radius:11px;padding:4px}
+  .seg button{flex:1;border:0;background:transparent;padding:9px 4px;font-size:13px;font-weight:700;color:var(--muted);border-radius:8px}
+  .seg button.on{background:#fff;color:var(--navy-active);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+  .m-body{padding:0 12px 90px;max-height:640px;overflow:auto}
+
+  .m-hero{background:linear-gradient(135deg,#1e2d5a,#2d45a8);color:#fff;border-radius:16px;padding:18px;margin-bottom:14px;text-align:center}
+  .m-hero .n{font-size:44px;font-weight:800;line-height:1}
+  .m-hero .l{font-size:13px;opacity:.85;margin-top:6px}
+  .m-report{width:100%;background:var(--red);color:#fff;border:0;border-radius:16px;padding:20px;font-size:19px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px}
+  .m-sub{font-size:13px;color:var(--muted);font-weight:700;margin:16px 2px 9px}
+  .m-listrow{display:flex;align-items:center;gap:11px;padding:13px;border:1px solid var(--line);border-radius:13px;margin-bottom:9px}
+  .m-listrow .ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .m-listrow .tx{flex:1}
+  .m-listrow .tx b{font-size:15px} .m-listrow .tx div{font-size:12px;color:var(--muted);margin-top:2px}
+  .m-check{display:flex;align-items:center;gap:12px;padding:15px 4px;border-bottom:1px solid #f1f5f9;font-size:15px}
+  .m-check .box{width:28px;height:28px;border-radius:8px;border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff}
+  .m-check .box.ck{background:var(--green);border-color:var(--green)}
+  .m-form label{display:block;font-size:13px;color:var(--muted);font-weight:700;margin:14px 2px 7px}
+  .m-form .big-select,.m-form .big-txt{width:100%;padding:14px;font-size:16px;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .m-photo{border:2px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--muted);font-size:15px;font-weight:600}
+  .sev{display:flex;gap:8px;margin-top:8px}
+  .sev button{flex:1;padding:13px;border-radius:11px;font-weight:800;font-size:14px;border:1px solid}
+  .sev .h{border-color:#fecaca;color:var(--red);background:#fff}
+  .sev .m{border-color:#fde68a;color:var(--amber);background:#fff}
+  .sev .l{border-color:#bbf7d0;color:var(--green);background:#fff}
+  .m-save{width:100%;padding:17px;border:0;border-radius:14px;font-size:18px;font-weight:800;color:#fff;background:var(--red);margin-top:18px}
+
+  .m-tabbar{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;height:64px}
+  .m-tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:#94a3b8;text-decoration:none}
+  .m-tabbar a.on{color:var(--navy-active)}
+  .m-tabbar .ic{font-size:19px}
+  .more-note{text-align:center;font-size:11px;color:#94a3b8;padding:8px}
+  .foot{text-align:center;font-size:12px;color:#94a3b8;margin:18px 0 4px}
+  .secnote{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="demobar">
+  <div class="t">안전보건 관리 <span class="dim">우수기업 인증 지향 — 문서 · 활동대장 · 지표</span></div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <div class="toggle">
+      <button id="tPc" class="on" onclick="setDevice('pc')">💻 PC</button>
+      <button id="tMo" onclick="setDevice('mo')">📱 모바일</button>
+    </div>
+    <span class="badge">예시 데이터</span>
+  </div>
+</div>
+
+<div class="stage">
+
+  <!-- ═══════════ PC ═══════════ -->
+  <div id="pcView" class="pc">
+    <aside class="side">
+      <div class="logo"><div class="mk">YEC</div><div><b>영전사</b><span>ERP 시스템</span></div></div>
+      <a><span class="ic">🏠</span>홈</a>
+      <a><span class="ic">📋</span>수주대장</a>
+      <a><span class="ic">✏️</span>투입실적</a>
+      <a><span class="ic">📈</span>공사이력</a>
+      <a><span class="ic">💹</span>매출손익 현황</a>
+      <a><span class="ic">📄</span>공무</a>
+      <div class="divider"></div>
+      <a><span class="ic">📦</span>자재 관리</a>
+      <a class="on"><span class="ic">🦺</span>안전보건 관리</a>
+      <div class="divider"></div>
+      <a><span class="ic">⚙️</span>관리자</a>
+    </aside>
+
+    <div class="main">
+      <div class="h1">🦺 안전보건 관리</div>
+      <p class="sub">우수기업 인증(KOSHA-MS / ISO 45001)은 문서가 아니라 <b>쌓인 활동 기록</b>으로 심사받습니다.</p>
+
+      <div class="tabs">
+        <button class="on" onclick="pcTab('dash',this)">📊 대시보드</button>
+        <button onclick="pcTab('risk',this)">위험성평가</button>
+        <button onclick="pcTab('near',this)">아차사고</button>
+        <button onclick="pcTab('insp',this)">점검·TBM</button>
+        <button onclick="pcTab('edu',this)">안전교육</button>
+        <button onclick="pcTab('doc',this)">경영시스템 문서</button>
+      </div>
+
+      <!-- 대시보드 -->
+      <div id="pc-dash">
+        <div class="callout">
+          💡 <b>우수기업 선정의 핵심</b> — 심사 판단기준 47개 중 <b>14개가 "실제 활동 수준"</b>, <b>6개가 근로자 면담</b>입니다.
+          방침·계획 문서만으로는 탈락하고, <b>위험성평가·아차사고·점검·교육이 매달 쌓이는 기록</b>이 있어야 인정받습니다. 아래 지표가 그 증빙입니다.
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="lb">🟢 무재해 일수</div><div class="v">312<small> 일</small></div><div class="d up">▲ 목표 300일 달성</div></div>
+          <div class="kpi"><div class="lb">🛠 위험성평가 개선완료율</div><div class="v">88<small>%</small></div><div class="bar"><i style="width:88%;background:var(--green)"></i></div></div>
+          <div class="kpi"><div class="lb">💬 아차사고 발굴</div><div class="v">24<small> 건</small></div><div class="d up">▲ 많을수록 성숙 (전년 9건)</div></div>
+          <div class="kpi"><div class="lb">🎓 안전교육 이수율</div><div class="v">96<small>%</small></div><div class="bar"><i style="width:96%;background:var(--blue)"></i></div></div>
+          <div class="kpi"><div class="lb">✅ 점검 이행률</div><div class="v">91<small>%</small></div><div class="bar"><i style="width:91%;background:var(--purple)"></i></div></div>
+        </div>
+
+        <div class="grid2">
+          <div class="cardbox">
+            <h3>최근 안전보건 활동 <span style="font-size:12px;font-weight:400;color:var(--muted)">(모두 심사 증빙)</span></h3>
+            <table>
+              <thead><tr><th>일자</th><th>구분</th><th>내용</th><th>상태</th></tr></thead>
+              <tbody>
+                <tr><td>06-30</td><td>아차사고</td><td>고소작업 중 안전고리 미체결 발견</td><td><span class="pill done">개선완료</span></td></tr>
+                <tr><td>06-28</td><td>위험성평가</td><td>변전소 활선 근접작업 재평가</td><td><span class="pill wait">조치중</span></td></tr>
+                <tr><td>06-27</td><td>TBM</td><td>초평동 현장 작업 전 안전미팅 (7명)</td><td><span class="pill low">완료</span></td></tr>
+                <tr><td>06-26</td><td>정기점검</td><td>전동공구·보호구 월례 점검</td><td><span class="pill low">완료</span></td></tr>
+                <tr><td>06-24</td><td>안전교육</td><td>정기 안전보건교육 2분기 (분기 6h)</td><td><span class="pill low">완료</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="cardbox readiness">
+            <h3>🏅 우수기업 인증 준비도</h3>
+            <div class="row"><span class="nm">안전보건 방침·목표 수립</span><span class="mini"><i style="width:100%"></i></span><span class="pct">100%</span></div>
+            <div class="row"><span class="nm">연간 계획·예산 편성</span><span class="mini"><i style="width:100%"></i></span><span class="pct">100%</span></div>
+            <div class="row"><span class="nm">위험성평가 정기 실시</span><span class="mini"><i style="width:88%"></i></span><span class="pct">88%</span></div>
+            <div class="row"><span class="nm">아차사고 발굴·개선</span><span class="mini"><i style="width:80%"></i></span><span class="pct">80%</span></div>
+            <div class="row"><span class="nm">순회점검·TBM 기록</span><span class="mini"><i style="width:91%"></i></span><span class="pct">91%</span></div>
+            <div class="row"><span class="nm">법정 안전보건교육 이수</span><span class="mini"><i style="width:96%"></i></span><span class="pct">96%</span></div>
+            <div class="row"><span class="nm">근로자 참여·의견수렴</span><span class="mini"><i style="width:70%"></i></span><span class="pct">70%</span></div>
+            <p class="secnote">각 항목은 KOSHA-MS 인증기준(경영체계 27 + 활동수준 14 + 면담 6)에 대응합니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 위험성평가 -->
+      <div id="pc-risk" class="hide">
+        <div class="cardbox">
+          <h3>위험성평가 대장 <button class="add">+ 새 평가</button></h3>
+          <p class="secnote" style="margin:0 0 14px">유해·위험요인을 찾아 위험성을 판정하고 개선대책까지 추적합니다. <b>기록은 3년 보존</b>(산안법 제36조).</p>
+          <table>
+            <thead><tr><th>평가일</th><th>공정/장소</th><th>유해·위험요인</th><th>위험성</th><th>개선대책</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td>06-28</td><td>변전소 활선작업</td><td>활선 근접 감전</td><td><span class="pill high">높음</span></td><td>정전작업 전환·활선방호구</td><td><span class="pill wait">조치중</span></td></tr>
+              <tr><td>06-15</td><td>케이블 포설</td><td>중량물 협착</td><td><span class="pill mid">보통</span></td><td>2인1조·리프트 사용</td><td><span class="pill done">완료</span></td></tr>
+              <tr><td>06-10</td><td>고소 배전작업</td><td>추락</td><td><span class="pill high">높음</span></td><td>안전대·작업발판</td><td><span class="pill done">완료</span></td></tr>
+              <tr><td>05-30</td><td>지중 관로작업</td><td>토사 붕괴</td><td><span class="pill mid">보통</span></td><td>흙막이·굴착면 관리</td><td><span class="pill done">완료</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 아차사고 -->
+      <div id="pc-near" class="hide">
+        <div class="grid2">
+          <div class="cardbox">
+            <h3>아차사고 신고 대장 <button class="add">+ 신고</button></h3>
+            <p class="secnote" style="margin:0 0 14px">현장에서 <b>다칠 뻔한 상황</b>을 발굴합니다. 발굴 건수가 많을수록 안전문화가 성숙했다고 평가됩니다.</p>
+            <table>
+              <thead><tr><th>일자</th><th>현장</th><th>내용</th><th>위험도</th><th>조치</th></tr></thead>
+              <tbody>
+                <tr><td>06-30</td><td>초평동20-2</td><td>안전고리 미체결 발견</td><td><span class="pill high">높음</span></td><td><span class="pill done">완료</span></td></tr>
+                <tr><td>06-25</td><td>JY25-098</td><td>정리 안된 케이블에 걸림</td><td><span class="pill low">낮음</span></td><td><span class="pill done">완료</span></td></tr>
+                <tr><td>06-20</td><td>변전소</td><td>공구 낙하 위험 위치</td><td><span class="pill mid">보통</span></td><td><span class="pill wait">조치중</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="cardbox">
+            <h3>신고 등록</h3>
+            <div class="field"><label>발생 현장</label><select class="select"><option>초평동20-2 변전소</option><option>JY25-098</option></select></div>
+            <div class="field"><label>어떤 상황이었나요?</label><textarea class="txt" rows="3" placeholder="예: 고소작업 중 안전고리를 안 걸고 이동함"></textarea></div>
+            <div class="field"><label>사진 첨부</label><div style="border:2px dashed var(--line);border-radius:10px;padding:22px;text-align:center;color:var(--muted);font-size:13px">📷 사진 올리기</div></div>
+            <div class="field"><label>위험도</label>
+              <div class="sev"><button class="h">높음</button><button class="m">보통</button><button class="l">낮음</button></div>
+            </div>
+            <button class="add" style="width:100%;padding:13px;font-size:15px;margin-top:6px">신고 저장</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 점검·TBM -->
+      <div id="pc-insp" class="hide">
+        <div class="cardbox">
+          <h3>점검 · TBM 기록 <button class="add">+ 점검 실시</button></h3>
+          <p class="secnote" style="margin:0 0 14px">순회점검·정기점검과 작업 전 안전미팅(TBM). 체크리스트 이행이 그대로 증빙이 됩니다.</p>
+          <table>
+            <thead><tr><th>일자</th><th>종류</th><th>대상/현장</th><th>점검자</th><th>지적</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td>06-27</td><td>TBM</td><td>초평동 현장 (7명)</td><td>김명호</td><td>0건</td><td><span class="pill low">완료</span></td></tr>
+              <tr><td>06-26</td><td>정기점검</td><td>전동공구·보호구</td><td>김단추</td><td>2건</td><td><span class="pill done">개선완료</span></td></tr>
+              <tr><td>06-20</td><td>순회점검</td><td>변전소 작업구역</td><td>김명호</td><td>1건</td><td><span class="pill wait">조치중</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 안전교육 -->
+      <div id="pc-edu" class="hide">
+        <div class="cardbox">
+          <h3>안전보건 교육 이수 대장 <button class="add">+ 교육 등록</button></h3>
+          <p class="secnote" style="margin:0 0 14px">정기교육·특별교육·신규자교육의 이수 이력. 법정 이수시간 충족 여부가 심사·처벌 판단의 핵심 근거입니다.</p>
+          <table>
+            <thead><tr><th>교육일</th><th>과정</th><th>구분</th><th>대상</th><th>이수</th><th>이수율</th></tr></thead>
+            <tbody>
+              <tr><td>06-24</td><td>2분기 정기 안전보건교육</td><td>정기(6h)</td><td>전 직원 12명</td><td>12/12</td><td><span class="pill low">100%</span></td></tr>
+              <tr><td>05-12</td><td>활선작업 특별안전교육</td><td>특별</td><td>전기공 5명</td><td>5/5</td><td><span class="pill low">100%</span></td></tr>
+              <tr><td>04-03</td><td>신규 채용자 교육</td><td>신규</td><td>신입 2명</td><td>1/2</td><td><span class="pill mid">50%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 문서 -->
+      <div id="pc-doc" class="hide">
+        <div class="grid2">
+          <div class="cardbox">
+            <h3>안전보건 경영방침 · 목표 <button class="add">저장</button></h3>
+            <div class="field"><label>기준연도</label><select class="select"><option>2026</option></select></div>
+            <div class="field"><label>경영방침</label><textarea class="txt" rows="4">우리 회사는 모든 임직원의 안전과 건강을 최우선 가치로 삼고, 무재해 사업장을 실현한다…</textarea></div>
+            <div class="field"><label>추진 목표</label><textarea class="txt" rows="3">1. 무재해 365일 달성  2. 위험성평가 100% 이행  3. 안전교육 이수율 100%</textarea></div>
+          </div>
+          <div class="cardbox">
+            <h3>연간 계획 · 예산</h3>
+            <table>
+              <thead><tr><th>구분</th><th>세부내용</th><th style="text-align:right">예산(원)</th></tr></thead>
+              <tbody>
+                <tr><td>보호구</td><td>안전모·안전대·활선방호구</td><td style="text-align:right">3,200,000</td></tr>
+                <tr><td>교육</td><td>정기·특별 안전보건교육</td><td style="text-align:right">1,800,000</td></tr>
+                <tr><td>점검·진단</td><td>작업환경측정·설비점검</td><td style="text-align:right">2,500,000</td></tr>
+                <tr><td>건강관리</td><td>특수건강검진</td><td style="text-align:right">1,500,000</td></tr>
+                <tr style="font-weight:800"><td colspan="2">합계</td><td style="text-align:right">9,000,000</td></tr>
+              </tbody>
+            </table>
+            <p class="secnote">첨부: 경영방침 공표문.pdf · 조직도.pdf · 위험성평가표.xlsx</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════ 모바일 ═══════════ -->
+  <div id="moView" class="mobile hide">
+    <div class="phone">
+      <div class="m-appbar"><b>🦺 안전보건</b><div class="u">조</div></div>
+      <div class="seg">
+        <button class="on" onclick="moTab('home',this)">홈</button>
+        <button onclick="moTab('near',this)">아차사고</button>
+        <button onclick="moTab('check',this)">점검</button>
+      </div>
+
+      <div class="m-body">
+        <!-- 홈 -->
+        <div id="mo-home">
+          <div class="m-hero"><div class="n">312<span style="font-size:20px">일</span></div><div class="l">🟢 무재해 연속 기록</div></div>
+          <button class="m-report">🚨 아차사고 즉시 신고</button>
+          <p class="m-sub">오늘 할 일</p>
+          <div class="m-listrow"><div class="ico" style="background:#fef3c7">📋</div><div class="tx"><b>작업 전 TBM</b><div>초평동 현장 · 오전 8시</div></div><span class="pill wait">대기</span></div>
+          <div class="m-listrow"><div class="ico" style="background:#dbeafe">✅</div><div class="tx"><b>보호구 점검</b><div>착용 상태 확인</div></div><span class="pill wait">대기</span></div>
+          <p class="m-sub">이번 달 우리 현장</p>
+          <div class="m-listrow"><div class="ico" style="background:#dcfce7">💬</div><div class="tx"><b>아차사고 발굴</b><div>많을수록 좋아요</div></div><b style="font-size:20px">24</b></div>
+          <div class="m-listrow"><div class="ico" style="background:#ede9fe">🎓</div><div class="tx"><b>안전교육 이수율</b><div>2분기</div></div><b style="font-size:20px">96%</b></div>
+        </div>
+
+        <!-- 아차사고 신고 -->
+        <div id="mo-near" class="hide">
+          <div class="m-form">
+            <label>발생 현장</label>
+            <select class="big-select"><option>초평동20-2 변전소</option><option>JY25-098</option></select>
+            <label>어떤 상황이었나요?</label>
+            <textarea class="big-txt" rows="3" placeholder="예: 고소작업 중 안전고리를 안 걸고 이동함"></textarea>
+            <label>사진 (선택)</label>
+            <div class="m-photo">📷 눌러서 사진 촬영</div>
+            <label>위험도</label>
+            <div class="sev"><button class="h">높음</button><button class="m">보통</button><button class="l">낮음</button></div>
+            <button class="m-save">신고 보내기</button>
+            <p class="secnote" style="text-align:center">신고는 익명 가능 · 관리자에게 바로 전달됩니다.</p>
+          </div>
+        </div>
+
+        <!-- 점검 체크리스트 -->
+        <div id="mo-check" class="hide">
+          <p class="m-sub" style="margin-top:6px">보호구·설비 점검 (초평동 현장)</p>
+          <div class="m-check"><div class="box ck">✓</div>안전모 착용 상태</div>
+          <div class="m-check"><div class="box ck">✓</div>안전대·안전고리</div>
+          <div class="m-check"><div class="box ck">✓</div>활선방호구 이상 없음</div>
+          <div class="m-check"><div class="box"></div>전동공구 절연 상태</div>
+          <div class="m-check"><div class="box"></div>작업발판·사다리 고정</div>
+          <div class="m-check"><div class="box"></div>소화기 비치 확인</div>
+          <button class="m-save" style="background:var(--navy-active)">점검 완료 저장</button>
+        </div>
+      </div>
+
+      <div class="m-tabbar">
+        <a><span class="ic">🏠</span>홈</a>
+        <a><span class="ic">📋</span>수주</a>
+        <a><span class="ic">✏️</span>실적</a>
+        <a><span class="ic">📈</span>이력</a>
+        <a class="on"><span class="ic">⋯</span>더보기</a>
+      </div>
+    </div>
+  </div>
+
+  <p class="more-note" id="moreNote" style="display:none">
+    모바일에서는 현장분이 가장 많이 쓰는 <b>아차사고 신고·점검 체크리스트</b>를 앞에 두고, 문서·대장 관리는 PC에서 합니다. 자재·안전보건은 하단 <b>"더보기(⋯)"</b> 안에 있습니다.
+  </p>
+
+  <p class="foot">※ 예시 데이터입니다 — 실제 수치가 아니며, 화면 구조·동작 확인용입니다.</p>
+</div>
+
+<script>
+  function setDevice(d){
+    var pc=d==='pc';
+    document.getElementById('pcView').classList.toggle('hide',!pc);
+    document.getElementById('moView').classList.toggle('hide',pc);
+    document.getElementById('tPc').classList.toggle('on',pc);
+    document.getElementById('tMo').classList.toggle('on',!pc);
+    document.getElementById('moreNote').style.display=pc?'none':'block';
+  }
+  function pcTab(id,btn){
+    ['dash','risk','near','insp','edu','doc'].forEach(function(x){document.getElementById('pc-'+x).classList.toggle('hide',x!==id)});
+    document.querySelectorAll('.tabs button').forEach(function(b){b.classList.remove('on')}); btn.classList.add('on');
+  }
+  function moTab(id,btn){
+    ['home','near','check'].forEach(function(x){document.getElementById('mo-'+x).classList.toggle('hide',x!==id)});
+    document.querySelectorAll('.seg button').forEach(function(b){b.classList.remove('on')}); btn.classList.add('on');
+  }
+  // 체크리스트 토글
+  document.querySelectorAll('.m-check').forEach(function(r){
+    r.addEventListener('click',function(){var b=r.querySelector('.box');b.classList.toggle('ck');b.textContent=b.classList.contains('ck')?'✓':'';});
+  });
+</script>
+</body>
+</html>
