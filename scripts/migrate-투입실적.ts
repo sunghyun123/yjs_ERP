@@ -166,7 +166,6 @@ async function main() {
 
   // 4. 배치 UPSERT (수주_id + 투입일 UNIQUE 충돌 시 덮어씀)
   let inserted = 0
-  let updated = 0
   const errors: string[] = []
 
   for (let i = 0; i < records.length; i += BATCH_SIZE) {

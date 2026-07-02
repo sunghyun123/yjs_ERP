@@ -27,7 +27,6 @@ import type { 공사단가Row, 투입실적Row, 투입실적Insert, 투입실적
 import { useWorkspaceSlice } from '../../_components/WorkspaceProvider'
 import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 
-const qty = z.number().min(0).max(99)
 const amt = z.number().min(0)
 const numOpts = { setValueAs: (v: unknown) => (v === '' || v == null) ? 0 : Number(v) || 0 }
 
@@ -152,7 +151,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
         .then(({ data: raw }) => {
           if (seq !== 조회Seq.current) return // 더 최신 조회가 시작됨 → 이 응답은 버린다
           if (raw) {
-            const row = raw as 투입실적조회Row
+            const row = raw as unknown as 투입실적조회Row
             set기존Id(row.id)
             fillRow(row)
           } else {
@@ -198,7 +197,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
         .or(`지중no.ilike."%${safe}%",공사명.ilike."%${safe}%"`)
         .order('지중no', { ascending: false })
         .limit(10)
-      const results = (raw ?? []) as 수주검색결과[]
+      const results = (raw ?? []) as unknown as 수주검색결과[]
       set검색결과(results)
       set드롭다운(results.length > 0)
     }, 250)
@@ -242,7 +241,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
       .eq('id', default수주Id)
       .single()
       .then(({ data: raw }) => {
-        if (raw) handleSelect(raw as 수주검색결과)
+        if (raw) handleSelect(raw as unknown as 수주검색결과)
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -286,7 +285,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
   async function replaceDetails(투입실적Id: number, rows: 투입상세수량[]) {
     const supabase = createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: deleteError } = await (supabase.from('투입실적상세') as any).delete().eq('투입실적_id', 투입실적Id)
+    const { error: deleteError } = await supabase.from('투입실적상세').delete().eq('투입실적_id', 투입실적Id)
     if (deleteError) throw deleteError
 
     const payload = rows.map((row) => ({
@@ -298,7 +297,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
     if (payload.length === 0) return
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertError } = await (supabase.from('투입실적상세') as any).insert(payload)
+    const { error: insertError } = await supabase.from('투입실적상세').insert(payload)
     if (insertError) throw insertError
   }
 
@@ -320,7 +319,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
           수정일: new Date().toISOString(),
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase.from('투입실적') as any).update(payload).eq('id', 기존Id)
+        const { error } = await supabase.from('투입실적').update(payload).eq('id', 기존Id)
         if (error) throw error
       } else {
         const payload: 투입실적Insert = {
@@ -332,7 +331,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
           생성자: uid,
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: ins, error } = await (supabase.from('투입실적') as any)
+        const { data: ins, error } = await supabase.from('투입실적')
           .insert(payload)
           .select('id')
           .single()

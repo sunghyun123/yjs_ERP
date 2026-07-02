@@ -98,7 +98,7 @@ export function ClientsClient({ initialRows }: { initialRows: 거래처Row[] }) 
     }
 
     if (editRow) {
-      const { data, error } = await (supabase.from('거래처') as any)
+      const { data, error } = await supabase.from('거래처')
         .update(payload)
         .eq('id', editRow.id)
         .select()
@@ -109,7 +109,7 @@ export function ClientsClient({ initialRows }: { initialRows: 거래처Row[] }) 
       showToast(true, '수정되었습니다.')
       closeSheet()
     } else {
-      const { data, error } = await (supabase.from('거래처') as any)
+      const { data, error } = await supabase.from('거래처')
         .insert(payload)
         .select()
         .single()
@@ -130,7 +130,7 @@ export function ClientsClient({ initialRows }: { initialRows: 거래처Row[] }) 
   const handleDelete = async () => {
     if (!editRow) return
     setDeleting(true)
-    const { error } = await (supabase.from('거래처') as any).delete().eq('id', editRow.id)
+    const { error } = await supabase.from('거래처').delete().eq('id', editRow.id)
     setDeleting(false)
     if (error) { showToast(false, '삭제에 실패했습니다.'); return }
     setRows(prev => prev.filter(r => r.id !== editRow.id))

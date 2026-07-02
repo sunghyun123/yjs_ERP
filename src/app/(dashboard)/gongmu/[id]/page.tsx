@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentWeek, getWeeksInMonth } from '@/lib/week'
-import type { 공무담당자Row, 공무_주간보고Row } from '@/types/database'
+import type { 공무담당자Row, 공무_월간계획Row, 공무_주간보고Row } from '@/types/database'
 import { WeeklyReportForm } from './_components/WeeklyReportForm'
 
 function shiftMonth(yyyy: number, mm: number, delta: number): string {
@@ -63,6 +63,11 @@ export default async function GongmuDetailPage({
   ])
 
   const weekRows = (weekRowsResult.data ?? []) as 공무_주간보고Row[]
+  // 한국어 컬럼명이 든 select 문자열은 postgrest-js 타입 파서가 못 읽어 unknown 경유 캐스트
+  const plans = (planResult.data ?? []) as unknown as Pick<공무_월간계획Row, '구분' | '월간계획금액'>[]
+  const allRows = (allRowsResult.data ?? []) as unknown as Pick<공무_주간보고Row, 'week_no' | 'year' | '금주실적' | '구분'>[]
+  const 수주목록 = (수주Result.data ?? []) as unknown as { id: number; 지중no: string; 공사명: string }[]
+  const 공무담당자목록 = (공무담당자Result.data ?? []) as unknown as { id: number; 이름: string }[]
 
   const weekStart = weekOptions.find((w) => w.week === selectedWeek)
 
@@ -133,13 +138,13 @@ export default async function GongmuDetailPage({
         year={selectedYear}
         week_no={selectedWeek}
         savedRows={weekRows}
-        수주목록={수주Result.data ?? []}
-        공무담당자목록={공무담당자Result.data ?? []}
-        plans={planResult.data ?? []}
+        수주목록={수주목록}
+        공무담당자목록={공무담당자목록}
+        plans={plans}
         month={calMonth}
         이름={공무.이름}
         weekLabel={weekStart?.label ?? ''}
-        allRows={allRowsResult.data ?? []}
+        allRows={allRows}
       />
     </div>
   )

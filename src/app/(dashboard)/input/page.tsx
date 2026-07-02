@@ -58,7 +58,7 @@ export default async function Page({
       .gte('투입일', date_from)
       .lte('투입일', date_to)
       .order('투입일', { ascending: false })
-    투입실적목록 = (histRaw ?? []) as 투입실적행[]
+    투입실적목록 = (histRaw ?? []) as unknown as 투입실적행[]
   }
 
   const historyHref = `/input?tab=history&date_from=${date_from}&date_to=${date_to}`

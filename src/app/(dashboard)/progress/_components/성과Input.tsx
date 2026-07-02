@@ -93,7 +93,8 @@ function PercentInput({
   )
 }
 
-export function 성과Input({
+// 성과 입력 (컴포넌트 함수명은 ASCII 대문자 시작 — react-hooks 린트가 훅 검사를 하는 조건)
+export function PerformanceInput({
   value,
   onChange,
   하도적용금액,

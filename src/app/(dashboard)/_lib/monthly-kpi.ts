@@ -94,12 +94,12 @@ export async function getMonthlyKpiData(
   }
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
-  const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적With상세[]
+  const 투입실적목록 = (투입실적결과.data ?? []) as unknown as 투입실적With상세[]
 
   const monthlyInput = 투입실적목록.reduce((sum, row) => sum + calc합계(row, 단가목록), 0)
-  const monthlyRevenue = sumMonthlyRevenue((공사이력결과.data ?? []) as RevenueHistoryRow[])
+  const monthlyRevenue = sumMonthlyRevenue((공사이력결과.data ?? []) as unknown as RevenueHistoryRow[])
   const prevMonthRevenue = sumMonthlyRevenue(
-    (전월공사이력결과.data ?? []) as RevenueHistoryRow[],
+    (전월공사이력결과.data ?? []) as unknown as RevenueHistoryRow[],
   )
   // 이번 달은 오늘까지(MTD), 전월은 한 달 전체이므로 경과일 비율로 환산해 동기간 비교
   const prevMonthComparableRevenue =

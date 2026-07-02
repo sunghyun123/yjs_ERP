@@ -28,7 +28,7 @@ export function SitesClient({ initialRows }: { initialRows: 공사현장Row[] })
     if (!name) { showToast(false, '현장명을 입력하세요.'); return }
     if (rows.some((r) => r.현장명 === name)) { showToast(false, '이미 등록된 현장입니다.'); return }
     setSaving(true)
-    const { data, error } = await (supabase.from('공사현장') as any)
+    const { data, error } = await supabase.from('공사현장')
       .insert({ 현장명: name }).select().single()
     setSaving(false)
     if (error) { showToast(false, '추가에 실패했습니다.'); return }
@@ -40,7 +40,7 @@ export function SitesClient({ initialRows }: { initialRows: 공사현장Row[] })
   const handleDelete = async (row: 공사현장Row) => {
     if (!window.confirm(`'${row.현장명}' 현장을 삭제하시겠습니까?\n기존 수주 데이터에는 영향이 없습니다.`)) return
     setDeletingId(row.id)
-    const { error } = await (supabase.from('공사현장') as any).delete().eq('id', row.id)
+    const { error } = await supabase.from('공사현장').delete().eq('id', row.id)
     setDeletingId(null)
     if (error) { showToast(false, '삭제에 실패했습니다.'); return }
     setRows((prev) => prev.filter((r) => r.id !== row.id))

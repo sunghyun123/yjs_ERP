@@ -8,7 +8,7 @@ import { Loader2, CheckCircle2, AlertCircle, Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import type { 공사이력행 } from '../_types'
-import { 이력수정Sheet, type 이력레코드 } from './이력수정Sheet'
+import { HistoryEditSheet, type 이력레코드 } from './이력수정Sheet'
 
 type Props = { date_from: string; date_to: string }
 
@@ -32,7 +32,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
   const fetchData = useCallback(async () => {
     setLoading(true)
     const supabase = createClient()
-    const { data } = await (supabase.from('공사이력') as any)
+    const { data } = await supabase.from('공사이력')
       .select('id, 작업일자, 성과금액, 수주_id, 수주!수주_id(지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율)')
       .gte('작업일자', dateFrom)
       .lte('작업일자', dateTo)
@@ -60,7 +60,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
     setEditLoading(true)
     setEditRecords([])
     const supabase = createClient()
-    const { data, error } = await (supabase.from('공사이력') as any)
+    const { data, error } = await supabase.from('공사이력')
       .select('id, 작업일자, 성과금액')
       .eq('수주_id', row.수주_id) as { data: 이력레코드[] | null; error: unknown }
     setEditLoading(false)
@@ -183,7 +183,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
       </div>
 
       {/* 수정 Sheet (공용 컴포넌트) */}
-      <이력수정Sheet
+      <HistoryEditSheet
         open={editRow != null}
         onOpenChange={(open) => { if (!open) setEditRow(null) }}
         row={editRow}

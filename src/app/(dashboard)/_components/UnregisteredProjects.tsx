@@ -40,7 +40,7 @@ export async function UnregisteredProjects() {
     )
   }
 
-  const 지중nos = [...new Set((pending as { 지중no: string }[]).map((p) => p.지중no))]
+  const 지중nos = [...new Set((pending as unknown as { 지중no: string }[]).map((p) => p.지중no))]
 
   // 수주 매핑
   const { data: 수주들Raw } = await supabase
@@ -48,11 +48,11 @@ export async function UnregisteredProjects() {
     .select('id, 지중no')
     .in('지중no', 지중nos)
 
-  const 수주들 = (수주들Raw ?? []) as { id: number; 지중no: string }[]
+  const 수주들 = (수주들Raw ?? []) as unknown as { id: number; 지중no: string }[]
   const 수주Map = new Map(수주들.map((s) => [s.지중no, s.id]))
 
   const 수주ids = [...수주Map.values()]
-  const dates = [...new Set((pending as { 진행날짜: string }[]).map((p) => p.진행날짜))]
+  const dates = [...new Set((pending as unknown as { 진행날짜: string }[]).map((p) => p.진행날짜))]
 
   // 공사이력, 투입실적 한꺼번에 조회
   const [이력결과, 실적결과] = await Promise.all([
@@ -65,17 +65,17 @@ export async function UnregisteredProjects() {
   ])
 
   const 이력Set = new Set(
-    ((이력결과.data ?? []) as { 수주_id: number; 작업일자: string }[]).map(
+    ((이력결과.data ?? []) as unknown as { 수주_id: number; 작업일자: string }[]).map(
       (r) => `${r.수주_id}_${r.작업일자}`,
     ),
   )
   const 실적Set = new Set(
-    ((실적결과.data ?? []) as { 수주_id: number; 투입일: string }[]).map(
+    ((실적결과.data ?? []) as unknown as { 수주_id: number; 투입일: string }[]).map(
       (r) => `${r.수주_id}_${r.투입일}`,
     ),
   )
 
-  const statuses: ProjectStatus[] = (pending as { id: number; 지중no: string; 공사명: string; 진행날짜: string }[])
+  const statuses: ProjectStatus[] = (pending as unknown as { id: number; 지중no: string; 공사명: string; 진행날짜: string }[])
     .map((p) => {
       const 수주_id = 수주Map.get(p.지중no) ?? null
       const key = 수주_id ? `${수주_id}_${p.진행날짜}` : null

@@ -14,8 +14,7 @@ export async function upsert월간계획(
   구분: '공사' | '공무',
   월간계획금액: number,
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any
+  const supabase = await createClient()
   const { error } = await supabase.from('공무_월간계획').upsert(
     { 공무_id, year, month, 구분, 월간계획금액 },
     { onConflict: '공무_id,year,month,구분' },
@@ -36,8 +35,7 @@ export async function save주간보고(
   week_no: number,
   rows: Omit<공무_주간보고Insert, 'id'>[],
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any
+  const supabase = await createClient()
   // 기존 행 삭제
   const { error: deleteError } = await supabase
     .from('공무_주간보고')
@@ -61,8 +59,7 @@ export async function save주간보고(
 
 /** 단일 행 삭제 */
 export async function delete주간보고행(id: number, 공무_id: number) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any
+  const supabase = await createClient()
   const { error } = await supabase.from('공무_주간보고').delete().eq('id', id)
   if (error) throw new Error(error.message)
   await captureServerEvent('admin_action_performed', {

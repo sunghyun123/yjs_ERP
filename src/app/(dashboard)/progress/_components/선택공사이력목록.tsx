@@ -6,7 +6,8 @@ import { formatKRW } from '@/lib/format'
 import { paginate } from '../_lib/pagination'
 import type { 이력레코드 } from './이력수정Sheet'
 
-export function 선택공사이력목록({
+// 선택공사이력목록 (컴포넌트 함수명은 ASCII 대문자 시작 — react-hooks 린트가 훅 검사를 하는 조건)
+export function SelectedHistoryList({
   records,
   onRowClick,
 }: {

@@ -34,7 +34,7 @@ export async function ActiveProjects() {
     .order('생성일', { ascending: false })
     .limit(10)
 
-  const projects = (raw ?? []) as ProjectRow[]
+  const projects = (raw ?? []) as unknown as ProjectRow[]
 
   return (
     <Card className="bg-white shadow-sm border-0">

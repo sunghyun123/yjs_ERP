@@ -53,7 +53,7 @@ export default async function GongmuPage({
     .select('id, 이름')
     .lt('생성일', nextMonthCutoff)
     .order('id')
-  const 공무들 = (공무들raw ?? []) as { id: number; 이름: string }[]
+  const 공무들 = (공무들raw ?? []) as unknown as { id: number; 이름: string }[]
 
   if (공무들.length === 0) {
     return (
@@ -86,11 +86,11 @@ export default async function GongmuPage({
       .eq('week_no', displayWeek),
   ])
 
-  const plans = (plansResult.data ?? []) as { 공무_id: number; 구분: string; 월간계획금액: number }[]
+  const plans = (plansResult.data ?? []) as unknown as { 공무_id: number; 구분: string; 월간계획금액: number }[]
   const validMonthPairs = new Set(getWeeksInMonth(calYear, calMonth).map((w) => `${w.isoYear}-${w.week}`))
-  const monthRows = ((monthRowsResult.data ?? []) as { 공무_id: number; 구분: string; 금주실적: number; year: number; week_no: number }[])
+  const monthRows = ((monthRowsResult.data ?? []) as unknown as { 공무_id: number; 구분: string; 금주실적: number; year: number; week_no: number }[])
     .filter((r) => validMonthPairs.has(`${r.year}-${r.week_no}`))
-  const weekRows = (weekRowsResult.data ?? []) as { 공무_id: number; 구분: string; 금주실적: number }[]
+  const weekRows = (weekRowsResult.data ?? []) as unknown as { 공무_id: number; 구분: string; 금주실적: number }[]
 
   // 전체 KPI
   const 총계획공사 = plans.filter((p) => p.구분 === '공사').reduce((s, p) => s + p.월간계획금액, 0)

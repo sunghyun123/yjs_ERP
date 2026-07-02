@@ -34,10 +34,10 @@ export default async function 수주대장Page() {
       .order('id'),  // 생성순: 관리자가 추가한 순서대로(기타 등 맨 뒤 고정)
   ])
 
-  const orders = (data ?? []) as 수주행[]
-  const 거래처목록 = (거래처data ?? []) as 거래처목록항목[]
-  const 공무담당자목록 = (공무담당자raw ?? []) as { id: number; 이름: string }[]
-  const 공사현장목록 = ((공사현장raw ?? []) as { 현장명: string }[]).map((r) => r.현장명)
+  const orders = (data ?? []) as unknown as 수주행[]
+  const 거래처목록 = (거래처data ?? []) as unknown as 거래처목록항목[]
+  const 공무담당자목록 = (공무담당자raw ?? []) as unknown as { id: number; 이름: string }[]
+  const 공사현장목록 = ((공사현장raw ?? []) as unknown as { 현장명: string }[]).map((r) => r.현장명)
 
   return (
     <div className="p-4 md:p-6 max-w-screen-2xl mx-auto">

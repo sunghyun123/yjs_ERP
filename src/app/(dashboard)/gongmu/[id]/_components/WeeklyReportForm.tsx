@@ -68,18 +68,6 @@ function NumberCell({ value, onChange }: { value: number; onChange: (v: number) 
   return <input className={cellCls('text-right')} {...props} />
 }
 
-function TextCell({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
-  return (
-    <input
-      type="text"
-      className={cellCls()}
-      value={value}
-      placeholder={placeholder}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  )
-}
-
 function TextAreaCell({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <textarea
@@ -91,7 +79,8 @@ function TextAreaCell({ value, onChange, placeholder }: { value: string; onChang
   )
 }
 
-function 공사통합Cell({ 지중no, 공사명, onChange, 수주목록 }: {
+// 지중no+공사명 통합 입력 셀 (컴포넌트 함수명은 ASCII 대문자 시작 — react-hooks 린트가 훅 검사를 하는 조건)
+function ProjectComboCell({ 지중no, 공사명, onChange, 수주목록 }: {
   지중no: string
   공사명: string
   onChange: (지중no: string, 공사명: string) => void
@@ -179,7 +168,7 @@ function 공사통합Cell({ 지중no, 공사명, onChange, 수주목록 }: {
 
 export function WeeklyReportForm({
   공무_id, calYear, year, week_no, savedRows,
-  수주목록, 공무담당자목록: _공무담당자목록,
+  수주목록,
   plans, month, 이름, weekLabel, allRows = [],
 }: Props) {
   const [pending, startTransition] = useTransition()
@@ -290,7 +279,7 @@ export function WeeklyReportForm({
               {tableRows.map((r) => (
                 <tr key={r.idx}>
                   <td className="px-1.5 py-1.5 border-b border-gray-50 align-top">
-                    <공사통합Cell
+                    <ProjectComboCell
                       지중no={r.지중no}
                       공사명={r.공사명}
                       onChange={(지중no, 공사명) => update(r.idx, { 지중no, 공사명 })}

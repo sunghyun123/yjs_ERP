@@ -23,7 +23,7 @@ export async function ProfitChartSection() {
   if (firstError) throw new Error(`월별 매출손익 조회 실패: ${firstError.message}`)
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
-  const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적With상세[]
+  const 투입실적목록 = (투입실적결과.data ?? []) as unknown as 투입실적With상세[]
 
   // 월별 집계 초기화 (1~12월)
   const monthly = Array.from({ length: 12 }, () => ({ 성과: 0, 투입: 0 }))
@@ -33,7 +33,7 @@ export async function ProfitChartSection() {
     monthly[m].투입 += calc합계(row, 단가목록)
   }
 
-  for (const row of (공사이력결과.data ?? []) as { 작업일자: string; 성과금액: number }[]) {
+  for (const row of (공사이력결과.data ?? []) as unknown as { 작업일자: string; 성과금액: number }[]) {
     if (!row.작업일자) continue
     const m = parseInt(row.작업일자.slice(5, 7), 10) - 1
     monthly[m].성과 += row.성과금액 ?? 0

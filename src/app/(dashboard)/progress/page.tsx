@@ -35,13 +35,13 @@ export default async function Page({
     .from('수주')
     .select('id, 지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율')
     .order('지중no', { ascending: true })
-  const 수주목록 = (수주raw ?? []) as 수주목록항목[]
+  const 수주목록 = (수주raw ?? []) as unknown as 수주목록항목[]
 
   const { data: 공무담당자raw } = await supabase
     .from('공무담당자')
     .select('id, 이름')
     .order('이름')
-  const 공무담당자목록 = (공무담당자raw ?? []) as { id: number; 이름: string }[]
+  const 공무담당자목록 = (공무담당자raw ?? []) as unknown as { id: number; 이름: string }[]
 
   const historyHref = `/progress?tab=history&date_from=${date_from}&date_to=${date_to}`
 

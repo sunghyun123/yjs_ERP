@@ -14,9 +14,9 @@ import { todayKST } from '@/lib/kst'
 import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 import type { 수주목록항목, 공사이력행 } from '../_types'
 import type { 공사이력Row } from '@/types/database'
-import { 성과Input } from './성과Input'
-import { 이력수정Sheet, type 이력레코드 } from './이력수정Sheet'
-import { 선택공사이력목록 } from './선택공사이력목록'
+import { PerformanceInput } from './성과Input'
+import { HistoryEditSheet, type 이력레코드 } from './이력수정Sheet'
+import { SelectedHistoryList } from './선택공사이력목록'
 import { useWorkspaceSlice } from '../../_components/WorkspaceProvider'
 
 type Props = {
@@ -28,7 +28,8 @@ type Props = {
 
 type ProgressWorkspace = { 선택수주Id: number | null; 작업일자: string }
 
-function 공사SearchableSelect({
+// 공사 검색 셀렉트 (컴포넌트 함수명은 ASCII 대문자 시작 — react-hooks 린트가 훅 검사를 하는 조건)
+function ProjectSearchableSelect({
   options,
   value,
   onChange,
@@ -209,7 +210,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
   const reload이력목록 = async () => {
     if (선택수주Id == null) return
     const supabase = createClient()
-    const { data } = await (supabase.from('공사이력') as any)
+    const { data } = await supabase.from('공사이력')
       .select('id, 작업일자, 성과금액')
       .eq('수주_id', 선택수주Id)
       .order('작업일자', { ascending: false }) as { data: Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[] | null }
@@ -243,16 +244,17 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     set로딩중(true)
     const supabase = createClient()
     const [이력결과, 수주결과] = await Promise.all([
-      (supabase.from('공사이력') as any)
+      supabase.from('공사이력')
         .select('id, 작업일자, 성과금액')
         .eq('수주_id', id)
-        .order('작업일자', { ascending: false }) as Promise<{ data: Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[] | null }>,
+        .order('작업일자', { ascending: false }) as unknown as Promise<{ data: Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[] | null }>,
       supabase.from('수주').select('공무담당자_id').eq('id', id).single(),
     ])
     set로딩중(false)
 
     set이력목록(이력결과.data ?? [])
-    const 수주data = (수주결과 as any).data as { 공무담당자_id: number | null } | null
+    // 한국어 컬럼 select 문자열은 postgrest-js 타입 파서가 못 읽어 unknown 경유 캐스트
+    const 수주data = 수주결과.data as unknown as { 공무담당자_id: number | null } | null
     if (수주data?.공무담당자_id) set담당공무Id(수주data.공무담당자_id)
   }
 
@@ -312,7 +314,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     const supabase = createClient()
     // 성과금액은 증분(원) 정본. % 모드의 하향 정정은 음수로 들어오며, 매출손익은 증분을 월별 합산하므로
     // 정정이 일어난 달의 매출이 그만큼 차감된다(총 누계는 정확). 의도된 동작.
-    const { data: inserted, error } = await (supabase.from('공사이력') as any).insert({
+    const { data: inserted, error } = await supabase.from('공사이력').insert({
       수주_id: 선택수주Id,
       작업일자,
       성과금액,
@@ -327,7 +329,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     }
     showToast(true, '저장되었습니다.')
     // 반환행을 이력목록에 추가 → 누계·최근·직전 자동 재파생(백필 시 최근일 덮어쓰기 버그 없음).
-    if (inserted) set이력목록((prev) => [...prev, inserted as Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>])
+    if (inserted) set이력목록((prev) => [...prev, inserted as unknown as Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>])
     set성과금액(null)
     set작업일자(todayKST())
     set작업내용('')
@@ -349,7 +351,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
 
         <div>
           <Label className="text-xs text-gray-600 mb-1.5 block">공사 선택 (지중No / 공사명)</Label>
-          <공사SearchableSelect
+          <ProjectSearchableSelect
             options={수주목록}
             value={선택수주Id}
             onChange={handle공사선택}
@@ -392,7 +394,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
               onChange={(e) => set작업일자(e.target.value)}
             />
           </div>
-          <성과Input
+          <PerformanceInput
             value={성과금액}
             onChange={set성과금액}
             하도적용금액={하도적용금액}
@@ -447,7 +449,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
         </Button>
 
         {선택수주Id != null && (
-          <선택공사이력목록 key={선택수주Id} records={이력목록} onRowClick={openRow} />
+          <SelectedHistoryList key={선택수주Id} records={이력목록} onRowClick={openRow} />
         )}
       </div>
 
@@ -499,7 +501,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
         )}
       </div>
 
-      <이력수정Sheet
+      <HistoryEditSheet
         open={editRow != null}
         onOpenChange={(open) => { if (!open) setEditRow(null) }}
         row={editRow}

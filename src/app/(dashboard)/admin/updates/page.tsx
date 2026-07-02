@@ -49,13 +49,13 @@ export default async function UpdatesPage({
   // 좁혀지는 알려진 이슈가 있어, 코드베이스 관례대로 명시 캐스트한다.
   const lookups: LookupMaps = {
     거래처: new Map(
-      ((거래처들 ?? []) as { id: number; 거래처명: string }[]).map((r) => [r.id, r.거래처명]),
+      ((거래처들 ?? []) as unknown as { id: number; 거래처명: string }[]).map((r) => [r.id, r.거래처명]),
     ),
     공무담당자: new Map(
-      ((공무들 ?? []) as { id: number; 이름: string }[]).map((r) => [r.id, r.이름]),
+      ((공무들 ?? []) as unknown as { id: number; 이름: string }[]).map((r) => [r.id, r.이름]),
     ),
     수주: new Map(
-      ((수주들 ?? []) as { id: number; 공사명: string }[]).map((r) => [r.id, r.공사명]),
+      ((수주들 ?? []) as unknown as { id: number; 공사명: string }[]).map((r) => [r.id, r.공사명]),
     ),
   }
 

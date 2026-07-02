@@ -48,9 +48,7 @@ export async function POST(req: NextRequest) {
   // 행별 insert(N+1) 대신 단일 배치 upsert.
   // ignoreDuplicates: 기존 행은 건너뛰고 신규 행만 삽입·반환하므로
   // .select()의 반환 개수가 곧 inserted 수가 된다.
-  // supabase-js 2.107의 타입 파서가 한국어 컬럼명을 지원하지 않아 unknown 경유.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as unknown as any)
+  const { data, error } = await supabase
     .from('dashboard_공사')
     .upsert(rows, { onConflict: '지중no,진행날짜', ignoreDuplicates: true })
     .select('id')

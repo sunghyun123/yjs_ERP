@@ -63,7 +63,7 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
   const handleSaveEdit = async (row: 공사단가Row) => {
     if (!editValues.적용시작일) { showToast(false, '적용시작일을 입력하세요.'); return }
     setSaving(true)
-    const { data, error } = await (supabase.from('공사단가') as any)
+    const { data, error } = await supabase.from('공사단가')
       .update({
         주간단가:   parseInt(editValues.주간단가.replace(/,/g, ''), 10) || 0,
         야간단가:   editValues.야간단가 !== '' ? parseInt(editValues.야간단가.replace(/,/g, ''), 10) : null,
@@ -82,7 +82,7 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
   const handleDelete = async (row: 공사단가Row) => {
     if (!window.confirm(`${row.투입구분} 단가를 삭제할까요? 기존 계산 결과가 바뀔 수 있습니다.`)) return
     setSaving(true)
-    const { error } = await (supabase.from('공사단가') as any).delete().eq('id', row.id)
+    const { error } = await supabase.from('공사단가').delete().eq('id', row.id)
     setSaving(false)
     if (error) { showToast(false, '삭제에 실패했습니다.'); return }
     setRows(prev => prev.filter(r => r.id !== row.id))
@@ -94,7 +94,7 @@ export function RatesClient({ initialRows }: { initialRows: 공사단가Row[] })
     if (!addValues.적용시작일) { showToast(false, '적용시작일을 입력하세요.'); return }
     const 투입구분 = addValues.투입구분.trim()
     setSaving(true)
-    const { data, error } = await (supabase.from('공사단가') as any)
+    const { data, error } = await supabase.from('공사단가')
       .insert({
         투입구분,
         주간단가:   parseInt(addValues.주간단가.replace(/,/g, ''), 10) || 0,

@@ -333,11 +333,13 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
   useEffect(() => {
     if (mode !== 'edit' || !row) return
     const supabase = createClient()
-    ;(supabase.from('공사이력') as any)
+    ;supabase.from('공사이력')
       .select('성과금액')
       .eq('수주_id', row.id)
-      .then(({ data }: { data: { 성과금액: number | null }[] | null }) => {
-        const sum = (data ?? []).reduce((s, r) => s + (r.성과금액 ?? 0), 0)
+      .then(({ data }) => {
+        // 한국어 컬럼 select 문자열은 postgrest-js 타입 파서가 못 읽어 unknown 경유 캐스트
+        const rows = (data ?? []) as unknown as { 성과금액: number | null }[]
+        const sum = rows.reduce((s, r) => s + (r.성과금액 ?? 0), 0)
         set공정누계(sum)
       })
   }, [mode, row?.id])
@@ -428,9 +430,9 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
 
     let error: { message?: string } | null = null
     if (mode === 'new') {
-      ;({ error } = await supabase.from('수주').insert(payload as any))
+      ;({ error } = await supabase.from('수주').insert(payload))
     } else {
-      ;({ error } = await (supabase.from('수주') as any).update(payload).eq('id', row!.id))
+      ;({ error } = await supabase.from('수주').update(payload).eq('id', row!.id))
     }
 
     setSaving(false)
@@ -464,12 +466,12 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
       set준공저장중(true)
 
       // 기존 성과 누계(준공정산 행 제외) + 기존 정산행 식별
-      const { data: 이력, error: 조회err } = await (supabase.from('공사이력') as any)
+      const { data: 이력, error: 조회err } = await supabase.from('공사이력')
         .select('id, 성과금액, 준공정산')
         .eq('수주_id', row.id)
       if (조회err) { set준공저장중(false); showToast(false, '공사이력 조회에 실패했습니다.'); return }
 
-      const 이력목록 = (이력 ?? []) as { id: number; 성과금액: number | null; 준공정산: boolean }[]
+      const 이력목록 = (이력 ?? []) as unknown as { id: number; 성과금액: number | null; 준공정산: boolean }[]
       const 기존누계 = 이력목록
         .filter((r) => !r.준공정산)
         .reduce((s, r) => s + (r.성과금액 ?? 0), 0)
@@ -484,7 +486,7 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
       )) { set준공저장중(false); return }
 
       // 1) 수주 업데이트 — 달성율 100 플래그
-      const { error: 수주err } = await (supabase.from('수주') as any)
+      const { error: 수주err } = await supabase.from('수주')
         .update({ 준공여부: true, 준공일: 준공일Local, 준공액_공급가: 준공액Local, 달성율: 100 })
         .eq('id', row.id)
       if (수주err) { set준공저장중(false); showToast(false, '준공 저장에 실패했습니다.'); return }
@@ -492,11 +494,11 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
       // 2) 준공정산 행 upsert (작업일자=준공일)
       let 정산err: { message?: string } | null = null
       if (기존정산행) {
-        ;({ error: 정산err } = await (supabase.from('공사이력') as any)
+        ;({ error: 정산err } = await supabase.from('공사이력')
           .update({ 작업일자: 준공일Local, 성과금액: delta })
           .eq('id', 기존정산행.id))
       } else {
-        ;({ error: 정산err } = await (supabase.from('공사이력') as any)
+        ;({ error: 정산err } = await supabase.from('공사이력')
           .insert({
             수주_id: row.id,
             작업일자: 준공일Local,
@@ -524,19 +526,19 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
     set준공저장중(true)
 
     // 1) 자동 준공정산 행만 삭제 (eq 준공정산=true 보장 → 사용자 데이터 손실 경로 없음)
-    const { error: 삭제err } = await (supabase.from('공사이력') as any)
+    const { error: 삭제err } = await supabase.from('공사이력')
       .delete().eq('수주_id', row.id).eq('준공정산', true)
     if (삭제err) { set준공저장중(false); showToast(false, '준공 해제에 실패했습니다.'); return }
 
     // 2) 남은 성과 누계로 달성율 재계산
-    const { data: 남은이력 } = await (supabase.from('공사이력') as any)
+    const { data: 남은이력 } = await supabase.from('공사이력')
       .select('성과금액').eq('수주_id', row.id)
-    const 남은누계 = ((남은이력 ?? []) as { 성과금액: number | null }[])
+    const 남은누계 = ((남은이력 ?? []) as unknown as { 성과금액: number | null }[])
       .reduce((s, r) => s + (r.성과금액 ?? 0), 0)
     const 하도적용 = calc하도적용금액(row.수주금액_공급가, row.보험료율, row.하도전용율)
     const 재계산달성율 = calc달성율(남은누계, 하도적용)
 
-    const { error: 수주err } = await (supabase.from('수주') as any)
+    const { error: 수주err } = await supabase.from('수주')
       .update({ 준공여부: false, 준공일: null, 준공액_공급가: null, 달성율: 재계산달성율 })
       .eq('id', row.id)
     set준공저장중(false)
@@ -574,7 +576,7 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
     const supabase = createClient()
 
     if (기성폼모드 === 'add') {
-      const { data, error } = await (supabase.from('기성') as any)
+      const { data, error } = await supabase.from('기성')
         .insert({
           수주_id: row.id,
           차수: 다음차수,
@@ -587,10 +589,10 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
         .single()
       set기성처리중(false)
       if (error) { showToast(false, '저장에 실패했습니다.'); return }
-      set기성목록((prev) => [...prev, data as 기성항목].sort((a, b) => a.차수 - b.차수))
+      set기성목록((prev) => [...prev, data as unknown as 기성항목].sort((a, b) => a.차수 - b.차수))
     } else {
       const editId = 기성폼모드 as number
-      const { error } = await (supabase.from('기성') as any)
+      const { error } = await supabase.from('기성')
         .update({
           기성일: 기성폼값.기성일 || null,
           기성액_공급가: 기성폼값.기성액_공급가 ?? null,
@@ -617,7 +619,7 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
     if (!window.confirm('이 기성 항목을 삭제하시겠습니까?')) return
     set기성처리중(true)
     const supabase = createClient()
-    const { error } = await (supabase.from('기성') as any).delete().eq('id', id)
+    const { error } = await supabase.from('기성').delete().eq('id', id)
     set기성처리중(false)
     if (error) { showToast(false, '삭제에 실패했습니다.'); return }
     set기성목록((prev) => prev.filter((g) => g.id !== id))

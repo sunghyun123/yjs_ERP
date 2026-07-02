@@ -47,8 +47,8 @@ export default async function SalesPage({
   if (firstError) throw new Error(`매출손익 데이터 조회 실패: ${firstError.message}`)
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
-  const 투입실적목록 = (투입실적결과.data ?? []) as 투입실적With상세[]
-  const 공사이력목록 = (공사이력결과.data ?? []) as {
+  const 투입실적목록 = (투입실적결과.data ?? []) as unknown as 투입실적With상세[]
+  const 공사이력목록 = (공사이력결과.data ?? []) as unknown as {
     작업일자: string
     수주_id: number
     성과금액: number
@@ -56,7 +56,7 @@ export default async function SalesPage({
 
   type 수주Info = { 지중no: string; 공사명: string }
   const 수주Map = new Map<number, 수주Info>(
-    ((수주결과.data ?? []) as (수주Info & { id: number })[]).map(r => [
+    ((수주결과.data ?? []) as unknown as (수주Info & { id: number })[]).map(r => [
       r.id,
       { 지중no: r.지중no, 공사명: r.공사명 },
     ]),

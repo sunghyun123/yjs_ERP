@@ -271,7 +271,7 @@ export function HistoryTable({
   async function replaceDetails(투입실적Id: number, rows: 투입상세수량[]) {
     const supabase = createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: deleteError } = await (supabase.from('투입실적상세') as any).delete().eq('투입실적_id', 투입실적Id)
+    const { error: deleteError } = await supabase.from('투입실적상세').delete().eq('투입실적_id', 투입실적Id)
     if (deleteError) throw deleteError
     const payload = rows.map((row) => ({
       투입실적_id: 투입실적Id,
@@ -281,7 +281,7 @@ export function HistoryTable({
     }))
     if (payload.length === 0) return
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertError } = await (supabase.from('투입실적상세') as any).insert(payload)
+    const { error: insertError } = await supabase.from('투입실적상세').insert(payload)
     if (insertError) throw insertError
   }
 
@@ -301,7 +301,7 @@ export function HistoryTable({
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('투입실적') as any).update(payload).eq('id', selectedRow.id)
+      const { error } = await supabase.from('투입실적').update(payload).eq('id', selectedRow.id)
       if (error) throw error
       await replaceDetails(selectedRow.id, rows)
       const updated: 투입실적행 = {
@@ -327,7 +327,7 @@ export function HistoryTable({
     setIsDeleting(true)
     const supabase = createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('투입실적') as any).delete().eq('id', selectedRow.id)
+    const { error } = await supabase.from('투입실적').delete().eq('id', selectedRow.id)
     setIsDeleting(false)
     if (error) {
       showToast(false, '삭제 실패: ' + (error as { message: string }).message)

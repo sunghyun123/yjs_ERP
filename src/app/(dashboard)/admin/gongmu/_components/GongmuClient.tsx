@@ -67,7 +67,7 @@ export function GongmuClient({ initialRows }: { initialRows: 공무담당자Row[
     const payload = { 이름: 이름.trim(), 생성일: 등록일 }
 
     if (editRow) {
-      const { data, error } = await (supabase.from('공무담당자') as any)
+      const { data, error } = await supabase.from('공무담당자')
         .update(payload)
         .eq('id', editRow.id)
         .select()
@@ -78,7 +78,7 @@ export function GongmuClient({ initialRows }: { initialRows: 공무담당자Row[
       showToast(true, '수정되었습니다.')
       closeSheet()
     } else {
-      const { data, error } = await (supabase.from('공무담당자') as any)
+      const { data, error } = await supabase.from('공무담당자')
         .insert(payload)
         .select()
         .single()
@@ -93,7 +93,7 @@ export function GongmuClient({ initialRows }: { initialRows: 공무담당자Row[
   const handleDelete = async () => {
     if (!editRow) return
     setDeleting(true)
-    const { error } = await (supabase.from('공무담당자') as any).delete().eq('id', editRow.id)
+    const { error } = await supabase.from('공무담당자').delete().eq('id', editRow.id)
     setDeleting(false)
     if (error) { showToast(false, '삭제에 실패했습니다.'); return }
     setRows(prev => prev.filter(r => r.id !== editRow.id))

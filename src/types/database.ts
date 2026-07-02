@@ -28,6 +28,7 @@ export type Database = {
           역할?: 역할타입
           생성일?: string
         }
+        Relationships: []
       }
       거래처: {
         Row: {
@@ -60,6 +61,7 @@ export type Database = {
           비고?: string | null
           생성일?: string
         }
+        Relationships: []
       }
       공사단가: {
         Row: {
@@ -89,6 +91,7 @@ export type Database = {
           생성자?: string | null
           생성일?: string
         }
+        Relationships: []
       }
       수주: {
         Row: {
@@ -196,6 +199,7 @@ export type Database = {
           수정일?: string | null
           공무담당자_id?: number | null
         }
+        Relationships: []
       }
       기성: {
         Row: {
@@ -231,6 +235,7 @@ export type Database = {
           작업내용?: string | null
           담당공무_id?: number | null
         }
+        Relationships: []
       }
       공사이력: {
         Row: {
@@ -260,6 +265,7 @@ export type Database = {
           담당공무_id?: number | null
           준공정산?: boolean
         }
+        Relationships: []
       }
       투입실적: {
         Row: {
@@ -361,6 +367,7 @@ export type Database = {
           수정자?: string | null
           수정일?: string | null
         }
+        Relationships: []
       }
       투입실적상세: {
         Row: {
@@ -387,11 +394,13 @@ export type Database = {
           야간수량?: number
           생성일?: string
         }
+        Relationships: []
       }
       공사현장: {
         Row: { id: number; 현장명: string; 생성일: string }
         Insert: { id?: number; 현장명: string; 생성일?: string }
         Update: { id?: number; 현장명?: string; 생성일?: string }
+        Relationships: []
       }
       시스템설정: {
         Row: {
@@ -409,6 +418,7 @@ export type Database = {
           값?: string
           설명?: string | null
         }
+        Relationships: []
       }
       계획금액: {
         Row: {
@@ -429,6 +439,7 @@ export type Database = {
           입력자?: string | null
           생성일?: string
         }
+        Relationships: []
       }
       dashboard_공사: {
         Row: {
@@ -455,11 +466,13 @@ export type Database = {
           등록일?: string
           삭제됨?: boolean
         }
+        Relationships: []
       }
       공무담당자: {
         Row: { id: number; 이름: string; 생성일: string }
         Insert: { id?: number; 이름: string; 생성일?: string }
         Update: { id?: number; 이름?: string; 생성일?: string }
+        Relationships: []
       }
       audit_log: {
         Row: {
@@ -489,11 +502,13 @@ export type Database = {
           new_data?: Record<string, unknown> | null
           changed_at?: string
         }
+        Relationships: []
       }
       공무_월간계획: {
         Row: { id: number; 공무_id: number; year: number; month: number; 구분: '공사' | '공무'; 월간계획금액: number }
         Insert: { id?: number; 공무_id: number; year: number; month: number; 구분: '공사' | '공무'; 월간계획금액?: number }
         Update: { id?: number; 공무_id?: number; year?: number; month?: number; 구분?: '공사' | '공무'; 월간계획금액?: number }
+        Relationships: []
       }
       공무_주간보고: {
         Row: {
@@ -520,6 +535,7 @@ export type Database = {
           구분?: '공사' | '공무'; 비고?: string | null
           erp_공사이력_id?: number | null; erp_기성_id?: number | null
         }
+        Relationships: []
       }
       whitelist: {
         Row: {
@@ -540,6 +556,7 @@ export type Database = {
           role?: string
           updated_at?: string
         }
+        Relationships: []
       }
     }
     Views: Record<string, never>

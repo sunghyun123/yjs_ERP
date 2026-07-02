@@ -10,12 +10,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, Save, Trash2 } from 'lucide-react'
 import type { 공사이력행 } from '../_types'
-import { 성과Input } from './성과Input'
+import { PerformanceInput } from './성과Input'
 import { 직전누계 } from '../_lib/percent'
 
 export type 이력레코드 = { id: number; 작업일자: string; 성과금액: number | null }
 
-export function 이력수정Sheet({
+// 이력수정 시트 (컴포넌트 함수명은 ASCII 대문자 시작 — react-hooks 린트가 훅 검사를 하는 조건)
+export function HistoryEditSheet({
   open,
   onOpenChange,
   row,
@@ -64,7 +65,7 @@ export function 이력수정Sheet({
     if (!row) return
     setSaving(true)
     const supabase = createClient()
-    const { error } = await (supabase.from('공사이력') as any)
+    const { error } = await supabase.from('공사이력')
       .update({ 작업일자: editDate, 성과금액: editAmount })
       .eq('id', row.id)
     setSaving(false)
@@ -77,7 +78,7 @@ export function 이력수정Sheet({
     if (!row) return
     setDeleting(true)
     const supabase = createClient()
-    const { error } = await (supabase.from('공사이력') as any).delete().eq('id', row.id)
+    const { error } = await supabase.from('공사이력').delete().eq('id', row.id)
     setDeleting(false)
     if (error) { showToast(false, '삭제에 실패했습니다.'); return }
     showToast(true, '삭제되었습니다.')
@@ -105,7 +106,7 @@ export function 이력수정Sheet({
                 <Loader2 className="size-4 animate-spin" /> 이력 불러오는 중...
               </div>
             ) : (
-              <성과Input
+              <PerformanceInput
                 value={editAmount}
                 onChange={setEditAmount}
                 하도적용금액={records.length > 0 ? editBase : null}
