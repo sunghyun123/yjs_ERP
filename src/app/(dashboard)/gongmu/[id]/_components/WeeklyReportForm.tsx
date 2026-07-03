@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useTransition } from 'react'
+import { useState, useRef, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { save주간보고, upsert월간계획 } from '../../_lib/actions'
@@ -91,7 +91,12 @@ function ProjectComboCell({ 지중no, 공사명, onChange, 수주목록 }: {
   const [dropRect, setDropRect] = useState<DOMRect | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { setQuery(공사명) }, [공사명])
+  // 부모가 행을 갈아끼우면(주차 전환 등) 검색어를 리셋 — 페인트 전 렌더 중 조정이라 틀린 프레임 없음
+  const [prevName, setPrevName] = useState(공사명)
+  if (prevName !== 공사명) {
+    setPrevName(공사명)
+    setQuery(공사명)
+  }
 
   const q = query.toLowerCase()
   const filtered = query
