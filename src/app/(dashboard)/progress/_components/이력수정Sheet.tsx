@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
@@ -40,12 +40,16 @@ export function HistoryEditSheet({
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  // row가 바뀌면(다른 행 클릭) 편집 필드를 그 행 값으로 1회 동기화. 반복 cascade가 아니라 규칙 부적용.
-  useEffect(() => {
-    if (!row) return
-    setEditDate(row.작업일자)
-    setEditAmount(row.성과금액)
-  }, [row])
+  // row 변경 감지용 기억. effect 동기화는 이전 행 값이 한 프레임 그려진 뒤 재렌더되므로
+  // (틀린 프레임 + 낭비 렌더), 렌더 중 조정으로 커밋 전에 새 값으로 바로잡는다.
+  const [prevRow, setPrevRow] = useState(row)
+  if (row !== prevRow) {
+    setPrevRow(row)
+    if (row) {
+      setEditDate(row.작업일자)
+      setEditAmount(row.성과금액)
+    }
+  }
 
   // 수정 대상 수주의 하도적용금액(=환산 base). 조인된 원자료로 계산.
   const editBase = useMemo(() => {
