@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { deleteUnregisteredProject } from '../_actions/dashboard'
@@ -34,16 +34,10 @@ export function UnregisteredProjectsClient({ items }: { items: ProjectStatus[] }
   const [page, setPage] = useState(0)
   const [pending, startTransition] = useTransition()
 
-  // 페이지 overflow 방지: items가 줄었을 때 현재 page가 유효한지 확인
-  useEffect(() => {
-    const newTotalPages = Math.ceil(items.length / PAGE_SIZE)
-    if (page >= newTotalPages && newTotalPages > 0) {
-      setPage(newTotalPages - 1)
-    }
-  }, [items.length, page])
-
   const totalPages = Math.ceil(items.length / PAGE_SIZE)
-  const pageItems = items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+  // items가 줄어 page가 범위를 벗어나도 표시용 값은 항상 마지막 페이지로 클램프
+  const safePage = Math.min(page, Math.max(totalPages - 1, 0))
+  const pageItems = items.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE)
 
   const handleDelete = (id: number) => {
     startTransition(async () => {
@@ -104,7 +98,7 @@ export function UnregisteredProjectsClient({ items }: { items: ProjectStatus[] }
               key={i}
               onClick={() => setPage(i)}
               className={`text-xs px-2.5 py-1 rounded border transition-colors ${
-                i === page
+                i === safePage
                   ? 'bg-[#1e2d5a] text-white border-[#1e2d5a]'
                   : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
               }`}
