@@ -218,24 +218,13 @@ function MoneyInput({
   placeholder?: string
   className?: string
 }) {
-  const [display, setDisplay] = useState(
-    value != null ? value.toLocaleString('ko-KR') : '',
-  )
-
-  useEffect(() => {
-    setDisplay(value != null ? value.toLocaleString('ko-KR') : '')
-  }, [value])
+  // display는 value의 파생(항상 계산 가능) — state+effect 동기화가 만들던 틀린 프레임·낭비 렌더 제거.
+  // 진실의 원천은 부모 value 하나: 입력 → onChange → 부모 갱신 → 다음 렌더에 포맷되어 표시
+  const display = value != null ? value.toLocaleString('ko-KR') : ''
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9]/g, '')
-    if (raw === '') {
-      setDisplay('')
-      onChange(null)
-    } else {
-      const num = parseInt(raw, 10)
-      setDisplay(num.toLocaleString('ko-KR'))
-      onChange(num)
-    }
+    onChange(raw === '' ? null : parseInt(raw, 10))
   }
 
   return (
