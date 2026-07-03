@@ -16,7 +16,9 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
   const [dateFrom, setDateFrom] = useState(initFrom)
   const [dateTo, setDateTo]     = useState(initTo)
   const [rows, setRows]         = useState<공사이력행[]>([])
-  const [loading, setLoading]   = useState(false)
+  // rows가 어느 날짜 범위의 것인지. loading은 이걸로 렌더 중 파생 —
+  // effect의 동기 setLoading(true)가 만들던 틀린 프레임(새 날짜+이전 데이터+스피너 없음) 제거
+  const [fetchedKey, setFetchedKey] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
   const [editRow, setEditRow]       = useState<공사이력행 | null>(null)
@@ -29,19 +31,25 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
     setTimeout(() => setToast(null), 3000)
   }
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
+  const fetchData = useCallback(() => {
     const supabase = createClient()
-    const { data } = await supabase.from('공사이력')
+    const query = supabase.from('공사이력')
       .select('id, 작업일자, 성과금액, 수주_id, 수주!수주_id(지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율)')
       .gte('작업일자', dateFrom)
       .lte('작업일자', dateTo)
-      .order('작업일자', { ascending: false }) as { data: 공사이력행[] | null }
-    setRows(data ?? [])
-    setLoading(false)
+      .order('작업일자', { ascending: false })
+    // setState는 DB 응답 콜백에서만 — 동기 setState 아님
+    return (query as unknown as Promise<{ data: 공사이력행[] | null }>).then(({ data }) => {
+      setRows(data ?? [])
+      setFetchedKey(`${dateFrom}~${dateTo}`)
+    })
   }, [dateFrom, dateTo])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  const loading = fetchedKey !== `${dateFrom}~${dateTo}`
+  // 같은 날짜로의 수동 재조회(조회 버튼·저장/삭제 후)도 스피너가 보이도록 키를 무효화하고 다시 가져온다
+  const refetch = () => { setFetchedKey(null); fetchData() }
 
   const filteredRows = searchQuery.trim()
     ? rows.filter((r) => {
@@ -52,6 +60,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
         )
       })
     : rows
+
 
   const total = filteredRows.reduce((sum, r) => sum + (r.성과금액 ?? 0), 0)
 
@@ -101,7 +110,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
             className="h-8 px-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
-        <Button size="sm" variant="outline" className="h-8" onClick={fetchData} disabled={loading}>
+        <Button size="sm" variant="outline" className="h-8" onClick={refetch} disabled={loading}>
           {loading ? <Loader2 className="size-3.5 animate-spin" /> : '조회'}
         </Button>
 
@@ -189,8 +198,8 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
         row={editRow}
         records={editRecords}
         loading={editLoading}
-        onSaved={() => { setEditRow(null); fetchData() }}
-        onDeleted={() => { setEditRow(null); fetchData() }}
+        onSaved={() => { setEditRow(null); refetch() }}
+        onDeleted={() => { setEditRow(null); refetch() }}
         showToast={showToast}
       />
     </>
