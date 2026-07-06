@@ -171,6 +171,8 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
   const [성과금액, set성과금액] = useState<number | null>(null)
   const [editRow, setEditRow] = useState<공사이력행 | null>(null)
   const [이력목록, set이력목록] = useState<Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[]>([])
+  // 지금 화면의 이력목록이 어느 수주 것인지 꼬리표 — 로딩중을 state 저장 없이 렌더 중 파생하기 위함
+  const [조회된수주Id, set조회된수주Id] = useState<number | null>(null)
 
   // 이력목록 단일 소스에서 파생 — 누계·최근일·직전누계 동기화 버그를 구조적으로 제거.
   const 누계성과금액 = useMemo(
@@ -183,7 +185,8 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
   )
   const [작업내용, set작업내용] = useState('')
   const [담당공무Id, set담당공무Id] = useState<number | null>(null)
-  const [로딩중, set로딩중] = useState(false)
+  // 선택은 됐는데 그 수주의 데이터가 아직 안 왔다 = 로딩 중. state 저장 대신 매 렌더 파생(④와 같은 꼬리표 패턴)
+  const 로딩중 = 선택수주Id != null && 조회된수주Id !== 선택수주Id
   const [저장중, set저장중] = useState(false)
   const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -235,32 +238,39 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     })
   }
 
-  const handle공사선택 = async (id: number | null) => {
-    set선택수주Id(id)
-    set성과금액(null)
-    set이력목록([])
-    if (id == null) return
-
-    set로딩중(true)
+  // fetch 전용. setState가 전부 .then 콜백(응답 도착 후)이라 마운트 effect에서 불러도 동기 setState가 없다.
+  const load수주데이터 = (id: number) => {
     const supabase = createClient()
-    const [이력결과, 수주결과] = await Promise.all([
+    return Promise.all([
       supabase.from('공사이력')
         .select('id, 작업일자, 성과금액')
         .eq('수주_id', id)
         .order('작업일자', { ascending: false }) as unknown as Promise<{ data: Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[] | null }>,
       supabase.from('수주').select('공무담당자_id').eq('id', id).single(),
-    ])
-    set로딩중(false)
-
-    set이력목록(이력결과.data ?? [])
-    // 한국어 컬럼 select 문자열은 postgrest-js 타입 파서가 못 읽어 unknown 경유 캐스트
-    const 수주data = 수주결과.data as unknown as { 공무담당자_id: number | null } | null
-    if (수주data?.공무담당자_id) set담당공무Id(수주data.공무담당자_id)
+    ]).then(([이력결과, 수주결과]) => {
+      set이력목록(이력결과.data ?? [])
+      // 한국어 컬럼 select 문자열은 postgrest-js 타입 파서가 못 읽어 unknown 경유 캐스트
+      const 수주data = 수주결과.data as unknown as { 공무담당자_id: number | null } | null
+      if (수주data?.공무담당자_id) set담당공무Id(수주data.공무담당자_id)
+      set조회된수주Id(id) // 꼬리표 부착 → 파생 로딩중이 꺼진다
+    })
   }
 
+  // 이벤트 전용(콤보박스 선택·워크스페이스 복원) — 동기 리셋은 이벤트 핸들러에서만 정당.
+  const handle공사선택 = (id: number | null) => {
+    set선택수주Id(id)
+    set성과금액(null)
+    set이력목록([])
+    set조회된수주Id(null) // 같은 수주 재선택이어도 꼬리표를 떼서 로딩중이 켜지게
+    if (id == null) return
+    load수주데이터(id)
+  }
+
+  // 선택수주Id·성과금액·이력목록은 useState 초기값이 이미 마운트 상태와 같아 동기 리셋 불필요 — fetch만 한다.
+  // 로딩중은 파생이라 첫 렌더부터 켜진다(꼬리표 null ≠ default수주Id).
   useEffect(() => {
     if (default수주Id != null) {
-      handle공사선택(default수주Id)
+      load수주데이터(default수주Id)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
