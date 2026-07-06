@@ -319,19 +319,21 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
 
   const [공정누계, set공정누계] = useState<number>(0)
 
+  // effect가 읽는 재료를 row 객체(매 렌더 새 참조 가능)가 아닌 id 원시값으로 좁힘 — 재조회는 id가 바뀔 때만
+  const rowId = row?.id
   useEffect(() => {
-    if (mode !== 'edit' || !row) return
+    if (mode !== 'edit' || rowId == null) return
     const supabase = createClient()
     ;supabase.from('공사이력')
       .select('성과금액')
-      .eq('수주_id', row.id)
+      .eq('수주_id', rowId)
       .then(({ data }) => {
         // 한국어 컬럼 select 문자열은 postgrest-js 타입 파서가 못 읽어 unknown 경유 캐스트
         const rows = (data ?? []) as unknown as { 성과금액: number | null }[]
         const sum = rows.reduce((s, r) => s + (r.성과금액 ?? 0), 0)
         set공정누계(sum)
       })
-  }, [mode, row?.id])
+  }, [mode, rowId])
 
   const defaultValues: FormValues =
     mode === 'edit' && row

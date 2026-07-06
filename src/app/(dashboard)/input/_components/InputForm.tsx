@@ -284,7 +284,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
 
   async function replaceDetails(투입실적Id: number, rows: 투입상세수량[]) {
     const supabase = createClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { error: deleteError } = await supabase.from('투입실적상세').delete().eq('투입실적_id', 투입실적Id)
     if (deleteError) throw deleteError
 
@@ -296,7 +296,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
     }))
     if (payload.length === 0) return
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { error: insertError } = await supabase.from('투입실적상세').insert(payload)
     if (insertError) throw insertError
   }
@@ -318,7 +318,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
           수정자: uid,
           수정일: new Date().toISOString(),
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const { error } = await supabase.from('투입실적').update(payload).eq('id', 기존Id)
         if (error) throw error
       } else {
@@ -330,7 +330,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
           외주2: data.외주2,
           생성자: uid,
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const { data: ins, error } = await supabase.from('투입실적')
           .insert(payload)
           .select('id')
