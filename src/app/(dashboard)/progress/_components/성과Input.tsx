@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
@@ -17,19 +17,13 @@ export function MoneyInput({
   placeholder?: string
   className?: string
 }) {
-  const [display, setDisplay] = useState(value != null ? value.toLocaleString('ko-KR') : '')
-  useEffect(() => {
-    setDisplay(value != null ? value.toLocaleString('ko-KR') : '')
-  }, [value])
+  // display는 value의 파생(항상 계산 가능) — state+effect 동기화가 만들던 틀린 프레임·낭비 렌더 제거.
+  // 진실의 원천은 부모 value 하나: 입력 → onChange → 부모 갱신 → 다음 렌더에 포맷되어 표시 (OrderForm MoneyInput과 동일 처방)
+  const display = value != null ? value.toLocaleString('ko-KR') : ''
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9]/g, '')
-    if (raw === '') { setDisplay(''); onChange(null) }
-    else {
-      const num = parseInt(raw, 10)
-      setDisplay(num.toLocaleString('ko-KR'))
-      onChange(num)
-    }
+    onChange(raw === '' ? null : parseInt(raw, 10))
   }
 
   return (
@@ -41,6 +35,12 @@ export function MoneyInput({
       className={className}
     />
   )
+}
+
+// value(증분원)를 화면용 누적% 문자열로 환원: (직전누계+증분)/base, 소수 둘째 자리 반올림.
+const 누적표시 = (증분: number, base: number, 직전누계: number) => {
+  const pct = wonToPercent(직전누계 + 증분, base)
+  return pct == null ? '' : String(Math.round(pct * 100) / 100)
 }
 
 function PercentInput({
@@ -56,19 +56,21 @@ function PercentInput({
   직전누계: number // 기준일 직전까지의 누계 성과금액(원). %는 "누적 목표"라 증분 역산의 기준점이 된다.
   className?: string
 }) {
-  // display 는 사용자가 입력한 "누적 달성률 %" 문자열. value(정본)는 이번 증분(원)이라
-  // 의미가 달라(누적 vs 증분) 둘을 분리해 타이핑 중 반올림 떨림을 막는다.
-  const [display, setDisplay] = useState('')
+  // display는 사용자가 입력 중인 "누적 달성률 %" 문자열 — 완전 파생 불가라 state(원본 초안)가 맞다:
+  // 여러 %가 같은 증분(원)으로 반올림돼 역산이 유일하지 않고, "12." 같은 입력 중 문자열도 지켜야 한다.
+  const [display, setDisplay] = useState(() => (value == null ? '' : 누적표시(value, base, 직전누계)))
 
-  useEffect(() => {
-    if (value == null) { setDisplay(''); return }
-    // 현재 display(누적%)가 이미 value(증분원)을 나타내면 덮어쓰지 않는다 (타이핑 떨림 방지).
-    const implied = display === '' || display === '.' ? null : 누적목표를증분으로(parseFloat(display), base, 직전누계)
-    if (implied === value) return
-    // value는 증분 → 화면에는 누적%로 환원: (직전누계 + 증분) / base.
-    const pct = wonToPercent(직전누계 + value, base)
-    setDisplay(pct == null ? '' : String(Math.round(pct * 100) / 100))
-  }, [value, base, 직전누계]) // eslint-disable-line react-hooks/exhaustive-deps
+  // 부모가 value·환산 기준을 바꿨을 때만 display를 따라 맞춘다 — effect 대신 prev 비교 렌더 중 조정(②형).
+  const [prev, setPrev] = useState({ value, base, 직전누계 })
+  if (value !== prev.value || base !== prev.base || 직전누계 !== prev.직전누계) {
+    setPrev({ value, base, 직전누계 })
+    if (value == null) setDisplay('')
+    else {
+      // 현재 display(누적%)가 이미 value(증분원)을 나타내면 덮어쓰지 않는다 (타이핑 떨림 방지).
+      const implied = display === '' || display === '.' ? null : 누적목표를증분으로(parseFloat(display), base, 직전누계)
+      if (implied !== value) setDisplay(누적표시(value, base, 직전누계))
+    }
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // 숫자와 소수점 1개만 허용
