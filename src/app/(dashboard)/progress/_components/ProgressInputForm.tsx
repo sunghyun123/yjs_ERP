@@ -15,6 +15,7 @@ import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 import type { 수주목록항목, 공사이력행 } from '../_types'
 import type { 공사이력Row } from '@/types/database'
 import { PerformanceInput } from './성과Input'
+import { 준공Badge } from './준공Badge'
 import { HistoryEditSheet, type 이력레코드 } from './이력수정Sheet'
 import { SelectedHistoryList } from './선택공사이력목록'
 import { useWorkspaceSlice } from '../../_components/WorkspaceProvider'
@@ -154,6 +155,7 @@ function ProjectSearchableSelect({
                   >
                     <span className="font-mono text-xs text-gray-400 mr-2">{o.지중no}</span>
                     {o.공사명}
+                    {o.준공여부 && <준공Badge className="ml-2" />}
                   </button>
                 ))
               )}
@@ -234,6 +236,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
         수주금액_공급가: 선택수주.수주금액_공급가,
         보험료율: 선택수주.보험료율,
         하도전용율: 선택수주.하도전용율,
+        준공여부: 선택수주.준공여부,
       },
     })
   }
@@ -372,6 +375,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
           <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
             <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest mb-2">
               {로딩중 ? '불러오는 중...' : '마지막 등록 기록'}
+              {선택수주?.준공여부 && <준공Badge className="ml-2" />}
             </p>
             {!로딩중 && (
               <div className="flex gap-6 text-sm">

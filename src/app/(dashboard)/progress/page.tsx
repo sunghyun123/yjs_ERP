@@ -33,7 +33,7 @@ export default async function Page({
   // (과거엔 준공여부=false로 걸렀으나, 끝난 공사 이력 조회 요구가 들어와 필터 제거)
   const { data: 수주raw } = await supabase
     .from('수주')
-    .select('id, 지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율')
+    .select('id, 지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율, 준공여부')
     .order('지중no', { ascending: true })
   const 수주목록 = (수주raw ?? []) as unknown as 수주목록항목[]
 

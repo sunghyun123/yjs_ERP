@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 import type { 수주행, 거래처목록항목, 기성항목, 공무담당자목록항목 } from '../_types'
-import { calc준공정산delta, calc달성율, calc하도적용금액 } from '../_lib/completion'
+import { calc달성율, calc하도적용금액 } from '../_lib/completion'
 
 // ── 옵션 목록 ──────────────────────────────────────────────────────────────
 const 공사구분옵션 = ['총가', '단가', '민수', '관급']
@@ -441,9 +441,9 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
     setTimeout(onSuccess, 1200)
   }
 
-  // 준공 저장/해제 핸들러
-  // - 완료: 수주.달성율=100 세팅 + 준공정산 행(준공정산=true) upsert (성과=준공액공급가−기존누계)
-  // - 해제: 자동 준공정산 행만 삭제(사용자 공사이력 보존) + 달성율 재계산
+  // 준공 저장/해제 핸들러 — 준공은 회계 축(실수령 확정)만 기록한다.
+  // 공사이력(진행 축)은 건드리지 않는다: 과거의 준공정산 자동 적재는 달성률을
+  // 127.19%로 고정시키는 기준 불일치(분자 목표=준공액 vs 분모=하도적용)의 원인이었다.
   const handleJunGongSave = async () => {
     if (!row) return
     const supabase = createClient()
@@ -455,82 +455,22 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
         return
       }
       set준공저장중(true)
-
-      // 기존 성과 누계(준공정산 행 제외) + 기존 정산행 식별
-      const { data: 이력, error: 조회err } = await supabase.from('공사이력')
-        .select('id, 성과금액, 준공정산')
-        .eq('수주_id', row.id)
-      if (조회err) { set준공저장중(false); showToast(false, '공사이력 조회에 실패했습니다.'); return }
-
-      const 이력목록 = (이력 ?? []) as unknown as { id: number; 성과금액: number | null; 준공정산: boolean }[]
-      const 기존누계 = 이력목록
-        .filter((r) => !r.준공정산)
-        .reduce((s, r) => s + (r.성과금액 ?? 0), 0)
-      const 기존정산행 = 이력목록.find((r) => r.준공정산) ?? null
-
-      const delta = calc준공정산delta(준공액Local, 기존누계)
-
-      // 하향 정산(기존 누계 > 준공액) 경고
-      if (delta < 0 && !window.confirm(
-        `기존 성과 누계(${formatKRW(기존누계)})가 준공액(${formatKRW(준공액Local)})보다 큽니다.\n` +
-        `성과가 ${formatKRW(delta)}원 하향 조정됩니다. 계속할까요?`
-      )) { set준공저장중(false); return }
-
-      // 1) 수주 업데이트 — 달성율 100 플래그
       const { error: 수주err } = await supabase.from('수주')
-        .update({ 준공여부: true, 준공일: 준공일Local, 준공액_공급가: 준공액Local, 달성율: 100 })
+        .update({ 준공여부: true, 준공일: 준공일Local, 준공액_공급가: 준공액Local })
         .eq('id', row.id)
-      if (수주err) { set준공저장중(false); showToast(false, '준공 저장에 실패했습니다.'); return }
-
-      // 2) 준공정산 행 upsert (작업일자=준공일)
-      let 정산err: { message?: string } | null = null
-      if (기존정산행) {
-        ;({ error: 정산err } = await supabase.from('공사이력')
-          .update({ 작업일자: 준공일Local, 성과금액: delta })
-          .eq('id', 기존정산행.id))
-      } else {
-        ;({ error: 정산err } = await supabase.from('공사이력')
-          .insert({
-            수주_id: row.id,
-            작업일자: 준공일Local,
-            성과금액: delta,
-            작업내용: '준공정산(자동)',
-            준공정산: true,
-            담당공무_id: row.공무담당자_id ?? null,
-          }))
-      }
       set준공저장중(false)
-      if (정산err) { showToast(false, '준공정산 적재에 실패했습니다.'); return }
+      if (수주err) { showToast(false, '준공 저장에 실패했습니다.'); return }
 
-      showToast(true, '준공 처리 완료 — 달성률 100%·매출손익 반영됨.')
+      showToast(true, '준공 처리 완료 — 공사이력 화면에 준공 뱃지가 표시됩니다.')
       router.refresh()
       return
     }
 
     // ── 준공 해제 ──────────────────────────────────────────────
-    if (row.준공여부) {
-      if (!window.confirm(
-        '준공을 해제하면 자동 생성된 준공정산 성과 1건이 제거되고 달성률이 재계산됩니다.\n' +
-        '직접 입력하신 공사이력은 그대로 보존됩니다. 계속할까요?'
-      )) return
-    }
+    if (row.준공여부 && !window.confirm('준공을 해제할까요? 저장된 준공일·준공액이 지워집니다.')) return
     set준공저장중(true)
-
-    // 1) 자동 준공정산 행만 삭제 (eq 준공정산=true 보장 → 사용자 데이터 손실 경로 없음)
-    const { error: 삭제err } = await supabase.from('공사이력')
-      .delete().eq('수주_id', row.id).eq('준공정산', true)
-    if (삭제err) { set준공저장중(false); showToast(false, '준공 해제에 실패했습니다.'); return }
-
-    // 2) 남은 성과 누계로 달성율 재계산
-    const { data: 남은이력 } = await supabase.from('공사이력')
-      .select('성과금액').eq('수주_id', row.id)
-    const 남은누계 = ((남은이력 ?? []) as unknown as { 성과금액: number | null }[])
-      .reduce((s, r) => s + (r.성과금액 ?? 0), 0)
-    const 하도적용 = calc하도적용금액(row.수주금액_공급가, row.보험료율, row.하도전용율)
-    const 재계산달성율 = calc달성율(남은누계, 하도적용)
-
     const { error: 수주err } = await supabase.from('수주')
-      .update({ 준공여부: false, 준공일: null, 준공액_공급가: null, 달성율: 재계산달성율 })
+      .update({ 준공여부: false, 준공일: null, 준공액_공급가: null })
       .eq('id', row.id)
     set준공저장중(false)
     if (수주err) { showToast(false, '준공 해제에 실패했습니다.'); return }
@@ -542,14 +482,10 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
   const 기성누계공급가 = 기성목록.reduce((sum, g) => sum + (g.기성액_공급가 ?? 0), 0)
   const 다음차수 = 기성목록.length > 0 ? Math.max(...기성목록.map((g) => g.차수)) + 1 : 1
 
-  // 달성률 표시값. 준공이면 공정·기성 모두 100% 고정(준공=완료 확정, 기준금액=준공액).
-  // 미준공은 하도적용(수주금액 기준) 대비 실측. 분모 없으면 null → 패널 숨김.
-  const 공정달성률표시 = 준공여부Local
-    ? '100.00'
-    : 하도적용 != null && 하도적용 > 0 ? ((공정누계 / 하도적용) * 100).toFixed(2) : null
-  const 기성달성률표시 = 준공여부Local
-    ? '100.00'
-    : 하도적용 != null && 하도적용 > 0 ? ((기성누계공급가 / 하도적용) * 100).toFixed(2) : null
+  // 달성률 표시값: 하도적용(수주금액 기준) 대비 실측. 분모 없으면 null → 패널 숨김.
+  // 준공이어도 100%로 덮지 않는다 — 준공(회계)과 진행도(공사이력)는 별개 축(A안 결정).
+  const 공정달성률표시 = calc달성율(공정누계, 하도적용)?.toFixed(2) ?? null
+  const 기성달성률표시 = calc달성율(기성누계공급가, 하도적용)?.toFixed(2) ?? null
 
   const handle기성추가시작 = () => {
     set기성폼모드('add')
@@ -997,18 +933,14 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
                     <p className="text-lg font-bold text-amber-600">
                       {공정달성률표시}%
                     </p>
-                    <p className="text-[10px] text-gray-400">
-                      {준공여부Local ? '준공 확정 · 준공액 기준' : '공사이력 누계'}
-                    </p>
+                    <p className="text-[10px] text-gray-400">공사이력 누계</p>
                   </div>
                   <div className="rounded-lg px-3 py-2 bg-blue-50 border border-blue-100">
                     <p className="text-[10px] text-gray-400">기성 달성률</p>
                     <p className="text-lg font-bold text-[#1e2d5a]">
                       {기성달성률표시}%
                     </p>
-                    <p className="text-[10px] text-gray-400">
-                      {준공여부Local ? '준공 확정 · 준공액 기준' : '기성 청구 누계'}
-                    </p>
+                    <p className="text-[10px] text-gray-400">기성 청구 누계</p>
                   </div>
                 </div>
               )}

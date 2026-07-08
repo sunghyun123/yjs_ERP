@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import type { 공사이력행 } from '../_types'
 import { HistoryEditSheet, type 이력레코드 } from './이력수정Sheet'
+import { 준공Badge } from './준공Badge'
 
 type Props = { date_from: string; date_to: string }
 
@@ -34,7 +35,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
   const fetchData = useCallback(() => {
     const supabase = createClient()
     const query = supabase.from('공사이력')
-      .select('id, 작업일자, 성과금액, 수주_id, 수주!수주_id(지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율)')
+      .select('id, 작업일자, 성과금액, 수주_id, 수주!수주_id(지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율, 준공여부)')
       .gte('작업일자', dateFrom)
       .lte('작업일자', dateTo)
       .order('작업일자', { ascending: false })
@@ -60,7 +61,6 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
         )
       })
     : rows
-
 
   const total = filteredRows.reduce((sum, r) => sum + (r.성과금액 ?? 0), 0)
 
@@ -155,7 +155,10 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
               filteredRows.map((row) => (
                 <tr key={row.id} className="hover:bg-blue-50/50 border-b border-gray-100 last:border-b-0 transition-colors cursor-pointer" onClick={() => openEdit(row)}>
                   <td className="px-4 py-2.5">
-                    <p className="font-medium text-sm text-gray-800">{row.수주?.공사명}</p>
+                    <p className="font-medium text-sm text-gray-800">
+                      {row.수주?.공사명}
+                      {row.수주?.준공여부 && <준공Badge className="ml-2" />}
+                    </p>
                     <p className="font-mono text-xs text-gray-400">{row.수주?.지중no}</p>
                   </td>
                   <td className="px-4 py-2.5 text-sm text-gray-600 tabular-nums">{row.작업일자}</td>
