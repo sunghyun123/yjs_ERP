@@ -61,7 +61,7 @@ function SortHeader({
   children,
   className,
 }: {
-  column: Column<수주행, unknown>
+  column: Column<표시행, unknown>
   children: React.ReactNode
   className?: string
 }) {
@@ -109,8 +109,17 @@ function 준공액표시(row: 수주행, 기준: 금액기준타입): number | n
     : calc하도적용표시금액(row.준공액_공급가, row.보험료율, row.하도전용율)
 }
 
+// 표시 금액은 컬럼 accessor 클로저가 아니라 data에 미리 넣는다.
+// TanStack Table은 data 배열이 바뀔 때만 행을 다시 만들고, 행마다 accessor 결과를
+// 캐시하므로(row._valuesCache) 기준이 클로저에만 있으면 토글해도 옛 값이 나온다.
+type 표시행 = 수주행 & {
+  수주금액표시값: number
+  누적기성표시값: number
+  준공액표시값: number | null
+}
+
 // ── 컬럼 정의 ─────────────────────────────────────────────────────────────
-const ch = createColumnHelper<수주행>()
+const ch = createColumnHelper<표시행>()
 
 // ── 필터 타입 ─────────────────────────────────────────────────────────────
 type 준공필터타입 = 'all' | 'active' | 'done'
@@ -168,6 +177,18 @@ export function OrdersTable({
     })
   }, [data, 준공필터, 공사구분필터, 검색어])
 
+  // 기준 토글 → 새 data 배열 → 테이블이 행(과 값 캐시)을 다시 만든다
+  const tableData = useMemo<표시행[]>(
+    () =>
+      filteredData.map((row) => ({
+        ...row,
+        수주금액표시값: 수주금액표시(row, 금액기준),
+        누적기성표시값: 누적기성표시(row, 금액기준),
+        준공액표시값: 준공액표시(row, 금액기준),
+      })),
+    [filteredData, 금액기준],
+  )
+
   const columns = useMemo(() => [
     ch.accessor('지중no', {
       header: ({ column }) => <SortHeader column={column}>지중No</SortHeader>,
@@ -192,7 +213,7 @@ export function OrdersTable({
         <span className="text-slate-500 text-sm">{getValue()}</span>
       ),
     }),
-    ch.accessor((row) => 수주금액표시(row, 금액기준), {
+    ch.accessor('수주금액표시값', {
       id: '수주금액',
       header: ({ column }) => (
         <SortHeader column={column} className="w-full justify-end">
@@ -204,7 +225,7 @@ export function OrdersTable({
         <div className="text-right tabular-nums font-medium">{formatKRW(getValue())}</div>
       ),
     }),
-    ch.accessor((row) => 누적기성표시(row, 금액기준), {
+    ch.accessor('누적기성표시값', {
       id: '누적기성액',
       header: ({ column }) => (
         <SortHeader column={column} className="w-full justify-end">
@@ -216,7 +237,7 @@ export function OrdersTable({
         <div className="text-right tabular-nums">{formatKRW(getValue())}</div>
       ),
     }),
-    ch.accessor((row) => 준공액표시(row, 금액기준) ?? -1, {
+    ch.accessor((row) => row.준공액표시값 ?? -1, {
       // 미준공(null)은 -1로 정렬 맨 아래 — 준공액이 음수일 수 없다는 전제(UI 입력에서만 강제됨)
       id: '준공액',
       header: ({ column }) => (
@@ -226,7 +247,7 @@ export function OrdersTable({
       ),
       enableSorting: true,
       cell: ({ row }) => {
-        const v = 준공액표시(row.original, 금액기준)
+        const v = row.original.준공액표시값
         return (
           <div className="text-right tabular-nums">
             {v === null ? <span className="text-gray-300">—</span> : formatKRW(v)}
@@ -267,7 +288,7 @@ export function OrdersTable({
   ], [금액기준, setFormState])
 
   const table = useReactTable({
-    data: filteredData,
+    data: tableData,
     columns,
     state: { sorting, pagination },
     onSortingChange: setSorting,
@@ -278,18 +299,18 @@ export function OrdersTable({
     manualPagination: false,
   })
 
-  const total = filteredData.length
+  const total = tableData.length
   const 수주금액합계 = useMemo(
-    () => filteredData.reduce((s, row) => s + 수주금액표시(row, 금액기준), 0),
-    [filteredData, 금액기준],
+    () => tableData.reduce((s, row) => s + row.수주금액표시값, 0),
+    [tableData],
   )
   const 누적기성액합계 = useMemo(
-    () => filteredData.reduce((s, row) => s + 누적기성표시(row, 금액기준), 0),
-    [filteredData, 금액기준],
+    () => tableData.reduce((s, row) => s + row.누적기성표시값, 0),
+    [tableData],
   )
   const 준공액합계 = useMemo(
-    () => filteredData.reduce((s, row) => s + (준공액표시(row, 금액기준) ?? 0), 0),
-    [filteredData, 금액기준],
+    () => tableData.reduce((s, row) => s + (row.준공액표시값 ?? 0), 0),
+    [tableData],
   )
   const { pageIndex, pageSize } = pagination
   const rangeStart = total === 0 ? 0 : pageIndex * pageSize + 1
