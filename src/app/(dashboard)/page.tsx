@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { KpiCards, KpiCardsSkeleton } from './_components/KpiCards'
 import { ProfitChartSection, ProfitChartSkeleton } from './_components/ProfitChartSection'
 import { UnregisteredProjects, UnregisteredProjectsSkeleton } from './_components/UnregisteredProjects'
+import { TypeStatusDonutSection, TypeStatusDonutSkeleton } from './_components/TypeStatusDonutSection'
 
 export default function DashboardPage() {
   return (
@@ -21,6 +22,10 @@ export default function DashboardPage() {
 
       <Suspense fallback={<ProfitChartSkeleton />}>
         <ProfitChartSection />
+      </Suspense>
+
+      <Suspense fallback={<TypeStatusDonutSkeleton />}>
+        <TypeStatusDonutSection />
       </Suspense>
 
       <Suspense fallback={<UnregisteredProjectsSkeleton />}>

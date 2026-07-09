@@ -30,7 +30,16 @@
     flex-shrink: 0; background: #fef3c7; color: #b45309;
     font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 10px;
   }
+  .chart-wrap { position: relative; }
   #chart { width: 100%; height: 460px; }
+  /* 우상단 유형별 요약란 (사장님 피드백 ②) */
+  .summary {
+    position: absolute; top: 4px; right: 4px;
+    background: rgba(255,255,255,.92); border: 1px solid #f1f5f9; border-radius: 10px;
+    padding: 8px 12px; font-size: 12px; color: #64748b; box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  }
+  .summary .row { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+  .summary .name { font-weight: 600; color: #475569; width: 28px; }
   .legend {
     display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
     gap: 8px 20px; font-size: 13px; color: #64748b; margin-top: 4px;
@@ -49,7 +58,10 @@
       <div class="badge">예시 데이터</div>
     </div>
 
-    <div id="chart"></div>
+    <div class="chart-wrap">
+      <div id="chart"></div>
+      <div class="summary" id="summary"></div>
+    </div>
 
     <div class="legend">
       <div class="group" id="legend-type"></div>
@@ -62,7 +74,7 @@
 
 <script>
   // ── 예시 데이터 (단위: 만원) — 실제 데이터로 바꾸려면 이 배열만 교체 ──
-  var rows = [
+  var raw = [
     { 유형: '단가', 상태: '완료',   금액: 162300, 건수: 210 },
     { 유형: '단가', 상태: '진행중', 금액: 43040,  건수: 50 },
     { 유형: '단가', 상태: '미진행', 금액: 20000,  건수: 40 },
@@ -77,9 +89,23 @@
     { 유형: '관급', 상태: '미진행', 금액: 8000,   건수: 2 },
   ];
 
-  var 유형순서 = ['단가', '민수', '총가', '관급'];
+  // 관급은 건수가 적어 민수로 합산 표시 (사장님 피드백 ①)
+  var 유형병합 = { 관급: '민수' };
+  var rows = (function () {
+    var acc = {};
+    raw.forEach(function (r) {
+      var t = 유형병합[r.유형] || r.유형;
+      var key = t + '-' + r.상태;
+      if (!acc[key]) acc[key] = { 유형: t, 상태: r.상태, 금액: 0, 건수: 0 };
+      acc[key].금액 += r.금액;
+      acc[key].건수 += r.건수;
+    });
+    return Object.keys(acc).map(function (k) { return acc[k]; });
+  })();
+
+  var 유형순서 = ['단가', '총가', '민수'];
   var 상태순서 = ['완료', '진행중', '미진행'];
-  var 유형색 = { 단가: '#22c55e', 민수: '#3b82f6', 총가: '#f59e0b', 관급: '#8b5cf6' };
+  var 유형색 = { 단가: '#22c55e', 총가: '#f59e0b', 민수: '#3b82f6' };
   var 상태투명도 = { 완료: 1, 진행중: 0.6, 미진행: 0.3 };
 
   var won = function (n) { return n.toLocaleString('ko-KR'); };
@@ -107,7 +133,7 @@
   var 총건수 = inner.reduce(function (a, b) { return a + b.건수; }, 0);
 
   var innerData = inner.map(function (d) {
-    return { name: d.유형, value: d.금액, 건수: d.건수, itemStyle: { color: 유형색[d.유형] } };
+    return { name: d.유형, value: d.금액, 유형: d.유형, 건수: d.건수, itemStyle: { color: 유형색[d.유형] } };
   });
   var outerData = outer.map(function (d) {
     return {
@@ -138,10 +164,21 @@
     series: [
       {
         name: '유형', type: 'pie',
-        radius: ['32%', '46%'], center: ['50%', '50%'],
+        radius: ['30%', '47%'], center: ['50%', '50%'],
         avoidLabelOverlap: true,
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
-        label: { position: 'inside', formatter: '{b}', color: '#fff', fontWeight: 'bold', fontSize: 12 },
+        label: {
+          position: 'inside',
+          // 사장님 피드백 ③: 유형 글자 밑에 총계 대비 비율(%)
+          formatter: function (p) {
+            var pct = 총금액 > 0 ? (p.value / 총금액 * 100).toFixed(1) : 0;
+            return '{n|' + p.name + '}\n{p|' + pct + '%}';
+          },
+          rich: {
+            n: { fontSize: 12, fontWeight: 'bold', color: '#fff', align: 'center' },
+            p: { fontSize: 10, fontWeight: 600, color: '#fff', align: 'center' },
+          },
+        },
         labelLine: { show: false },
         data: innerData,
       },
@@ -162,6 +199,15 @@
         data: outerData,
       },
     ],
+  });
+
+  // 우상단 요약란 (사장님 피드백 ②: 유형별 총 금액·건수)
+  var sm = document.getElementById('summary');
+  inner.forEach(function (d) {
+    sm.insertAdjacentHTML('beforeend',
+      '<div class="row"><span class="swatch" style="background:' + 유형색[d.유형] + '"></span>' +
+      '<span class="name">' + d.유형 + '</span>' +
+      '<span>' + won(d.금액) + '만원 · ' + won(d.건수) + '건</span></div>');
   });
 
   // 범례 (색 = 유형, 진하기 = 상태)
