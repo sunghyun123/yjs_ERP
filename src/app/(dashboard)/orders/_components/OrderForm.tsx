@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 import type { 수주행, 거래처목록항목, 기성항목, 공무담당자목록항목 } from '../_types'
-import { calc달성율, calc하도적용금액 } from '../_lib/completion'
+import { calc달성율 } from '../_lib/completion'
 
 // ── 옵션 목록 ──────────────────────────────────────────────────────────────
 const 공사구분옵션 = ['총가', '단가', '민수', '관급']
@@ -280,6 +280,61 @@ function Field({ label, required, children, error }: {
       </Label>
       <div className="mt-1">{children}</div>
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+    </div>
+  )
+}
+
+// ── 준공 탭 미니 정산 박스 ───────────────────────────────────────────────────
+// 준공검사보고서(한전 서류)의 항목·용어를 그대로 따른다 — 사용자가 서류를 보며 입력·대조하는 화면.
+// 전부 입력값에서 렌더 중 파생: 저장하지 않는다(저장된 파생값은 원본과 어긋난다 — 달성율 127.19% 전례).
+function 준공정산박스({
+  준공액, 계약금액, 전회기성,
+}: {
+  준공액: number
+  계약금액: number
+  전회기성: number
+}) {
+  const 정산증감액 = 준공액 - 계약금액        // 서류의 정산증감액(B) = 설계변경 크기
+  const 금회지불액 = 준공액 - 전회기성        // 서류의 금회지불액(F=C−D) = 이번에 새로 받는 돈
+
+  return (
+    <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-1.5">
+      <div className="flex justify-between text-xs text-gray-500">
+        <span>계약금액 (수주 공급가)</span>
+        <span className="tabular-nums">{formatKRW(계약금액)}</span>
+      </div>
+      <div className="flex justify-between text-xs text-gray-500">
+        <span>정산증감액 (준공 − 계약)</span>
+        <span className={cn('tabular-nums', 정산증감액 < 0 && 'text-red-600')}>
+          {정산증감액 >= 0 ? '+' : ''}{formatKRW(정산증감액)}
+        </span>
+      </div>
+      {전회기성 > 0 && (
+        <>
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>전회기성 (누적)</span>
+            <span className="tabular-nums">{formatKRW(전회기성)}</span>
+          </div>
+          <div className="flex justify-between text-sm font-bold text-green-700">
+            <span>금회지불액 (준공 − 전회기성)</span>
+            <span className={cn('tabular-nums', 금회지불액 < 0 && 'text-red-600')}>{formatKRW(금회지불액)}</span>
+          </div>
+        </>
+      )}
+      {/* 계약금액과 같은 공급가 기준 — 서류 대조 시 두 값이 같은 기준으로 비교돼야 한다 */}
+      <div className="flex justify-between text-xs text-gray-500">
+        <span>준공액 (공급가)</span>
+        <span className="tabular-nums">{formatKRW(준공액)}</span>
+      </div>
+      <Separator className="my-1" />
+      <div className="flex justify-between text-[11px] text-gray-400">
+        <span>부가세 (10%)</span>
+        <span className="tabular-nums">{formatKRW(준공액 * 0.1)}</span>
+      </div>
+      <div className="flex justify-between text-[11px] text-gray-400">
+        <span>준공 합계 (VAT포함)</span>
+        <span className="tabular-nums">{formatKRW(준공액 * 1.1)}</span>
+      </div>
     </div>
   )
 }
@@ -1040,16 +1095,11 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
                   />
                 </Field>
                 {준공액Local != null && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-1.5">
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>부가세 (10%)</span>
-                      <span>{formatKRW(준공액Local * 0.1)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-bold text-green-700">
-                      <span>준공 합계</span>
-                      <span>{formatKRW(준공액Local * 1.1)}</span>
-                    </div>
-                  </div>
+                  <준공정산박스
+                    준공액={준공액Local}
+                    계약금액={공급가}
+                    전회기성={기성누계공급가}
+                  />
                 )}
               </>
             )}
