@@ -53,6 +53,7 @@ import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import type { 수주행, 거래처목록항목, 공무담당자목록항목 } from '../_types'
 import { OrderForm } from './OrderForm'
+import { calc하도적용표시금액 } from '../_lib/completion'
 
 // ── 정렬 가능한 헤더 버튼 ──────────────────────────────────────────────────
 function SortHeader({
@@ -87,17 +88,25 @@ function SortHeader({
 }
 
 // ── 금액 계산 헬퍼 (컬럼 · 합계에서 공용) ──────────────────────────────────
-function 하도적용수주금액(row: 수주행): number {
+// 한 화면 한 기준: 토글에 따라 세 금액 컬럼(수주·기성·준공)이 같은 기준으로 전환된다.
+type 금액기준타입 = '하도적용' | '공급가'
+
+function 수주금액표시(row: 수주행, 기준: 금액기준타입): number {
   const 공급가 = row.수주금액_공급가 ?? 0
-  const 보험료율 = row.보험료율 ?? null
-  const 하도전용율 = row.하도전용율 ?? null
-  if (보험료율 === null && 하도전용율 === null) return 공급가
-  const 보험료제외 = 보험료율 !== null ? 공급가 * (1 - 보험료율) : 공급가
-  return 하도전용율 !== null ? 보험료제외 * 하도전용율 : 보험료제외
+  return 기준 === '공급가' ? 공급가 : calc하도적용표시금액(공급가, row.보험료율, row.하도전용율)
 }
 
-function 누적기성액(row: 수주행): number {
-  return row.기성.reduce((s, g) => s + (g.기성액_공급가 ?? 0), 0)
+function 누적기성표시(row: 수주행, 기준: 금액기준타입): number {
+  const 공급가합 = row.기성.reduce((s, g) => s + (g.기성액_공급가 ?? 0), 0)
+  return 기준 === '공급가' ? 공급가합 : calc하도적용표시금액(공급가합, row.보험료율, row.하도전용율)
+}
+
+// 미준공(준공액 미입력)은 null — 셀에서 '—' 처리
+function 준공액표시(row: 수주행, 기준: 금액기준타입): number | null {
+  if (row.준공액_공급가 == null) return null
+  return 기준 === '공급가'
+    ? row.준공액_공급가
+    : calc하도적용표시금액(row.준공액_공급가, row.보험료율, row.하도전용율)
 }
 
 // ── 컬럼 정의 ─────────────────────────────────────────────────────────────
@@ -130,6 +139,7 @@ export function OrdersTable({
   공사현장목록: string[]
 }) {
   const [준공필터, set준공필터] = useState<준공필터타입>('all')
+  const [금액기준, set금액기준] = useState<금액기준타입>('하도적용')
   const [공사구분필터, set공사구분필터] = useState('전체')
   const [검색어, set검색어] = useState('')
   const [formState, setFormState] = useState<FormState | null>(null)
@@ -182,50 +192,44 @@ export function OrdersTable({
         <span className="text-slate-500 text-sm">{getValue()}</span>
       ),
     }),
-    ch.accessor(
-      (row) => 하도적용수주금액(row),
-      {
-        id: '수주금액_하도적용',
-        header: ({ column }) => (
-          <SortHeader column={column} className="w-full justify-end">
-            수주금액(하도적용)
-          </SortHeader>
-        ),
-        enableSorting: true,
-        cell: ({ getValue }) => (
-          <div className="text-right tabular-nums font-medium">
-            {formatKRW(getValue())}
-          </div>
-        ),
-      },
-    ),
-    ch.accessor(
-      (row) => 누적기성액(row),
-      {
-        id: '누적기성액',
-        header: ({ column }) => (
-          <SortHeader column={column} className="w-full justify-end">
-            누적기성액
-          </SortHeader>
-        ),
-        enableSorting: true,
-        cell: ({ getValue }) => (
-          <div className="text-right tabular-nums">{formatKRW(getValue())}</div>
-        ),
-      },
-    ),
-    ch.accessor('달성율', {
+    ch.accessor((row) => 수주금액표시(row, 금액기준), {
+      id: '수주금액',
       header: ({ column }) => (
         <SortHeader column={column} className="w-full justify-end">
-          달성율
+          수주금액({금액기준})
         </SortHeader>
       ),
       enableSorting: true,
-      cell: ({ getValue }) => {
-        const v = getValue()
+      cell: ({ getValue }) => (
+        <div className="text-right tabular-nums font-medium">{formatKRW(getValue())}</div>
+      ),
+    }),
+    ch.accessor((row) => 누적기성표시(row, 금액기준), {
+      id: '누적기성액',
+      header: ({ column }) => (
+        <SortHeader column={column} className="w-full justify-end">
+          누적기성액({금액기준})
+        </SortHeader>
+      ),
+      enableSorting: true,
+      cell: ({ getValue }) => (
+        <div className="text-right tabular-nums">{formatKRW(getValue())}</div>
+      ),
+    }),
+    ch.accessor((row) => 준공액표시(row, 금액기준) ?? -1, {
+      // 미준공(null)은 -1로 정렬 맨 아래 — 준공액이 음수일 수 없다는 전제(UI 입력에서만 강제됨)
+      id: '준공액',
+      header: ({ column }) => (
+        <SortHeader column={column} className="w-full justify-end">
+          준공액({금액기준})
+        </SortHeader>
+      ),
+      enableSorting: true,
+      cell: ({ row }) => {
+        const v = 준공액표시(row.original, 금액기준)
         return (
           <div className="text-right tabular-nums">
-            {v !== null ? `${v.toFixed(1)}%` : '—'}
+            {v === null ? <span className="text-gray-300">—</span> : formatKRW(v)}
           </div>
         )
       },
@@ -260,7 +264,7 @@ export function OrdersTable({
         </div>
       ),
     }),
-  ], [setFormState])
+  ], [금액기준, setFormState])
 
   const table = useReactTable({
     data: filteredData,
@@ -276,12 +280,16 @@ export function OrdersTable({
 
   const total = filteredData.length
   const 수주금액합계 = useMemo(
-    () => filteredData.reduce((s, row) => s + 하도적용수주금액(row), 0),
-    [filteredData],
+    () => filteredData.reduce((s, row) => s + 수주금액표시(row, 금액기준), 0),
+    [filteredData, 금액기준],
   )
   const 누적기성액합계 = useMemo(
-    () => filteredData.reduce((s, row) => s + 누적기성액(row), 0),
-    [filteredData],
+    () => filteredData.reduce((s, row) => s + 누적기성표시(row, 금액기준), 0),
+    [filteredData, 금액기준],
+  )
+  const 준공액합계 = useMemo(
+    () => filteredData.reduce((s, row) => s + (준공액표시(row, 금액기준) ?? 0), 0),
+    [filteredData, 금액기준],
   )
   const { pageIndex, pageSize } = pagination
   const rangeStart = total === 0 ? 0 : pageIndex * pageSize + 1
@@ -312,6 +320,25 @@ export function OrdersTable({
               }}
             >
               {label}
+            </button>
+          ))}
+        </div>
+
+        {/* 금액 기준 토글 — 서류 대조(공급가) vs 실수령 조망(하도적용) */}
+        <div className="flex items-center rounded-lg border border-gray-200 divide-x divide-gray-200 overflow-hidden">
+          {(['하도적용', '공급가'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              className={cn(
+                'px-3 h-8 text-sm transition-colors whitespace-nowrap',
+                금액기준 === v
+                  ? 'bg-[#1e2d5a] text-white font-medium'
+                  : 'bg-white text-gray-600 hover:bg-gray-50',
+              )}
+              onClick={() => set금액기준(v)}
+            >
+              {v}
             </button>
           ))}
         </div>
@@ -432,7 +459,10 @@ export function OrdersTable({
                 <TableCell className="px-3 py-2.5 text-right font-bold text-[#1e2d5a] tabular-nums">
                   {formatKRW(누적기성액합계)}
                 </TableCell>
-                <TableCell colSpan={3} />
+                <TableCell className="px-3 py-2.5 text-right font-bold text-[#1e2d5a] tabular-nums">
+                  {formatKRW(준공액합계)}
+                </TableCell>
+                <TableCell colSpan={2} />
               </TableRow>
             </TableFooter>
           )}
