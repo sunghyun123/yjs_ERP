@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
+  Cable,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { signOut } from '@/app/actions/auth'
@@ -94,6 +95,16 @@ export function Sidebar({ userName, isAdmin }: SidebarProps) {
             </Link>
           )
         })}
+
+        {/* [임시] 자재관리 목업 (예시데이터) — 떼려면 이 <a> 블록과 public/mockups/materials.html 을 삭제 */}
+        {/* 정적 HTML이라 Next 라우트가 아님 → Link 대신 <a>로 풀 페이지 이동 */}
+        <a
+          href="/mockups/materials.html"
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-white/10"
+        >
+          <Cable className="size-4 shrink-0" />
+          자재관리 (목업)
+        </a>
 
         {isAdmin && (
           <>
