@@ -558,6 +558,36 @@ export type Database = {
         }
         Relationships: []
       }
+      자재_선종: {
+        Row: { id: number; 코드: string; 전압: string; 정렬: number }
+        Insert: { id?: number; 코드: string; 전압: string; 정렬?: number }
+        Update: { id?: number; 코드?: string; 전압?: string; 정렬?: number }
+        Relationships: []
+      }
+      자재_드럼: {
+        Row: { id: number; 선종_id: number; 초기길이: number; 제조표기: string | null; 입고일: string; 사용처공사: string | null; 입고묶음: string; 생성일: string; 작성자: string | null }
+        Insert: { id?: number; 선종_id: number; 초기길이: number; 제조표기?: string | null; 입고일: string; 사용처공사?: string | null; 입고묶음: string; 생성일?: string; 작성자?: string | null }
+        Update: { id?: number; 선종_id?: number; 초기길이?: number; 제조표기?: string | null; 입고일?: string; 사용처공사?: string | null; 입고묶음?: string; 생성일?: string; 작성자?: string | null }
+        Relationships: []
+      }
+      자재_드럼기록: {
+        Row: { id: number; 드럼_id: number; 출고일: string; 공사명: string; 사용량: number | null; 복귀일: string | null; 출고묶음: string; 생성일: string; 작성자: string | null }
+        Insert: { id?: number; 드럼_id: number; 출고일: string; 공사명: string; 사용량?: number | null; 복귀일?: string | null; 출고묶음: string; 생성일?: string; 작성자?: string | null }
+        Update: { id?: number; 드럼_id?: number; 출고일?: string; 공사명?: string; 사용량?: number | null; 복귀일?: string | null; 출고묶음?: string; 생성일?: string; 작성자?: string | null }
+        Relationships: []
+      }
+      자재_품목: {
+        Row: { id: number; 분류: string; 품명: string; 단위: string; 정렬: number }
+        Insert: { id?: number; 분류: string; 품명: string; 단위?: string; 정렬?: number }
+        Update: { id?: number; 분류?: string; 품명?: string; 단위?: string; 정렬?: number }
+        Relationships: []
+      }
+      자재_품목기록: {
+        Row: { id: number; 품목_id: number; 변화량: number; 일자: string; 공사명: string | null; 생성일: string; 작성자: string | null }
+        Insert: { id?: number; 품목_id: number; 변화량: number; 일자: string; 공사명?: string | null; 생성일?: string; 작성자?: string | null }
+        Update: { id?: number; 품목_id?: number; 변화량?: number; 일자?: string; 공사명?: string | null; 생성일?: string; 작성자?: string | null }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -612,3 +642,13 @@ export const 투입구분목록 = [
   '재료비/인', '접속', '기타',
 ] as const
 export type 투입구분타입 = (typeof 투입구분목록)[number]
+
+// 자재관리 타입 re-export
+export type 자재_선종Row     = Database['public']['Tables']['자재_선종']['Row']
+export type 자재_드럼Row     = Database['public']['Tables']['자재_드럼']['Row']
+export type 자재_드럼기록Row = Database['public']['Tables']['자재_드럼기록']['Row']
+export type 자재_품목Row     = Database['public']['Tables']['자재_품목']['Row']
+export type 자재_품목기록Row = Database['public']['Tables']['자재_품목기록']['Row']
+export type 자재_드럼Insert     = Database['public']['Tables']['자재_드럼']['Insert']
+export type 자재_드럼기록Insert = Database['public']['Tables']['자재_드럼기록']['Insert']
+export type 자재_품목기록Insert = Database['public']['Tables']['자재_품목기록']['Insert']

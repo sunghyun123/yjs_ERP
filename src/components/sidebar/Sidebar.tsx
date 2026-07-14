@@ -14,7 +14,7 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
-  Cable,
+  Package,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { signOut } from '@/app/actions/auth'
@@ -23,13 +23,17 @@ const SIDEBAR_BG = '#1e2d5a'
 const ACTIVE_BG = '#2d45a8'
 const SIDEBAR_TEXT = '#c8d3f0'
 
-const mainNav = [
-  { href: '/', label: '홈', icon: LayoutDashboard },
-  { href: '/orders', label: '수주대장', icon: ClipboardList },
-  { href: '/input', label: '투입실적', icon: PenLine },
-  { href: '/progress', label: '공사이력', icon: Activity },
-  { href: '/sales', label: '매출손익 현황', icon: TrendingUp },
-  { href: '/gongmu', label: '공무', icon: FileText },
+// 그룹 사이에 구분선 — 현황(홈~매출손익) / 자재관리 / 공무
+const navGroups = [
+  [
+    { href: '/', label: '홈', icon: LayoutDashboard },
+    { href: '/orders', label: '수주대장', icon: ClipboardList },
+    { href: '/input', label: '투입실적', icon: PenLine },
+    { href: '/progress', label: '공사이력', icon: Activity },
+    { href: '/sales', label: '매출손익 현황', icon: TrendingUp },
+  ],
+  [{ href: '/materials', label: '자재관리', icon: Package }],
+  [{ href: '/gongmu', label: '공무', icon: FileText }],
 ] as const
 
 const adminNav = [
@@ -78,33 +82,28 @@ export function Sidebar({ userName, isAdmin }: SidebarProps) {
 
       {/* 메뉴 */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        {mainNav.map(({ href, label, icon: Icon }) => {
-          const active = isActive(href)
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
-                active ? 'text-white' : 'hover:bg-white/10',
-              )}
-              style={active ? { backgroundColor: ACTIVE_BG, color: '#fff' } : undefined}
-            >
-              <Icon className="size-4 shrink-0" />
-              {label}
-            </Link>
-          )
-        })}
-
-        {/* [임시] 자재관리 목업 (예시데이터) — 떼려면 이 <a> 블록과 public/mockups/materials.html 을 삭제 */}
-        {/* 정적 HTML이라 Next 라우트가 아님 → Link 대신 <a>로 풀 페이지 이동 */}
-        <a
-          href="/mockups/materials.html"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-white/10"
-        >
-          <Cable className="size-4 shrink-0" />
-          자재관리 (목업)
-        </a>
+        {navGroups.map((group, gi) => (
+          <div key={gi} className="space-y-0.5">
+            {gi > 0 && <div className="my-2 border-t border-white/10" />}
+            {group.map(({ href, label, icon: Icon }) => {
+              const active = isActive(href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                    active ? 'text-white' : 'hover:bg-white/10',
+                  )}
+                  style={active ? { backgroundColor: ACTIVE_BG, color: '#fff' } : undefined}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  {label}
+                </Link>
+              )
+            })}
+          </div>
+        ))}
 
         {isAdmin && (
           <>
