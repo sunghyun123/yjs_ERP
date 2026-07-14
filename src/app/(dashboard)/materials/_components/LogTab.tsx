@@ -51,7 +51,10 @@ export function LogTab({ feed, openIn, openOut }: Props) {
       </div>
 
       {shown.length === 0 ? (
-        <p className="text-sm text-slate-400 py-6 text-center">기록이 없습니다. 입고 기록부터 시작해 보세요.</p>
+        <p className="text-sm text-slate-400 py-6 text-center">
+          {/* 필터로 0건이 된 것과 진짜 빈 피드를 구분 — 입고 기록이 있는데 "입고부터 시작하라"고 안내하면 오해 */}
+          {feed.length === 0 ? '기록이 없습니다. 입고 기록부터 시작해 보세요.' : '이 필터에 해당하는 기록이 없습니다.'}
+        </p>
       ) : (
         <div className="grid gap-2">
           {shown.map((f) => (
