@@ -1,13 +1,22 @@
 'use client'
 
 // 유형(공사구분)×상태(시공상태)별 이중 도넛 — 안쪽 링=유형(색), 바깥 링=유형×상태(진하기).
-// 데이터는 서버(TypeStatusDonutSection)가 집계해 props로 내려준다. 이 파일은 렌더만 담당.
+// 데이터는 서버(TypeStatusDonutSection)가 연도까지 포함해 집계해 props로 내려준다. 이 파일은 렌더 담당.
 // 금액 = 하도적용수주금액(수주대장과 같은 관대 로직, _lib/type-status.ts) → 합계가 수주대장과 일치.
 // 사장님 피드백(2026-07-09): ①관급은 민수에 합산(집계 단계) ②우상단 유형별 요약란 ③안쪽 링 글자 밑 비율(%).
 
+import { useState } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { DonutRow, 상태 } from '../_lib/type-status'
+import {
+  연도목록,
+  연도필터,
+  연도미상,
+  type DonutRow,
+  type 연도DonutRow,
+  type 연도선택,
+  type 상태,
+} from '../_lib/type-status'
 
 // 표시 순서·색은 유형에 고정 배정 — 목록에 없는 유형이 와도 버리지 않고 뒤에 회색으로 그린다.
 const 유형순서 = ['단가', '총가', '민수', '미분류']
@@ -17,6 +26,10 @@ const 기본색 = '#94a3b8'
 // 미분류 상태는 투명도 대신 명시적 회색 — "안 보이는 것"과 "분류 안 된 것"은 다른 메시지.
 const 미분류색 = '#cbd5e1'
 const 상태투명도: Record<상태, number> = { 완료: 1, 진행중: 0.6, 미진행: 0.3, 미분류: 1 }
+
+// <select>의 value는 무조건 문자열로 돌아온다 — 숫자 연도로 되돌려야 rows의 연도와 === 로 맞는다.
+const 파싱된연도 = (v: string): 연도선택 =>
+  v === '전체' || v === 연도미상 ? v : Number(v)
 
 const fmt = (n: number) => n.toLocaleString('ko-KR')
 // DB 금액은 원 단위 — 차트는 만원으로 표시(비율 계산은 원 단위 원본으로)
@@ -32,7 +45,21 @@ type Geom = {
   payload: { 유형: string; 상태?: 상태; 금액: number; 건수: number }
 }
 
-export function TypeStatusDonut({ rows }: { rows: DonutRow[] }) {
+export function TypeStatusDonut({
+  rows: 연도별rows,
+  초기연도,
+}: {
+  rows: 연도DonutRow[]
+  초기연도: 연도선택
+}) {
+  // 선택연도만 state — 계산해 낼 수 없는 사용자 선택이라 여기가 원본이다.
+  const [선택연도, set선택연도] = useState<연도선택>(초기연도)
+
+  // 도넛이 그리는 rows는 전부 (연도별rows + 선택연도)에서 계산되는 파생값 — 렌더 중 계산하고
+  // 따로 저장하지 않는다. 저장하면 선택연도와 어긋난 프레임이 생긴다.
+  const 연도들 = 연도목록(연도별rows)
+  const rows = 연도필터(연도별rows, 선택연도)
+
   // 유형 정렬: 고정 순서 우선, 모르는 유형은 뒤에
   const 순서 = new Map(유형순서.map((t, i) => [t, i]))
   const 유형들 = [...new Set(rows.map((r) => r.유형))].sort(
@@ -62,10 +89,25 @@ export function TypeStatusDonut({ rows }: { rows: DonutRow[] }) {
   return (
     <Card className="bg-white shadow-sm border-0">
       <CardHeader className="px-5 pt-5 pb-0">
-        <CardTitle className="text-sm font-medium text-gray-600">
-          유형별 프로젝트 현황 (금액 및 수량)
-          <span className="ml-2 text-xs font-normal text-gray-400">(단위: 만원 · 하도수주금액)</span>
-        </CardTitle>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-sm font-medium text-gray-600">
+            유형별 프로젝트 현황 (금액 및 수량)
+            <span className="ml-2 text-xs font-normal text-gray-400">(단위: 만원 · 하도수주금액)</span>
+          </CardTitle>
+          <select
+            value={선택연도}
+            onChange={(e) => set선택연도(파싱된연도(e.target.value))}
+            aria-label="수주 연도 선택"
+            className="h-8 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
+          >
+            <option value="전체">전체</option>
+            {연도들.map((y) => (
+              <option key={y} value={y}>
+                {y === 연도미상 ? 연도미상 : `${y}년 수주`}
+              </option>
+            ))}
+          </select>
+        </div>
       </CardHeader>
       <CardContent className="px-5 pt-2 pb-5">
         <div className="relative">
