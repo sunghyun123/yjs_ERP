@@ -22,6 +22,10 @@ export default async function MaterialsPage() {
     fetchAll<자재_품목기록Row>((f, t) => supabase.from('자재_품목기록').select('*').order('id').range(f, t) as never),
   ])
 
+  // 선종·품목은 페이지의 뼈대 — 조회 실패가 삼켜지면 "재고 0"처럼 보이므로 fetchAll과 같이 fail-loud
+  if (선종res.error) throw new Error(`선종 조회 실패: ${선종res.error.message}`)
+  if (품목res.error) throw new Error(`품목 조회 실패: ${품목res.error.message}`)
+
   const 선종들 = (선종res.data ?? []) as unknown as 자재_선종Row[]
   const 품목들raw = (품목res.data ?? []) as unknown as 자재_품목Row[]
   const 드럼들 = derive드럼(드럼raw, 드럼기록raw)
