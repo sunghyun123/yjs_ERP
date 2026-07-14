@@ -31,33 +31,40 @@ export function InSheet({ onClose, 선종들, 초기전압, 공사명목록 }: P
   const [error, setError] = useState<string | null>(null)
 
   const 표시선종 = 선종들.filter((s) => s.전압 === 전압)
-  const n = parseInt(드럼수, 10)
+  const n = Number(드럼수) // parseInt는 '3.9'를 3으로 절삭해 정수 검증이 못 잡는다 — Number로 그대로 보여 isInteger가 걸러내게
 
   async function submit() {
     const m = Number(미터수)
     if (!선종id) return setError('선종을 선택하세요')
+    if (!입고일) return setError('입고 일자를 입력하세요')
     if (!Number.isFinite(m) || m <= 0) return setError('드럼당 미터수를 입력하세요')
     if (!Number.isInteger(n) || n < 1 || n > MAX_드럼) return setError(`드럼 수는 1~${MAX_드럼}개`)
     setError(null)
     setSaving(true)
-    const 묶음 = crypto.randomUUID()
-    const rows: 자재_드럼Insert[] = Array.from({ length: n }, () => ({
-      선종_id: 선종id,
-      초기길이: m,
-      입고일,
-      사용처공사: 사용처.trim() || null,
-      제조표기: 제조표기.trim() || null,
-      입고묶음: 묶음,
-    }))
-    const supabase = createClient()
-    const { error: err } = await supabase.from('자재_드럼').insert(rows)
-    if (err) {
-      setError(`저장 실패: ${err.message}`)
+    try {
+      const 묶음 = crypto.randomUUID()
+      const rows: 자재_드럼Insert[] = Array.from({ length: n }, () => ({
+        선종_id: 선종id,
+        초기길이: m,
+        입고일,
+        사용처공사: 사용처.trim() || null,
+        제조표기: 제조표기.trim() || null,
+        입고묶음: 묶음,
+      }))
+      const supabase = createClient()
+      const { error: err } = await supabase.from('자재_드럼').insert(rows)
+      if (err) {
+        setError(`저장 실패: ${err.message}`)
+        setSaving(false)
+        return
+      }
+      router.refresh()
+      onClose()
+    } catch (e) {
+      // 네트워크 예외 등 reject 경로에서도 버튼이 영구 잠기지 않게
+      setError(`저장 실패: ${e instanceof Error ? e.message : String(e)}`)
       setSaving(false)
-      return
     }
-    router.refresh()
-    onClose()
   }
 
   const lb = 'block text-[12.5px] font-bold text-slate-500 mb-1.5'
@@ -65,7 +72,8 @@ export function InSheet({ onClose, 선종들, 초기전압, 공사명목록 }: P
   const step = 'text-xs font-bold tracking-[.08em] text-[#3d5af1] mt-4 mb-2 first:mt-0'
 
   return (
-    <MSheet title="입고 기록" sub="거래처에서 케이블이 도착했을 때" onClose={onClose}>
+    // 저장 중 배경클릭·ESC로 닫히면 실패가 조용히 삼켜진다 — 저장 중엔 닫기 무시
+    <MSheet title="입고 기록" sub="거래처에서 케이블이 도착했을 때" onClose={() => { if (!saving) onClose() }}>
       <p className={step}>1 · 공사 · 일자</p>
       <div className="mb-3">
         <label className={lb}>사용처 공사 <em className="not-italic font-medium">— 목록에서 고르거나 직접 입력</em></label>
