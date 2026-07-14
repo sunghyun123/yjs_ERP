@@ -83,7 +83,7 @@ export function Sidebar({ userName, isAdmin }: SidebarProps) {
       {/* 메뉴 */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         {navGroups.map((group, gi) => (
-          <div key={gi}>
+          <div key={gi} className="space-y-0.5">
             {gi > 0 && <div className="my-2 border-t border-white/10" />}
             {group.map(({ href, label, icon: Icon }) => {
               const active = isActive(href)
