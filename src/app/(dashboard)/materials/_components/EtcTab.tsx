@@ -22,7 +22,7 @@ export function EtcTab({ 품목들 }: Props) {
 
   async function apply(품목id: number, delta: number) {
     if (delta === 0) return
-    if (saving !== null) return // 저장 상태가 스칼라라, 다른 행 저장이 앞선 저장의 잠금을 덮어쓴다 — insert 중복을 원천 차단
+    if (saving !== null) return setError('다른 항목 저장 중입니다 — 잠시 후 다시 시도하세요') // 저장 상태가 스칼라라 동시 저장을 차단하되, 조용히 삼키지 않고 알린다 (직접입력 blur 경로 커버)
     setError(null)
     setSaving(품목id)
     try {
@@ -78,13 +78,14 @@ export function EtcTab({ 품목들 }: Props) {
                 </button>
               )}
               <span className="flex gap-1.5">
+                {/* 잠금은 전역(스칼라 saving)이므로 비활성도 전역으로 — 행 단위로만 막으면 다른 행 탭이 조용히 무시된다 */}
                 <button
-                  disabled={saving === p.id || p.수량 === 0}
+                  disabled={saving !== null || p.수량 === 0}
                   onClick={() => apply(p.id, -1)}
                   className="w-[30px] h-[30px] rounded-lg border border-slate-200 bg-slate-50 text-base font-bold leading-none disabled:opacity-40"
                 >−</button>
                 <button
-                  disabled={saving === p.id}
+                  disabled={saving !== null}
                   onClick={() => apply(p.id, 1)}
                   className="w-[30px] h-[30px] rounded-lg border border-slate-200 bg-slate-50 text-base font-bold leading-none disabled:opacity-40"
                 >＋</button>
