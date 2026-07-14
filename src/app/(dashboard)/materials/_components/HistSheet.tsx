@@ -27,6 +27,7 @@ export function HistSheet({ onClose, 드럼ids, 드럼들, 기록들, 선종들 
   const 코드of = new Map(선종들.map((s) => [s.id, s.코드]))
 
   async function 복귀기록(기록id: number, max: number) {
+    if (saving !== null) return // 저장 상태가 스칼라라, 두 번째 저장이 첫 저장의 버튼 잠금을 덮어쓴다 — 동시 저장 자체를 차단
     const raw = (사용입력[기록id] ?? '').trim()
     if (raw === '') return setError('사용량을 입력하세요') // Number('')는 0 — 빈칸인 채 클릭이 0m 복귀로 기록되는 사고 방지
     const v = Number(raw)
