@@ -1,7 +1,9 @@
 'use client'
 
-// 유형(공사구분)×상태(시공상태)별 이중 도넛 — 안쪽 링=유형(색), 바깥 링=유형×상태(진하기).
-// 데이터는 서버(TypeStatusDonutSection)가 연도까지 포함해 집계해 props로 내려준다. 이 파일은 렌더 담당.
+// 유형(공사구분)×상태별 이중 도넛 — 안쪽 링=유형(색), 바깥 링=유형×상태(진하기).
+// 데이터는 서버(TypeStatusDonutSection)가 공사 1건=1행(공사도넛행)으로 내려주고,
+// 도넛 조각 합계와 클릭 팝업의 공사 목록은 전부 그 원본에서 렌더 중 파생한다 —
+// 같은 원본 하나에서 나오므로 도넛 숫자와 목록이 어긋날 수 없다.
 // 금액 = 하도적용수주금액(수주대장과 같은 관대 로직, _lib/type-status.ts) → 합계가 수주대장과 일치.
 // 사장님 피드백(2026-07-09): ①관급은 민수에 합산(집계 단계) ②우상단 유형별 요약란 ③안쪽 링 글자 밑 비율(%).
 
@@ -9,23 +11,26 @@ import { useState } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from '@/components/ui/sheet'
+import {
   연도목록,
   연도필터,
+  유형상태집계,
   연도미상,
   type DonutRow,
-  type 연도DonutRow,
+  type 공사도넛행,
   type 연도선택,
   type 상태,
 } from '../_lib/type-status'
 
 // 표시 순서·색은 유형에 고정 배정 — 목록에 없는 유형이 와도 버리지 않고 뒤에 회색으로 그린다.
 const 유형순서 = ['단가', '총가', '민수', '미분류']
-const 상태순서: 상태[] = ['완료', '진행중', '미진행', '미분류']
+const 상태순서: 상태[] = ['완료', '진행중', '미진행']
+// 유형 미분류(공사구분 NULL)는 남는다 — 상태 축의 미분류는 소멸(이력 없음 = 미진행 디폴트).
 const 유형색: Record<string, string> = { 단가: '#22c55e', 총가: '#f59e0b', 민수: '#3b82f6', 미분류: '#94a3b8' }
 const 기본색 = '#94a3b8'
-// 미분류 상태는 투명도 대신 명시적 회색 — "안 보이는 것"과 "분류 안 된 것"은 다른 메시지.
-const 미분류색 = '#cbd5e1'
-const 상태투명도: Record<상태, number> = { 완료: 1, 진행중: 0.6, 미진행: 0.3, 미분류: 1 }
+const 상태투명도: Record<상태, number> = { 완료: 1, 진행중: 0.6, 미진행: 0.3 }
 
 // <select>의 value는 무조건 문자열로 돌아온다 — 숫자 연도로 되돌려야 rows의 연도와 === 로 맞는다.
 const 파싱된연도 = (v: string): 연도선택 =>
@@ -46,19 +51,21 @@ type Geom = {
 }
 
 export function TypeStatusDonut({
-  rows: 연도별rows,
+  rows: 공사행들,
   초기연도,
 }: {
-  rows: 연도DonutRow[]
+  rows: 공사도넛행[]
   초기연도: 연도선택
 }) {
-  // 선택연도만 state — 계산해 낼 수 없는 사용자 선택이라 여기가 원본이다.
+  // state는 사용자 선택 둘뿐 — 연도와 클릭한 조각. 둘 다 계산해 낼 수 없는 원본이다.
   const [선택연도, set선택연도] = useState<연도선택>(초기연도)
+  const [선택조각, set선택조각] = useState<{ 유형: string; 상태: 상태 } | null>(null)
 
-  // 도넛이 그리는 rows는 전부 (연도별rows + 선택연도)에서 계산되는 파생값 — 렌더 중 계산하고
+  // 도넛이 그리는 값은 전부 (공사행들 + 선택연도)에서 계산되는 파생값 — 렌더 중 계산하고
   // 따로 저장하지 않는다. 저장하면 선택연도와 어긋난 프레임이 생긴다.
-  const 연도들 = 연도목록(연도별rows)
-  const rows = 연도필터(연도별rows, 선택연도)
+  const 연도들 = 연도목록(공사행들)
+  const 필터행 = 연도필터(공사행들, 선택연도)
+  const rows = 유형상태집계(필터행)
 
   // 유형 정렬: 고정 순서 우선, 모르는 유형은 뒤에
   const 순서 = new Map(유형순서.map((t, i) => [t, i]))
@@ -86,13 +93,25 @@ export function TypeStatusDonut({
   const 총금액 = rows.reduce((s, r) => s + r.금액, 0)
   const 총건수 = rows.reduce((s, r) => s + r.건수, 0)
 
+  // 팝업 목록도 필터행에서 파생 — 도넛 조각의 건수와 이 목록 길이는 같은 필터를 지나므로 항상 일치.
+  const 팝업목록 = 선택조각
+    ? 필터행
+        .filter((r) => r.유형 === 선택조각.유형 && r.상태 === 선택조각.상태)
+        .sort((a, b) => a.지중no.localeCompare(b.지중no))
+    : []
+
+  const 연도라벨 =
+    선택연도 === '전체' ? '전체 연도' : 선택연도 === 연도미상 ? 연도미상 : `${선택연도}년 수주`
+
   return (
     <Card className="bg-white shadow-sm border-0">
       <CardHeader className="px-5 pt-5 pb-0">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-sm font-medium text-gray-600">
             유형별 프로젝트 현황 (금액 및 수량)
-            <span className="ml-2 text-xs font-normal text-gray-400">(단위: 만원 · 하도수주금액)</span>
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              (단위: 만원 · 하도수주금액 · 조각 클릭 시 공사 목록)
+            </span>
           </CardTitle>
           <select
             value={선택연도}
@@ -182,7 +201,7 @@ export function TypeStatusDonut({
                 ))}
               </Pie>
 
-              {/* 바깥 링: 유형 × 상태 */}
+              {/* 바깥 링: 유형 × 상태 — 조각 클릭이 공사 목록 팝업의 진입점 */}
               <Pie
                 data={outer}
                 dataKey="금액"
@@ -197,6 +216,11 @@ export function TypeStatusDonut({
                 stroke="#fff"
                 strokeWidth={2}
                 labelLine
+                onClick={(d) => {
+                  // recharts는 클릭된 조각의 원본 datum을 payload로 실어준다.
+                  const p = (d as { payload?: DonutRow }).payload ?? (d as unknown as DonutRow)
+                  if (p?.유형 && p?.상태) set선택조각({ 유형: p.유형, 상태: p.상태 })
+                }}
                 label={(props) => {
                   const g = props as unknown as Geom
                   // 2% 미만 초소형 조각은 라벨 생략(세로로 겹침) → 상세는 툴팁으로.
@@ -216,7 +240,8 @@ export function TypeStatusDonut({
                 {outer.map((r) => (
                   <Cell
                     key={`${r.유형}-${r.상태}`}
-                    fill={r.상태 === '미분류' ? 미분류색 : (유형색[r.유형] ?? 기본색)}
+                    cursor="pointer"
+                    fill={유형색[r.유형] ?? 기본색}
                     fillOpacity={상태투명도[r.상태]}
                   />
                 ))}
@@ -250,7 +275,7 @@ export function TypeStatusDonut({
                 <span key={s} className="flex items-center gap-1.5">
                   <span
                     className="inline-block size-2.5 rounded-sm"
-                    style={s === '미분류' ? { background: 미분류색 } : { background: '#64748b', opacity: 상태투명도[s] }}
+                    style={{ background: '#64748b', opacity: 상태투명도[s] }}
                   />
                   {s}
                 </span>
@@ -258,6 +283,36 @@ export function TypeStatusDonut({
           </div>
         </div>
       </CardContent>
+
+      {/* 조각 클릭 팝업: 우측 시트에 해당 유형×상태의 공사 목록(지중no·공사명) */}
+      <Sheet open={선택조각 !== null} onOpenChange={(open) => { if (!open) set선택조각(null) }}>
+        <SheetContent side="right" className="sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>
+              {선택조각?.유형} · {선택조각?.상태}
+            </SheetTitle>
+            <SheetDescription>
+              {연도라벨} · {fmt(팝업목록.length)}건 · 금액 단위: 만원(하도수주금액)
+            </SheetDescription>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+            {팝업목록.length === 0 ? (
+              <p className="py-6 text-center text-sm text-gray-400">해당하는 공사가 없습니다.</p>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {팝업목록.map((r, i) => (
+                  <li key={r.지중no} className="flex items-baseline gap-3 py-2 text-sm">
+                    <span className="w-6 shrink-0 text-right text-xs tabular-nums text-gray-300">{i + 1}</span>
+                    <span className="shrink-0 font-mono text-xs font-medium text-gray-500">{r.지중no}</span>
+                    <span className="min-w-0 flex-1 break-keep text-gray-800">{r.공사명}</span>
+                    <span className="shrink-0 text-xs tabular-nums text-gray-500">{만원(r.금액)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </Card>
   )
 }
