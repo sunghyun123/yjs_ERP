@@ -57,7 +57,7 @@ export function HistSheet({ onClose, 드럼ids, 드럼들, 기록들, 선종들 
   const 삭제컨트롤 = (id: number, wasLast: boolean) =>
     confirm === id ? (
       <span className="inline-flex items-center gap-1.5 shrink-0">
-        <span className="text-[12px] font-semibold text-red-600">정말 삭제?</span>
+        <span className="text-[12px] font-semibold text-red-600">정말 삭제하시겠습니까?</span>
         <button
           onClick={() => 삭제드럼(id, wasLast)}
           disabled={deleting !== null}
