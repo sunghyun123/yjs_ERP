@@ -11,6 +11,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DateField } from '@/components/ui/date-field'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
@@ -432,9 +433,8 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
 
             <div className="space-y-1.5">
               <Label htmlFor="투입일">투입일</Label>
-              <Input
+              <DateField
                 id="투입일"
-                type="date"
                 className="w-44 h-10"
                 {...register('투입일')}
               />
