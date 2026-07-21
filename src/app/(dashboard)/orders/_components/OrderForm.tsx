@@ -14,6 +14,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DateField } from '@/components/ui/date-field'
 import { Label } from '@/components/ui/label'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -898,7 +899,7 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
                 />
               </div>
               <Field label="착공일">
-                <Input type="date" className="h-9 text-sm" {...register('착공일')} />
+                <DateField className="h-9 text-sm" {...register('착공일')} />
               </Field>
               <Field label="참고사항">
                 <Textarea className="text-sm min-h-[64px] resize-none" {...register('참고사항')} />
