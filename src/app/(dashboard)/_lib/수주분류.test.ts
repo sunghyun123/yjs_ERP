@@ -6,6 +6,7 @@ import {
   연도미상,
   연도추출,
   연도파싱,
+  type 연도,
 } from './수주분류'
 
 describe('연도추출', () => {
@@ -34,6 +35,14 @@ describe('연도목록', () => {
 
   it('연도미상 행이 없으면 그 옵션도 없다', () => {
     expect(연도목록([{ 연도: 2025 }])).toEqual([2025])
+  })
+
+  it('입력 배열을 제자리에서 건드리지 않는다 (호출자의 data를 그대로 넘겨도 안전)', () => {
+    const rows: { 연도: 연도 }[] = [{ 연도: 2025 }, { 연도: 2026 }, { 연도: 2024 }]
+    const 원래순서 = rows.map((r) => r.연도)
+    const out = 연도목록(rows)
+    expect(rows.map((r) => r.연도)).toEqual(원래순서)
+    expect(out).not.toBe(rows)
   })
 })
 
@@ -81,5 +90,12 @@ describe('공사구분정규화', () => {
 
   it('목록에 없는 값도 버리지 않고 그대로 통과시킨다', () => {
     expect(공사구분정규화('신규유형')).toBe('신규유형')
+  })
+
+  it('프로토타입에서 상속된 키 이름이 들어와도 문자열을 그대로 돌려준다', () => {
+    // 객체 리터럴이었을 때는 상속된 함수가 반환돼 렌더가 터졌다
+    for (const 키 of ['toString', 'constructor', 'hasOwnProperty', '__proto__']) {
+      expect(공사구분정규화(키)).toBe(키)
+    }
   })
 })
