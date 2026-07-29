@@ -510,6 +510,17 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
         showToast(false, '준공일과 준공액을 모두 입력하세요.')
         return
       }
+      // 잔여가 음수면 '진짜 환수'이거나 '잔여를 총액 칸에 잘못 넣은 것'인데 코드는 둘을 구분 못 한다.
+      // 과거 데이터 37건이 후자였으므로 사람에게 한 번 되묻는다.
+      if (잔여준공액 != null && 잔여준공액 < 0) {
+        const 예상총액 = 준공액Local + 기성누계공급가
+        const ok = window.confirm(
+          `준공액(${formatKRW(준공액Local)})이 기성누계(${formatKRW(기성누계공급가)})보다 작습니다.\n\n` +
+          `잔여분을 총 준공액 칸에 넣으신 거라면 총액은 ${formatKRW(예상총액)} 이어야 합니다.\n` +
+          `실제로 환수(돈을 되돌려주는) 건이라면 그대로 진행하세요.\n\n이대로 저장할까요?`
+        )
+        if (!ok) return
+      }
       set준공저장중(true)
       const { error: 수주err } = await supabase.from('수주')
         .update({ 준공여부: true, 준공일: 준공일Local, 준공액_공급가: 준공액Local })
@@ -537,6 +548,9 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
 
   const 기성누계공급가 = 기성목록.reduce((sum, g) => sum + (g.기성액_공급가 ?? 0), 0)
   const 다음차수 = 기성목록.length > 0 ? Math.max(...기성목록.map((g) => g.차수)) + 1 : 1
+
+  // 잔여(금회지불액)는 총액의 파생 — 별도 state로 두면 총액과 어긋날 수 있다(같은 사실 두 벌).
+  const 잔여준공액 = 준공액Local == null ? null : 준공액Local - 기성누계공급가
 
   // 달성률 표시값: 하도적용(수주금액 기준) 대비 실측. 분모 없으면 null → 패널 숨김.
   // 준공이어도 100%로 덮지 않는다 — 준공(회계)과 진행도(공사이력)는 별개 축(A안 결정).
@@ -1088,13 +1102,37 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
                     onChange={(e) => set준공일Local(e.target.value)}
                   />
                 </Field>
-                <Field label="준공액 (공급가)">
+                {/* 총액/잔여 두 칸 — 서류에 적힌 쪽 칸에 넣으면 나머지가 자동으로 채워진다.
+                    (누구는 총액, 누구는 잔여를 적어 넣어 준공액이 조용히 틀리던 문제) */}
+                <Field label="총 준공액 (공급가)">
                   <MoneyInput
                     value={준공액Local}
                     onChange={set준공액Local}
                     className="h-9 text-sm"
                   />
                 </Field>
+
+                {/* 기성이 없으면 총액 == 잔여라 칸이 둘일 이유가 없다 */}
+                {기성누계공급가 > 0 && (
+                  <Field label="금회지불액 (잔여 준공액)">
+                    {잔여준공액 != null && 잔여준공액 < 0 ? (
+                      // 환수(준공액 < 기성누계): MoneyInput은 숫자만 받아 음수를 못 지킨다 → 표시만 하고 총액 칸에서 고친다
+                      <div className="h-9 flex items-center px-3 rounded-md border border-red-200 bg-red-50 text-sm tabular-nums text-red-600">
+                        {formatKRW(잔여준공액)} (환수)
+                      </div>
+                    ) : (
+                      // 저장되는 값은 총액 하나 — 잔여 입력은 즉시 총액으로 역산해서 넣는다
+                      <MoneyInput
+                        value={잔여준공액}
+                        onChange={(v) => set준공액Local(v == null ? null : v + 기성누계공급가)}
+                        className="h-9 text-sm"
+                      />
+                    )}
+                    <p className="mt-1 text-xs text-gray-400 tabular-nums">
+                      총 준공액 = 잔여 + 전회기성 {formatKRW(기성누계공급가)}
+                    </p>
+                  </Field>
+                )}
                 {준공액Local != null && (
                   <준공정산박스
                     준공액={준공액Local}
