@@ -31,6 +31,7 @@ import { calc달성율 } from '../_lib/completion'
 // ── 옵션 목록 ──────────────────────────────────────────────────────────────
 const 공사구분옵션 = ['총가', '단가', '민수', '관급']
 const 공사종류옵션 = ['지중', '가공', '혼합']
+const 작업구분옵션 = ['고압', '저압', '보수']
 const 시공상태옵션 = ['미시공', '시공중', '완료']
 const 정산상태옵션 = ['1차기성', '2차기성', '3차기성', '4차기성', '5차기성', '완료']
 
@@ -41,9 +42,10 @@ const schema = z.object({
   지중no:          z.string().min(1, { error: '지중No를 입력하세요' }),
   공사명:          z.string().min(1, { error: '공사명을 입력하세요' }),
   공사번호:        z.string().optional(),
-  공사구분:        z.string().optional(),
-  공사종류:        z.string().optional(),
-  공사현장:        z.string().optional(),
+  공사구분:        z.string().nullable().optional(),
+  공사종류:        z.string().nullable().optional(),
+  공사현장:        z.string().nullable().optional(),
+  작업구분:        z.string().nullable().optional(),
   발주자_id:       z.number().int().nullable().optional(),
   원청사_id:       z.number().int().nullable().optional(),
   수주금액_공급가: z.number().nullable().optional(),
@@ -400,6 +402,7 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
           공사구분:        row.공사구분 ?? '',
           공사종류:        row.공사종류 ?? '',
           공사현장:        row.공사현장 ?? '',
+          작업구분:        row.작업구분 ?? '',
           발주자_id:       row.발주자_id ?? null,
           원청사_id:       row.원청사_id ?? null,
           수주금액_공급가: row.수주금액_공급가 ?? null,
@@ -457,6 +460,7 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
       공사구분:        values.공사구분 || null,
       공사종류:        values.공사종류 || null,
       공사현장:        values.공사현장?.trim() || null,
+      작업구분:        values.작업구분 || null,
       발주자_id:       values.발주자_id ?? null,
       원청사_id:       values.원청사_id ?? null,
       수주금액_공급가: values.수주금액_공급가 ?? null,
@@ -743,8 +747,8 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
 
             {/* ── 계약 정보 ─────────────────────────────────────────────────── */}
             <Section title="계약 정보">
-              {/* 공사구분 · 공사종류 · 공사현장 — 3열 */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* 공사구분 · 공사종류 — 2열 */}
+              <div className="grid grid-cols-2 gap-3">
                 <Field label="공사구분">
                   <Controller
                     name="공사구분"
@@ -775,6 +779,10 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
                     )}
                   />
                 </Field>
+              </div>
+
+              {/* 공사현장 · 작업구분 — 2열 */}
+              <div className="grid grid-cols-2 gap-3">
                 <Field label="공사현장">
                   <Controller
                     name="공사현장"
@@ -797,6 +805,21 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
                         </Select>
                       )
                     }}
+                  />
+                </Field>
+                <Field label="작업구분">
+                  <Controller
+                    name="작업구분"
+                    control={control}
+                    render={({ field }) => (
+                      <Select value={field.value || '__none__'} onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}>
+                        <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="선택" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">—</SelectItem>
+                          {작업구분옵션.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
                   />
                 </Field>
               </div>
