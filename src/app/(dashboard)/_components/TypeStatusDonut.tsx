@@ -14,15 +14,18 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet'
 import {
-  연도목록,
   연도필터,
   유형상태집계,
-  연도미상,
   type DonutRow,
   type 공사도넛행,
+} from '../_lib/type-status'
+import {
+  연도목록,
+  연도미상,
+  연도파싱,
   type 연도선택,
   type 상태,
-} from '../_lib/type-status'
+} from '../_lib/수주분류'
 
 // 표시 순서·색은 유형에 고정 배정 — 목록에 없는 유형이 와도 버리지 않고 뒤에 회색으로 그린다.
 const 유형순서 = ['단가', '총가', '민수', '미분류']
@@ -31,10 +34,6 @@ const 상태순서: 상태[] = ['완료', '진행중', '미진행']
 const 유형색: Record<string, string> = { 단가: '#22c55e', 총가: '#f59e0b', 민수: '#3b82f6', 미분류: '#94a3b8' }
 const 기본색 = '#94a3b8'
 const 상태투명도: Record<상태, number> = { 완료: 1, 진행중: 0.6, 미진행: 0.3 }
-
-// <select>의 value는 무조건 문자열로 돌아온다 — 숫자 연도로 되돌려야 rows의 연도와 === 로 맞는다.
-const 파싱된연도 = (v: string): 연도선택 =>
-  v === '전체' || v === 연도미상 ? v : Number(v)
 
 const fmt = (n: number) => n.toLocaleString('ko-KR')
 // DB 금액은 원 단위 — 차트는 만원으로 표시(비율 계산은 원 단위 원본으로)
@@ -115,7 +114,7 @@ export function TypeStatusDonut({
           </CardTitle>
           <select
             value={선택연도}
-            onChange={(e) => set선택연도(파싱된연도(e.target.value))}
+            onChange={(e) => set선택연도(연도파싱(e.target.value))}
             aria-label="수주 연도 선택"
             className="h-8 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
           >
