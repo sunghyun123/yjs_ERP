@@ -54,6 +54,22 @@ import { formatKRW } from '@/lib/format'
 import type { 수주행, 거래처목록항목, 공무담당자목록항목 } from '../_types'
 import { OrderForm } from './OrderForm'
 import { calc하도적용표시금액 } from '../_lib/completion'
+import {
+  수주필터,
+  연도선택목록,
+  원청사ID,
+  원청사값,
+  원청사목록,
+  원청사없음ID,
+  원청사없음존재,
+  초기필터,
+  필터적용중,
+  공사구분옵션,
+  상태옵션,
+  type 수주필터조건,
+} from '../_lib/filters'
+import { 연도미상, 연도파싱 } from '../../_lib/수주분류'
+import { SearchableSelect } from './SearchableSelect'
 
 // ── 정렬 가능한 헤더 버튼 ──────────────────────────────────────────────────
 function SortHeader({
@@ -121,15 +137,6 @@ type 표시행 = 수주행 & {
 // ── 컬럼 정의 ─────────────────────────────────────────────────────────────
 const ch = createColumnHelper<표시행>()
 
-// ── 필터 타입 ─────────────────────────────────────────────────────────────
-type 준공필터타입 = 'all' | 'active' | 'done'
-const 준공필터옵션: { value: 준공필터타입; label: string }[] = [
-  { value: 'all', label: '전체' },
-  { value: 'active', label: '진행중' },
-  { value: 'done', label: '준공완료' },
-]
-const 공사구분옵션 = ['전체', '단가', '민수']
-
 // ── 폼 Sheet 상태 타입 ────────────────────────────────────────────────────
 type FormState =
   | { mode: 'new' }
@@ -147,10 +154,11 @@ export function OrdersTable({
   공무담당자목록: 공무담당자목록항목[]
   공사현장목록: string[]
 }) {
-  const [준공필터, set준공필터] = useState<준공필터타입>('all')
+  // 필터 5축을 객체 하나로 묶는다 — 어느 축이 바뀌어도 같은 경로(필터변경)를 타므로
+  // 페이지 리셋을 빠뜨릴 수 없다.
+  const [필터, set필터] = useState<수주필터조건>(초기필터)
+  // 금액기준은 필터가 아니라 '표시 전환'이다 — 행을 걸러내지 않으므로 따로 둔다.
   const [금액기준, set금액기준] = useState<금액기준타입>('하도적용')
-  const [공사구분필터, set공사구분필터] = useState('전체')
-  const [검색어, set검색어] = useState('')
   const [formState, setFormState] = useState<FormState | null>(null)
   const [sorting, setSorting] = useState<SortingState>([])
   const [pagination, setPagination] = useState<PaginationState>({
@@ -158,24 +166,24 @@ export function OrdersTable({
     pageSize: 20,
   })
 
-  const resetPage = () => setPagination((p) => ({ ...p, pageIndex: 0 }))
+  // 필터가 바뀌면 3페이지에 머문 채 결과가 2페이지로 줄어드는 빈 화면을 막는다.
+  const 필터변경 = <K extends keyof 수주필터조건,>(key: K, value: 수주필터조건[K]) => {
+    set필터((p) => ({ ...p, [key]: value }))
+    setPagination((p) => ({ ...p, pageIndex: 0 }))
+  }
 
-  const filteredData = useMemo(() => {
-    return data.filter((row) => {
-      if (준공필터 === 'active' && row.준공여부) return false
-      if (준공필터 === 'done' && !row.준공여부) return false
-      if (공사구분필터 !== '전체' && row.공사구분 !== 공사구분필터) return false
-      if (검색어) {
-        const q = 검색어.toLowerCase()
-        if (
-          !row.공사명.toLowerCase().includes(q) &&
-          !row.지중no.toLowerCase().includes(q)
-        )
-          return false
-      }
-      return true
-    })
-  }, [data, 준공필터, 공사구분필터, 검색어])
+  const filteredData = useMemo(() => 수주필터(data, 필터), [data, 필터])
+
+  // 드롭다운 옵션은 필터 결과가 아니라 전체 data에서 파생시킨다 —
+  // 필터를 걸수록 선택지가 사라져 되돌릴 수 없게 되는 걸 막는다.
+  const 연도옵션 = useMemo(() => 연도선택목록(data), [data])
+  const 원청사옵션 = useMemo(() => {
+    const 목록 = 원청사목록(data)
+    // '원청사 없음' 건이 있을 때만 그 선택지를 만든다(없으면 결과 0건인 옵션이 된다)
+    return 원청사없음존재(data)
+      ? [...목록, { id: 원청사없음ID, 거래처명: '(원청사 없음)' }]
+      : 목록
+  }, [data])
 
   // 기준 토글 → 새 data 배열 → 테이블이 행(과 값 캐시)을 다시 만든다
   const tableData = useMemo<표시행[]>(
@@ -318,100 +326,121 @@ export function OrdersTable({
 
   return (
     <>
-      {/* 필터 바 */}
-      <div
-        className="bg-white rounded-xl shadow-sm px-4 py-3 mb-3 flex flex-wrap items-center gap-3"
-        style={{ borderColor: '#e2e8f0' }}
-      >
-        {/* 준공여부 토글 */}
-        <div className="flex items-center rounded-lg border border-gray-200 divide-x divide-gray-200 overflow-hidden">
-          {준공필터옵션.map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              className={cn(
-                'px-3 h-8 text-sm transition-colors whitespace-nowrap',
-                준공필터 === value
-                  ? 'bg-[#1e2d5a] text-white font-medium'
-                  : 'bg-white text-gray-600 hover:bg-gray-50',
-              )}
-              onClick={() => {
-                set준공필터(value)
-                resetPage()
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+      {/* 필터 바 — 윗줄: 무엇을 조회할지 / 아랫줄: 어떻게 볼지 + 검색 */}
+      <div className="bg-white rounded-xl shadow-sm px-4 py-3 mb-3 space-y-2.5">
+        {/* ── 윗줄: 조회 축 ── */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* 연도 — 옵션은 데이터에서 파생(2027년 수주가 들어오면 자동으로 생긴다) */}
+          <Select
+            value={String(필터.연도)}
+            onValueChange={(v) => 필터변경('연도', 연도파싱(v))}
+          >
+            <SelectTrigger className="h-8 w-28 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {연도옵션.map((y) => (
+                <SelectItem key={String(y)} value={String(y)}>
+                  {y === '전체' ? '전체 연도' : y === 연도미상 ? 연도미상 : `${y}년`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        {/* 금액 기준 토글 — 서류 대조(공급가) vs 실수령 조망(하도적용) */}
-        <div className="flex items-center rounded-lg border border-gray-200 divide-x divide-gray-200 overflow-hidden">
-          {(['하도적용', '공급가'] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              className={cn(
-                'px-3 h-8 text-sm transition-colors whitespace-nowrap',
-                금액기준 === v
-                  ? 'bg-[#1e2d5a] text-white font-medium'
-                  : 'bg-white text-gray-600 hover:bg-gray-50',
-              )}
-              onClick={() => set금액기준(v)}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
-
-        {/* 공사구분 */}
-        <Select
-          value={공사구분필터}
-          onValueChange={(v) => {
-            set공사구분필터(v)
-            resetPage()
-          }}
-        >
-          <SelectTrigger className="h-8 w-24 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {공사구분옵션.map((v) => (
-              <SelectItem key={v} value={v}>
+          {/* 상태 — 진행전(이력 0건) / 진행중(이력 1건 이상) / 준공완료(준공여부) */}
+          <div className="flex items-center rounded-lg border border-gray-200 divide-x divide-gray-200 overflow-hidden">
+            {상태옵션.map((v) => (
+              <button
+                key={v}
+                type="button"
+                className={cn(
+                  'px-3 h-8 text-sm transition-colors whitespace-nowrap',
+                  필터.상태 === v
+                    ? 'bg-[#1e2d5a] text-white font-medium'
+                    : 'bg-white text-gray-600 hover:bg-gray-50',
+                )}
+                onClick={() => 필터변경('상태', v)}
+              >
                 {v}
-              </SelectItem>
+              </button>
             ))}
-          </SelectContent>
-        </Select>
+          </div>
 
-        {/* 검색어 */}
-        <div className="relative flex-1 min-w-44 max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-gray-400 pointer-events-none" />
-          <Input
-            className="h-8 pl-8 text-sm"
-            placeholder="지중No 또는 공사명으로 검색..."
-            value={검색어}
-            onChange={(e) => {
-              set검색어(e.target.value)
-              resetPage()
-            }}
-          />
+          {/* 원청사 — 수주에 실제 등장하는 곳만(결과 0건인 선택지를 만들지 않는다) */}
+          <div className="w-52">
+            <SearchableSelect
+              options={원청사옵션}
+              value={원청사ID(필터.원청사)}
+              onChange={(id) => 필터변경('원청사', 원청사값(id))}
+              placeholder="원청사 전체"
+            />
+          </div>
+
+          {/* 공사구분 — '민수'는 관급까지 포함(회사 규정) */}
+          <Select
+            value={필터.공사구분}
+            onValueChange={(v) => 필터변경('공사구분', v as 수주필터조건['공사구분'])}
+          >
+            <SelectTrigger className="h-8 w-36 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {공사구분옵션.map((v) => (
+                <SelectItem key={v} value={v}>
+                  {v === '전체' ? '공사구분 전체' : v}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* 건수 */}
-        <span className="text-sm text-gray-500 tabular-nums shrink-0">
-          {total.toLocaleString('ko-KR')}건
-        </span>
+        {/* ── 아랫줄: 표시 기준 + 검색 ── */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* 금액 기준 토글 — 서류 대조(공급가) vs 실수령 조망(하도적용). 행을 걸러내지 않으므로 페이지 리셋 없음 */}
+          <div className="flex items-center rounded-lg border border-gray-200 divide-x divide-gray-200 overflow-hidden">
+            {(['하도적용', '공급가'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                className={cn(
+                  'px-3 h-8 text-sm transition-colors whitespace-nowrap',
+                  금액기준 === v
+                    ? 'bg-[#1e2d5a] text-white font-medium'
+                    : 'bg-white text-gray-600 hover:bg-gray-50',
+                )}
+                onClick={() => set금액기준(v)}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
 
-        {/* 새 수주 버튼 */}
-        <Button
-          size="sm"
-          className="ml-auto h-8 bg-[#1e2d5a] hover:bg-[#2d45a8] shrink-0"
-          onClick={() => setFormState({ mode: 'new' })}
-        >
-          <Plus className="size-3.5 mr-1" />
-          새 수주
-        </Button>
+          {/* 검색어 */}
+          <div className="relative flex-1 min-w-44 max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-gray-400 pointer-events-none" />
+            <Input
+              className="h-8 pl-8 text-sm"
+              placeholder="지중No 또는 공사명으로 검색..."
+              value={필터.검색어}
+              onChange={(e) => 필터변경('검색어', e.target.value)}
+            />
+          </div>
+
+          {/* 건수 */}
+          <span className="text-sm text-gray-500 tabular-nums shrink-0">
+            {total.toLocaleString('ko-KR')}건
+          </span>
+
+          {/* 새 수주 버튼 */}
+          <Button
+            size="sm"
+            className="ml-auto h-8 bg-[#1e2d5a] hover:bg-[#2d45a8] shrink-0"
+            onClick={() => setFormState({ mode: 'new' })}
+          >
+            <Plus className="size-3.5 mr-1" />
+            새 수주
+          </Button>
+        </div>
       </div>
 
       {/* 테이블 */}
@@ -470,7 +499,7 @@ export function OrdersTable({
               <TableRow className="bg-gray-50/80 hover:bg-gray-50/80 border-t border-gray-200">
                 <TableCell colSpan={3} className="px-3 py-2.5 text-sm font-bold text-gray-600">
                   합계 ({total.toLocaleString('ko-KR')}건)
-                  {검색어.trim() && data.length !== total && (
+                  {필터적용중(필터) && data.length !== total && (
                     <span className="font-normal text-gray-400 ml-1">/ 전체 {data.length.toLocaleString('ko-KR')}건</span>
                   )}
                 </TableCell>
