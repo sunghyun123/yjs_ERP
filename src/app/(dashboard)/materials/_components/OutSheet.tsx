@@ -152,6 +152,7 @@ export function OutSheet({ onClose, 선종들, 드럼들, 초기전압, 공사�
       {선종 && 칩들.length === 0 && <p className="text-sm text-slate-400 mb-2">{선종.코드} 재고 드럼이 없습니다.</p>}
       {칩들.map((c) => {
         const sel = sels[c.key]
+        const 선택가능개수 = Math.min(c.개수, MAX_드럼)
         const 균등 = sel?.균등사용.trim() ?? ''
         const 균등잔량 = 균등 === '' ? null : Math.max(0, c.잔량 - Number(균등))
         return (
@@ -164,18 +165,24 @@ export function OutSheet({ onClose, 선종들, 드럼들, 초기전압, 공사�
             </button>
             {sel && (
               <div className="px-3 pb-2.5 pl-10 text-[13.5px] text-slate-500">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  나간 드럼
-                  <input type="number" inputMode="numeric" min={1} max={Math.min(c.개수, MAX_드럼)}
-                    className={`${numInp} w-[52px]`} value={sel.개수}
+                <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                  <label htmlFor={`out-count-${c.key}`} className="font-bold text-slate-700">나간 드럼 수</label>
+                  <select id={`out-count-${c.key}`}
+                    className={`${numInp} w-[64px] appearance-auto text-left`} value={sel.개수}
                     onChange={(e) => {
-                      const v = Math.max(1, Math.min(parseInt(e.target.value, 10) || 1, c.개수, MAX_드럼))
+                      const v = Number(e.target.value)
                       updateSel(c.key, { 개수: v, 각사용: Array.from({ length: v }, (_, i) => sel.각사용[i] ?? sel.균등사용) })
-                    }} />
-                  개
+                    }}>
+                    {Array.from({ length: 선택가능개수 }, (_, i) => i + 1).map((개수) => (
+                      <option key={개수} value={개수}>{개수}개</option>
+                    ))}
+                  </select>
+                  <span className="text-[12px]">/ 보유 {c.개수}개</span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {!sel.드럼별 && (
                     <>
-                      · 드럼당 사용
+                      드럼마다 같은 사용 길이
                       <input type="number" inputMode="numeric" className={`${numInp} w-[76px]`} value={sel.균등사용}
                         placeholder="비우면 출고 중"
                         onChange={(e) => updateSel(c.key, { 균등사용: e.target.value })} />
@@ -184,12 +191,23 @@ export function OutSheet({ onClose, 선종들, 드럼들, 초기전압, 공사�
                       {균등잔량 === 0 && <span className="text-[10px] font-bold text-amber-700 bg-amber-100 rounded-full px-1.5">소진</span>}
                     </>
                   )}
-                  <button
-                    className="ml-auto flex-none border border-slate-200 bg-white rounded-full px-2.5 py-1 text-[11.5px] font-bold"
-                    onClick={() => updateSel(c.key, { 드럼별: !sel.드럼별, 각사용: Array.from({ length: sel.개수 }, (_, i) => sel.각사용[i] ?? sel.균등사용) })}
-                  >
-                    {sel.드럼별 ? '똑같이 입력' : '드럼별 입력'}
-                  </button>
+                  <div className="ml-auto flex flex-none rounded-full border border-slate-200 bg-white p-0.5" role="group" aria-label="사용 길이 입력 방식">
+                    {([
+                      { 드럼별: false, label: '모두 같게' },
+                      { 드럼별: true, label: '각각 다르게' },
+                    ] as const).map((mode) => (
+                      <button key={mode.label} type="button" aria-pressed={sel.드럼별 === mode.드럼별}
+                        className={`rounded-full px-2.5 py-1 text-[11.5px] font-bold ${
+                          sel.드럼별 === mode.드럼별 ? 'bg-[#3d5af1] text-white' : 'text-slate-500'
+                        }`}
+                        onClick={() => updateSel(c.key, {
+                          드럼별: mode.드럼별,
+                          각사용: Array.from({ length: sel.개수 }, (_, i) => sel.각사용[i] ?? sel.균등사용),
+                        })}>
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 {sel.드럼별 && (
                   <div className="mt-1.5 space-y-1.5">
@@ -221,7 +239,7 @@ export function OutSheet({ onClose, 선종들, 드럼들, 초기전압, 공사�
 
       <div className="bg-slate-50 rounded-[10px] px-3 py-2.5 text-[12.5px] text-slate-500 my-3">
         <b className="text-slate-900">여러 묶음에서 섞어 나가도 한 번에 기록됩니다.</b> 보통은 드럼당 같은 양을 쓰니 숫자
-        하나만 넣으면 되고, 드럼마다 다르면 <b className="text-slate-900">드럼별 입력</b>을 누르세요. 사용량은 복귀 후
+        하나만 넣으면 되고, 드럼마다 다르면 <b className="text-slate-900">각각 다르게</b>를 누르세요. 사용량은 복귀 후
         채워도 됩니다(비워두면 &ldquo;출고 중&rdquo;).
       </div>
 
