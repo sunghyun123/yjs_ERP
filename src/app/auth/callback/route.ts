@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { extractKakaoId, getWhitelistEntry } from '@/lib/whitelist'
+import { syncDashboardApprovedUser } from '@/lib/dashboard-whitelist'
 
 // 카카오 OAuth 리다이렉트 콜백. code 교환 → kakao_id 추출 → 화이트리스트 검증 → 분기.
 export async function GET(request: Request) {
@@ -34,7 +35,14 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${baseUrl}/login?error=not_allowed`)
   }
 
-  const entry = await getWhitelistEntry(supabase, kakaoId)
+  let entry = await getWhitelistEntry(supabase, kakaoId)
+  if (!entry) {
+    try {
+      entry = await syncDashboardApprovedUser(kakaoId)
+    } catch (error) {
+      console.error('Dashboard whitelist sync failed', error)
+    }
+  }
   if (!entry) {
     await supabase.auth.signOut()
     return NextResponse.redirect(`${baseUrl}/login?error=not_allowed`)
