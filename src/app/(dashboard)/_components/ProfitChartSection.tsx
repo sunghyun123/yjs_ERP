@@ -3,27 +3,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { 공사단가Row } from '@/types/database'
 import { calc합계, type 투입실적With상세 } from '../_lib/calc'
+import { build이력누계, calc준공잔여성과, load성과재료 } from '../_lib/junggong-seonggwa'
+import { partsKST } from '@/lib/kst'
 import { ProfitChart } from './ProfitChart'
 
 export async function ProfitChartSection() {
   const supabase = await createClient()
 
-  const year = new Date().getFullYear()
+  // 서버 시계는 UTC라 new Date().getFullYear()는 KST 1/1 00~09시에 전년을 준다 → partsKST 사용
+  const year = partsKST().year
   const yearStart = `${year}-01-01`
   const yearEnd = `${year + 1}-01-01`
 
-  const [투입실적결과, 단가결과, 공사이력결과] = await Promise.all([
+  const [투입실적결과, 단가결과, 성과재료] = await Promise.all([
     supabase.from('투입실적').select('*, 투입실적상세(투입구분, 주간수량, 야간수량)').gte('투입일', yearStart).lt('투입일', yearEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
-    supabase.from('공사이력').select('작업일자, 성과금액').gte('작업일자', yearStart).lt('작업일자', yearEnd),
+    // 매출손익 페이지와 같은 재료·같은 규칙 — 한쪽만 안 거치면 같은 "성과"가 다른 숫자가 된다
+    load성과재료(supabase),
   ])
 
   // 쿼리 실패 시 0으로 폴백돼 손익이 0처럼 보이는 것을 막는다.
-  const firstError = 투입실적결과.error ?? 단가결과.error ?? 공사이력결과.error
+  const firstError = 투입실적결과.error ?? 단가결과.error
   if (firstError) throw new Error(`월별 매출손익 조회 실패: ${firstError.message}`)
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
   const 투입실적목록 = (투입실적결과.data ?? []) as unknown as 투입실적With상세[]
+  const { 공사이력: 공사이력전체, 수주: 수주목록 } = 성과재료
 
   // 월별 집계 초기화 (1~12월)
   const monthly = Array.from({ length: 12 }, () => ({ 성과: 0, 투입: 0 }))
@@ -33,10 +38,16 @@ export async function ProfitChartSection() {
     monthly[m].투입 += calc합계(row, 단가목록)
   }
 
-  for (const row of (공사이력결과.data ?? []) as unknown as { 작업일자: string; 성과금액: number }[]) {
+  for (const row of 공사이력전체) {
     if (!row.작업일자) continue
+    if (row.작업일자 < yearStart || row.작업일자 >= yearEnd) continue
     const m = parseInt(row.작업일자.slice(5, 7), 10) - 1
     monthly[m].성과 += row.성과금액 ?? 0
+  }
+
+  // 준공 잔여성과를 준공월에 얹는다 (차감 기준은 전 기간 성과누계 — 연도로 자르면 이중 계상)
+  for (const { 월, 금액 } of calc준공잔여성과(수주목록, build이력누계(공사이력전체), yearStart, yearEnd)) {
+    monthly[월].성과 += 금액
   }
 
   // 연간 합계

@@ -18,6 +18,8 @@ export type PivotProjectRow = {
   투입금액: number
   손익금액: number
   monthly: Array<{ 성과: number; 투입: number; 손익: number }>
+  /** 준공월에 얹힌 잔여성과 — 성과금액에 이미 포함됨. 어디서 온 숫자인지 배지로만 구분한다 */
+  준공?: { 월: number; 금액: number }
 }
 
 type Props = {
@@ -277,6 +279,21 @@ export function PivotProjectTable({ data }: Props) {
                               <span className="block truncate font-medium text-gray-800" title={row.공사명}>
                                 {row.공사명}
                               </span>
+                              {row.준공 && (
+                                <span
+                                  className={cn(
+                                    'mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-medium',
+                                    // 음수 = 공사이력 성과누계가 준공액을 넘은 건. 0으로 깎지 않고 눈에 띄게 둔다
+                                    row.준공.금액 < 0
+                                      ? 'bg-red-50 text-red-600'
+                                      : 'bg-emerald-50 text-emerald-700',
+                                  )}
+                                  title={`${row.준공.월 + 1}월 준공 반영 ${Math.round(row.준공.금액).toLocaleString('ko-KR')}원 (준공액 − 기존 성과누계)`}
+                                >
+                                  {/* 금액은 title로 — 모바일 공사명 열이 96px라 배지에 넣으면 넘친다 */}
+                                  준공 {row.준공.월 + 1}월
+                                </span>
+                              )}
                             </td>
                           </>
                         )}

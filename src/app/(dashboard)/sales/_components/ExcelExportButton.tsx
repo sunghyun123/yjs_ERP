@@ -25,9 +25,18 @@ export function ExcelExportButton({ pivotData, chartData, year }: Props) {
       const wb = XLSX.utils.book_new()
 
       // 시트 1: 공사별 (연간 합계, 이익률 제거)
+      // 준공 2열은 성과금액의 내역 — 성과금액에 이미 포함돼 있다(더하면 이중 계산)
       const sheet1 = XLSX.utils.aoa_to_sheet([
-        ['지중No', '공사명', '성과금액(원)', '투입금액(원)', '손익금액(원)'],
-        ...pivotData.map(r => [r.지중no, r.공사명, r.성과금액, r.투입금액, r.손익금액]),
+        ['지중No', '공사명', '성과금액(원)', '투입금액(원)', '손익금액(원)', '준공월', '준공반영액(원)'],
+        ...pivotData.map(r => [
+          r.지중no,
+          r.공사명,
+          r.성과금액,
+          r.투입금액,
+          r.손익금액,
+          r.준공 ? r.준공.월 + 1 : '',
+          r.준공 ? r.준공.금액 : '',
+        ]),
       ])
       XLSX.utils.book_append_sheet(wb, sheet1, '공사별')
 
