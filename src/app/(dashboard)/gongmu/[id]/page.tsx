@@ -24,9 +24,6 @@ export default async function GongmuDetailPage({
   if (isNaN(공무_id)) notFound()
 
   const supabase = await createClient()
-  const { data: 공무raw } = await supabase.from('공무담당자').select('id, 이름').eq('id', 공무_id).single()
-  const 공무 = 공무raw as Pick<공무담당자Row, 'id' | '이름'> | null
-  if (!공무) notFound()
 
   // 월 파싱: YYYY-MM 형식 또는 구형 숫자 형식 모두 처리
   const now = new Date()
@@ -54,13 +51,17 @@ export default async function GongmuDetailPage({
   const selectedYear = sp.year ? Number(sp.year) : (defaultWeekOption?.isoYear ?? calYear)
   const selectedWeek = sp.week ? Number(sp.week) : (defaultWeekOption?.week ?? curWeek)
 
-  const [planResult, allRowsResult, weekRowsResult, 수주Result, 공무담당자Result] = await Promise.all([
+  const [공무Result, planResult, allRowsResult, weekRowsResult, 수주Result, 공무담당자Result] = await Promise.all([
+    supabase.from('공무담당자').select('id, 이름').eq('id', 공무_id).single(),
     supabase.from('공무_월간계획').select('구분, 월간계획금액').eq('공무_id', 공무_id).eq('year', calYear).eq('month', calMonth),
     supabase.from('공무_주간보고').select('week_no, year, 금주실적, 구분').eq('공무_id', 공무_id).in('year', isoYearsInMonth),
     supabase.from('공무_주간보고').select('*').eq('공무_id', 공무_id).eq('year', selectedYear).eq('week_no', selectedWeek).order('항목순서'),
     supabase.from('수주').select('id, 지중no, 공사명').eq('준공여부', false).order('지중no'),
     supabase.from('공무담당자').select('id, 이름').order('이름'),
   ])
+
+  const 공무 = 공무Result.data as Pick<공무담당자Row, 'id' | '이름'> | null
+  if (!공무) notFound()
 
   const weekRows = (weekRowsResult.data ?? []) as 공무_주간보고Row[]
   // 한국어 컬럼명이 든 select 문자열은 postgrest-js 타입 파서가 못 읽어 unknown 경유 캐스트

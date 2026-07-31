@@ -10,13 +10,11 @@ export const metadata = { title: '자재관리 | 영전사 ERP' }
 export default async function MaterialsPage() {
   const supabase = await createClient()
 
-  const [선종res, 품목res, 수주res] = await Promise.all([
+  const [선종res, 품목res, 수주res, 드럼raw, 드럼기록raw, 품목기록raw] = await Promise.all([
     supabase.from('자재_선종').select('*').order('전압').order('정렬'),
     supabase.from('자재_품목').select('*').order('분류').order('정렬'),
     // 공사명 콤보 옵션: 최근 수주부터 (자유 입력도 허용되므로 완전할 필요 없음)
     supabase.from('수주').select('공사명').order('id', { ascending: false }).limit(300),
-  ])
-  const [드럼raw, 드럼기록raw, 품목기록raw] = await Promise.all([
     fetchAll<자재_드럼Row>((f, t) => supabase.from('자재_드럼').select('*').order('id').range(f, t) as never),
     fetchAll<자재_드럼기록Row>((f, t) => supabase.from('자재_드럼기록').select('*').order('id').range(f, t) as never),
     fetchAll<자재_품목기록Row>((f, t) => supabase.from('자재_품목기록').select('*').order('id').range(f, t) as never),

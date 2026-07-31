@@ -1,21 +1,14 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { extractKakaoId, getWhitelistEntry } from '@/lib/whitelist'
+import { getDashboardAccess } from '@/lib/auth/dashboard-access'
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const access = await getDashboardAccess()
 
-  const kakaoId = extractKakaoId(user)
-  const entry = kakaoId ? await getWhitelistEntry(supabase, kakaoId) : null
-
-  if (entry?.role !== 'admin') {
+  if (access.entry?.role !== 'admin') {
     redirect('/')
   }
 

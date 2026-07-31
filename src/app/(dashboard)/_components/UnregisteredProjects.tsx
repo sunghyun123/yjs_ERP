@@ -1,7 +1,11 @@
 // src/app/(dashboard)/_components/UnregisteredProjects.tsx
-import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import type { load성과재료 } from '../_lib/junggong-seonggwa'
+import type {
+  load미입력공사,
+  load투입헤더,
+} from '../_lib/dashboard-data'
 import { UnregisteredProjectsClient } from './UnregisteredProjectsClient'
 
 export type ProjectStatus = {
@@ -14,20 +18,22 @@ export type ProjectStatus = {
   has투입실적: boolean
 }
 
-export async function UnregisteredProjects() {
-  const supabase = await createClient()
+export async function UnregisteredProjects({
+  성과재료Promise,
+  투입헤더Promise,
+  미입력공사Promise,
+}: {
+  성과재료Promise: ReturnType<typeof load성과재료>
+  투입헤더Promise: ReturnType<typeof load투입헤더>
+  미입력공사Promise: ReturnType<typeof load미입력공사>
+}) {
+  const [pending, 성과재료, 투입헤더] = await Promise.all([
+    미입력공사Promise,
+    성과재료Promise,
+    투입헤더Promise,
+  ])
 
-  // 미삭제 항목 전체
-  const { data: pending, error: pendingError } = await supabase
-    .from('dashboard_공사')
-    .select('id, 지중no, 공사명, 진행날짜')
-    .eq('삭제됨', false)
-    .order('진행날짜', { ascending: true })
-
-  // 조회 실패를 "미입력 공사 없음"으로 오인하지 않도록 에러를 던진다.
-  if (pendingError) throw new Error(`미입력 공사 조회 실패: ${pendingError.message}`)
-
-  if (!pending || pending.length === 0) {
+  if (pending.length === 0) {
     return (
       <Card className="bg-white shadow-sm border-0">
         <CardHeader className="px-5 pt-5 pb-3">
@@ -40,42 +46,20 @@ export async function UnregisteredProjects() {
     )
   }
 
-  const 지중nos = [...new Set((pending as unknown as { 지중no: string }[]).map((p) => p.지중no))]
-
-  // 수주 매핑
-  const { data: 수주들Raw } = await supabase
-    .from('수주')
-    .select('id, 지중no')
-    .in('지중no', 지중nos)
-
-  const 수주들 = (수주들Raw ?? []) as unknown as { id: number; 지중no: string }[]
-  const 수주Map = new Map(수주들.map((s) => [s.지중no, s.id]))
-
-  const 수주ids = [...수주Map.values()]
-  const dates = [...new Set((pending as unknown as { 진행날짜: string }[]).map((p) => p.진행날짜))]
-
-  // 공사이력, 투입실적 한꺼번에 조회
-  const [이력결과, 실적결과] = await Promise.all([
-    수주ids.length > 0
-      ? supabase.from('공사이력').select('수주_id, 작업일자').in('수주_id', 수주ids).in('작업일자', dates)
-      : Promise.resolve({ data: [] }),
-    수주ids.length > 0
-      ? supabase.from('투입실적').select('수주_id, 투입일').in('수주_id', 수주ids).in('투입일', dates)
-      : Promise.resolve({ data: [] }),
-  ])
+  const 수주Map = new Map(성과재료.수주.map((row) => [row.지중no, row.id]))
 
   const 이력Set = new Set(
-    ((이력결과.data ?? []) as unknown as { 수주_id: number; 작업일자: string }[]).map(
+    성과재료.공사이력.map(
       (r) => `${r.수주_id}_${r.작업일자}`,
     ),
   )
   const 실적Set = new Set(
-    ((실적결과.data ?? []) as unknown as { 수주_id: number; 투입일: string }[]).map(
+    투입헤더.map(
       (r) => `${r.수주_id}_${r.투입일}`,
     ),
   )
 
-  const statuses: ProjectStatus[] = (pending as unknown as { id: number; 지중no: string; 공사명: string; 진행날짜: string }[])
+  const statuses: ProjectStatus[] = pending
     .map((p) => {
       const 수주_id = 수주Map.get(p.지중no) ?? null
       const key = 수주_id ? `${수주_id}_${p.진행날짜}` : null

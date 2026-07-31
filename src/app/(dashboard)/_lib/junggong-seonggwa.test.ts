@@ -9,9 +9,13 @@ import {
 const 수주 = (over: Partial<준공수주Row> & { id: number }): 준공수주Row => ({
   지중no: `JG26-${String(over.id).padStart(3, '0')}`,
   공사명: '테스트 공사',
+  공사구분: '지중',
   준공여부: true,
   준공일: '2026-03-15',
   준공액_공급가: 10_000_000,
+  수주금액_공급가: 10_000_000,
+  보험료율: null,
+  하도전용율: null,
   ...over,
 })
 

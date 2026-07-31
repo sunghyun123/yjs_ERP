@@ -1,37 +1,27 @@
-import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { 공사단가Row } from '@/types/database'
 import { calc합계, type 투입실적With상세 } from '../_lib/calc'
 import { build이력누계, calc준공잔여성과, load성과재료 } from '../_lib/junggong-seonggwa'
-import { partsKST } from '@/lib/kst'
+import type { load연간투입원가재료 } from '../_lib/dashboard-data'
 import { ProfitChart } from './ProfitChart'
 
 export async function ProfitChartSection({
   성과재료Promise,
+  투입원가재료Promise,
 }: {
   성과재료Promise: ReturnType<typeof load성과재료>
+  투입원가재료Promise: ReturnType<typeof load연간투입원가재료>
 }) {
-  const supabase = await createClient()
-
-  // 서버 시계는 UTC라 new Date().getFullYear()는 KST 1/1 00~09시에 전년을 준다 → partsKST 사용
-  const year = partsKST().year
+  const [투입재료, 성과재료] = await Promise.all([
+    투입원가재료Promise,
+    성과재료Promise,
+  ])
+  const year = 투입재료.year
   const yearStart = `${year}-01-01`
   const yearEnd = `${year + 1}-01-01`
 
-  const [투입실적결과, 단가결과, 성과재료] = await Promise.all([
-    supabase.from('투입실적').select('*, 투입실적상세(투입구분, 주간수량, 야간수량)').gte('투입일', yearStart).lt('투입일', yearEnd),
-    supabase.from('공사단가').select('*').order('적용시작일'),
-    // 매출손익 페이지와 같은 재료·같은 규칙 — 한쪽만 안 거치면 같은 "성과"가 다른 숫자가 된다
-    성과재료Promise,
-  ])
-
-  // 쿼리 실패 시 0으로 폴백돼 손익이 0처럼 보이는 것을 막는다.
-  const firstError = 투입실적결과.error ?? 단가결과.error
-  if (firstError) throw new Error(`월별 매출손익 조회 실패: ${firstError.message}`)
-
-  const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
-  const 투입실적목록 = (투입실적결과.data ?? []) as unknown as 투입실적With상세[]
+  const 단가목록 = 투입재료.단가
+  const 투입실적목록 = 투입재료.투입실적 as 투입실적With상세[]
   const { 공사이력: 공사이력전체, 수주: 수주목록 } = 성과재료
 
   // 월별 집계 초기화 (1~12월)

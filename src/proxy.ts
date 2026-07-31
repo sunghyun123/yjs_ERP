@@ -30,8 +30,9 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // getUser()가 만료된 Access Token을 자동으로 갱신하고 setAll을 통해 쿠키에 씀
-  await supabase.auth.getUser()
+  // ES256 JWT를 JWKS로 검증한다. 키는 SDK 전역 캐시에 보관되므로 getUser()처럼
+  // 매 요청마다 Auth 서버를 왕복하지 않으며, 만료 임박 토큰의 갱신 동작은 유지된다.
+  await supabase.auth.getClaims()
 
   return supabaseResponse
 }

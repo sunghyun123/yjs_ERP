@@ -25,9 +25,13 @@ export type 준공수주Row = {
   id: number
   지중no: string
   공사명: string
+  공사구분: string | null
   준공여부: boolean
   준공일: string | null
   준공액_공급가: number | null
+  수주금액_공급가: number | null
+  보험료율: number | null
+  하도전용율: number | null
 }
 
 export type 공사이력Row = {
@@ -69,7 +73,9 @@ export async function load성과재료(
     fetchAllRows('수주', (from, to) =>
       supabase
         .from('수주')
-        .select('id, 지중no, 공사명, 준공여부, 준공일, 준공액_공급가')
+        .select(
+          'id, 지중no, 공사명, 공사구분, 준공여부, 준공일, 준공액_공급가, 수주금액_공급가, 보험료율, 하도전용율',
+        )
         .order('지중no')
         .range(from, to),
     ),

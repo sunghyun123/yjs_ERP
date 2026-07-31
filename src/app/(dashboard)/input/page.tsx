@@ -30,17 +30,13 @@ export default async function Page({
 
   const supabase = await createClient()
 
-  // 공사단가는 탭 무관하게 항상 fetch
-  const { data: 단가raw } = await supabase
-    .from('공사단가')
-    .select()
-    .order('적용시작일', { ascending: false })
-  const 단가목록 = (단가raw ?? []) as 공사단가Row[]
-
-  // 현황 탭: 선택 기간의 투입실적 fetch
-  let 투입실적목록: 투입실적행[] = []
-  if (tab === 'history') {
-    const { data: histRaw } = await supabase
+  const [단가결과, 이력결과] = await Promise.all([
+    supabase
+      .from('공사단가')
+      .select()
+      .order('적용시작일', { ascending: false }),
+    tab === 'history'
+      ? supabase
       .from('투입실적')
       .select(`
         id, 투입일, 수주_id,
@@ -58,8 +54,10 @@ export default async function Page({
       .gte('투입일', date_from)
       .lte('투입일', date_to)
       .order('투입일', { ascending: false })
-    투입실적목록 = (histRaw ?? []) as unknown as 투입실적행[]
-  }
+      : Promise.resolve({ data: [] }),
+  ])
+  const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
+  const 투입실적목록 = (이력결과.data ?? []) as unknown as 투입실적행[]
 
   const historyHref = `/input?tab=history&date_from=${date_from}&date_to=${date_to}`
 
