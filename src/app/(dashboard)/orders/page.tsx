@@ -17,7 +17,8 @@ export default async function 수주대장Page() {
         공사담당, 감독자, 정산상태, 포장여부, 자재청구여부, 공무담당자_id,
         발주자:거래처!발주자_id(거래처명),
         원청사:거래처!원청사_id(거래처명),
-        기성(id, 차수, 기성일, 기성액_공급가, 작업내용, 담당공무_id)
+        기성(id, 차수, 기성일, 기성액_공급가, 작업내용, 담당공무_id),
+        공사이력!수주_id(count)
       `)
       .order('지중no', { ascending: true }),
     supabase
@@ -34,7 +35,22 @@ export default async function 수주대장Page() {
       .order('id'),  // 생성순: 관리자가 추가한 순서대로(기타 등 맨 뒤 고정)
   ])
 
-  const orders = (data ?? []) as unknown as 수주행[]
+  // 카운트 임베드는 [{ count: n }] 모양으로 온다 — 평평한 이력건수로 풀어서 표에 넘긴다.
+  // DB가 세서 붙여주므로 쿼리는 여전히 1방이고, 이력 행을 직접 받지 않으니
+  // 1000행 캡은 수주 행에만 걸린다.
+  type 수주조회행 = Omit<수주행, '이력건수'> & { 공사이력: { count: number }[] }
+  const raw = (data ?? []) as unknown as 수주조회행[]
+
+  // PostgREST는 1000행에서 조용히 자른다 — 잘린 대장을 맞는 것처럼 보여주면
+  // 합계 푸터 숫자까지 틀려진다. 티 나게 실패시킨다.
+  if (raw.length >= 1000) {
+    throw new Error('수주 조회가 1000행 캡에 도달 — 대장 합계가 잘릴 수 있어 중단(페이지네이션 필요)')
+  }
+
+  const orders: 수주행[] = raw.map(({ 공사이력, ...r }) => ({
+    ...r,
+    이력건수: 공사이력?.[0]?.count ?? 0,
+  }))
   const 거래처목록 = (거래처data ?? []) as unknown as 거래처목록항목[]
   const 공무담당자목록 = (공무담당자raw ?? []) as unknown as { id: number; 이름: string }[]
   const 공사현장목록 = ((공사현장raw ?? []) as unknown as { 현장명: string }[]).map((r) => r.현장명)
