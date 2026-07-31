@@ -381,13 +381,13 @@ export function OrdersTable({
             value={필터.공사구분}
             onValueChange={(v) => 필터변경('공사구분', v as 수주필터조건['공사구분'])}
           >
-            <SelectTrigger className="h-8 w-24 text-sm">
+            <SelectTrigger className="h-8 w-36 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {공사구분옵션.map((v) => (
                 <SelectItem key={v} value={v}>
-                  {v}
+                  {v === '전체' ? '공사구분 전체' : v}
                 </SelectItem>
               ))}
             </SelectContent>
