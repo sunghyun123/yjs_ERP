@@ -4,6 +4,12 @@ import { formatEok } from '@/lib/format'
 import { partsKST } from '@/lib/kst'
 import { calc합계, type 투입실적With상세 } from './calc'
 import { sumMonthlyRevenue, type RevenueHistoryRow } from './revenue'
+import {
+  build이력누계,
+  calc준공잔여성과,
+  load성과재료,
+  sum준공잔여성과,
+} from './junggong-seonggwa'
 
 export type MonthlyKpiData = {
   year: number
@@ -67,40 +73,41 @@ export async function getMonthlyKpiData(
 ): Promise<MonthlyKpiData> {
   const period = getMonthlyPeriod(now)
 
-  const [투입실적결과, 단가결과, 공사이력결과, 전월공사이력결과] = await Promise.all([
+  const [투입실적결과, 단가결과, 성과재료] = await Promise.all([
     supabase
       .from('투입실적')
       .select('*, 투입실적상세(투입구분, 주간수량, 야간수량)')
       .gte('투입일', period.monthStart)
       .lt('투입일', period.monthEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
-    // 성과금액은 일별 증분으로 적재됨 → 기간 내 모든 행을 합산한다.
-    supabase
-      .from('공사이력')
-      .select('작업일자, 성과금액')
-      .gte('작업일자', period.monthStart)
-      .lt('작업일자', period.monthEnd),
-    supabase
-      .from('공사이력')
-      .select('작업일자, 성과금액')
-      .gte('작업일자', period.prevMonthStart)
-      .lt('작업일자', period.monthStart),
+    // 공사이력 전 기간 + 수주(준공 컬럼). 매출손익·홈 차트와 같은 재료·같은 규칙을 쓴다.
+    load성과재료(supabase),
   ])
 
-  const firstError =
-    투입실적결과.error ?? 단가결과.error ?? 공사이력결과.error ?? 전월공사이력결과.error
+  const firstError = 투입실적결과.error ?? 단가결과.error
   if (firstError) {
     throw firstError
   }
 
   const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
   const 투입실적목록 = (투입실적결과.data ?? []) as unknown as 투입실적With상세[]
+  const { 공사이력: 공사이력전체, 수주: 수주목록 } = 성과재료
+  const 이력누계 = build이력누계(공사이력전체)
+
+  // 성과금액은 일별 증분으로 적재됨 → 기간 내 모든 행을 합산한다.
+  const 기간내이력 = (from: string, to: string) =>
+    공사이력전체.filter(r => r.작업일자 >= from && r.작업일자 < to) as RevenueHistoryRow[]
+  // 준공월 잔여성과 — 차감 기준(성과누계)은 기간이 아니라 전 기간이어야 한다
+  const 준공반영 = (from: string, to: string) =>
+    sum준공잔여성과(calc준공잔여성과(수주목록, 이력누계, from, to))
 
   const monthlyInput = 투입실적목록.reduce((sum, row) => sum + calc합계(row, 단가목록), 0)
-  const monthlyRevenue = sumMonthlyRevenue((공사이력결과.data ?? []) as unknown as RevenueHistoryRow[])
-  const prevMonthRevenue = sumMonthlyRevenue(
-    (전월공사이력결과.data ?? []) as unknown as RevenueHistoryRow[],
-  )
+  const monthlyRevenue =
+    sumMonthlyRevenue(기간내이력(period.monthStart, period.monthEnd)) +
+    준공반영(period.monthStart, period.monthEnd)
+  const prevMonthRevenue =
+    sumMonthlyRevenue(기간내이력(period.prevMonthStart, period.monthStart)) +
+    준공반영(period.prevMonthStart, period.monthStart)
   // 이번 달은 오늘까지(MTD), 전월은 한 달 전체이므로 경과일 비율로 환산해 동기간 비교
   const prevMonthComparableRevenue =
     prevMonthRevenue * (period.comparisonDay / period.prevMonthDays)
