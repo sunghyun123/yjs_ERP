@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extractKakaoId } from './whitelist'
+import { extractKakaoId, extractKakaoIdFromClaims } from './whitelist'
 import type { User } from '@supabase/supabase-js'
 
 // 테스트용 최소 User 형태 (필요한 필드만 채운 부분 객체)
@@ -48,5 +48,24 @@ describe('extractKakaoId', () => {
       identities: [{ provider: 'kakao', identity_data: { provider_id: 4834516923 } }],
     })
     expect(extractKakaoId(user)).toBe('4834516923')
+  })
+})
+
+describe('extractKakaoIdFromClaims', () => {
+  it('검증된 claims의 provider_id를 사용한다', () => {
+    expect(
+      extractKakaoIdFromClaims({
+        user_metadata: { provider_id: '4834516923', sub: 'fallback' },
+      }),
+    ).toBe('4834516923')
+  })
+
+  it('provider_id가 없으면 metadata의 sub로 폴백한다', () => {
+    expect(extractKakaoIdFromClaims({ user_metadata: { sub: 777 } })).toBe('777')
+  })
+
+  it('카카오 식별 정보가 없으면 null을 반환한다', () => {
+    expect(extractKakaoIdFromClaims({ user_metadata: {} })).toBeNull()
+    expect(extractKakaoIdFromClaims(null)).toBeNull()
   })
 })

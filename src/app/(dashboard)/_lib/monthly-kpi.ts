@@ -10,6 +10,7 @@ import {
   load성과재료,
   sum준공잔여성과,
 } from './junggong-seonggwa'
+import type { 투입원가재료 } from './dashboard-data'
 
 export type MonthlyKpiData = {
   year: number
@@ -71,27 +72,37 @@ export async function getMonthlyKpiData(
   supabase: SupabaseClient<Database>,
   now = new Date(),
   성과재료Promise: ReturnType<typeof load성과재료> = load성과재료(supabase),
+  투입원가재료Promise?: Promise<투입원가재료>,
 ): Promise<MonthlyKpiData> {
   const period = getMonthlyPeriod(now)
 
-  const [투입실적결과, 단가결과, 성과재료] = await Promise.all([
+  const 자체투입재료Promise = 투입원가재료Promise ?? Promise.all([
     supabase
       .from('투입실적')
       .select('*, 투입실적상세(투입구분, 주간수량, 야간수량)')
       .gte('투입일', period.monthStart)
       .lt('투입일', period.monthEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
+  ]).then(([투입실적결과, 단가결과]) => {
+    const firstError = 투입실적결과.error ?? 단가결과.error
+    if (firstError) throw firstError
+    return {
+      year: period.year,
+      투입실적: (투입실적결과.data ?? []) as unknown as 투입실적With상세[],
+      단가: (단가결과.data ?? []) as 공사단가Row[],
+    }
+  })
+
+  const [투입재료, 성과재료] = await Promise.all([
+    자체투입재료Promise,
     // 공사이력 전 기간 + 수주(준공 컬럼). 매출손익·홈 차트와 같은 재료·같은 규칙을 쓴다.
     성과재료Promise,
   ])
 
-  const firstError = 투입실적결과.error ?? 단가결과.error
-  if (firstError) {
-    throw firstError
-  }
-
-  const 단가목록 = (단가결과.data ?? []) as 공사단가Row[]
-  const 투입실적목록 = (투입실적결과.data ?? []) as unknown as 투입실적With상세[]
+  const 단가목록 = 투입재료.단가
+  const 투입실적목록 = 투입재료.투입실적.filter(
+    (row) => row.투입일 >= period.monthStart && row.투입일 < period.monthEnd,
+  )
   const { 공사이력: 공사이력전체, 수주: 수주목록 } = 성과재료
   const 이력누계 = build이력누계(공사이력전체)
 

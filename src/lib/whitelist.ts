@@ -26,6 +26,22 @@ export interface WhitelistEntry {
   role: string
 }
 
+type AuthClaims = {
+  user_metadata?: Record<string, unknown>
+}
+
+/**
+ * 서명이 검증된 Supabase JWT claims에서 카카오 회원번호를 추출한다.
+ * 현재 카카오 로그인 토큰에는 provider_id와 sub가 모두 user_metadata에 포함된다.
+ */
+export function extractKakaoIdFromClaims(claims: AuthClaims | null): string | null {
+  const metadata = claims?.user_metadata
+  if (!metadata) return null
+
+  const kakaoId = metadata.provider_id ?? metadata.sub
+  return kakaoId != null ? String(kakaoId) : null
+}
+
 /**
  * kakao_id가 화이트리스트에 있으면 해당 항목을, 없으면 null을 반환한다.
  */

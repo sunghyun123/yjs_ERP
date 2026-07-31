@@ -5,14 +5,24 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CircleDollarSign, TrendingUp, Wallet, ArrowUpDown } from 'lucide-react'
 import { getMonthlyKpiData } from '../_lib/monthly-kpi'
 import type { load성과재료 } from '../_lib/junggong-seonggwa'
+import type { load연간투입원가재료 } from '../_lib/dashboard-data'
 
 export async function KpiCards({
   성과재료Promise,
+  투입원가재료Promise,
+  now,
 }: {
   성과재료Promise: ReturnType<typeof load성과재료>
+  투입원가재료Promise: ReturnType<typeof load연간투입원가재료>
+  now: Date
 }) {
   const supabase = await createClient()
-  const kpi = await getMonthlyKpiData(supabase, new Date(), 성과재료Promise)
+  const kpi = await getMonthlyKpiData(
+    supabase,
+    now,
+    성과재료Promise,
+    투입원가재료Promise,
+  )
   const { label: 월표시, amounts, formatted } = kpi
 
   const cards = [

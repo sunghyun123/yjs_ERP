@@ -48,11 +48,29 @@ export default async function GongmuPage({
   // 해당 월 이후 등록된 담당자는 이전 달 보고서에 표시되지 않도록 필터링
   const nextMonthYear = calMonth === 12 ? calYear + 1 : calYear
   const nextMonthCutoff = `${nextMonthYear}-${String(calMonth === 12 ? 1 : calMonth + 1).padStart(2, '0')}-01`
-  const { data: 공무들raw } = await supabase
-    .from('공무담당자')
-    .select('id, 이름')
-    .lt('생성일', nextMonthCutoff)
-    .order('id')
+  const [공무결과, plansResult, monthRowsResult, weekRowsResult] = await Promise.all([
+    supabase
+      .from('공무담당자')
+      .select('id, 이름')
+      .lt('생성일', nextMonthCutoff)
+      .order('id'),
+    supabase
+      .from('공무_월간계획')
+      .select('공무_id, 구분, 월간계획금액')
+      .eq('year', calYear)
+      .eq('month', calMonth),
+    supabase
+      .from('공무_주간보고')
+      .select('공무_id, 구분, 금주실적, year, week_no')
+      .in('year', isoYears)
+      .in('week_no', weekNos),
+    supabase
+      .from('공무_주간보고')
+      .select('공무_id, 구분, 금주실적')
+      .eq('year', displayWeekYear)
+      .eq('week_no', displayWeek),
+  ])
+  const 공무들raw = 공무결과.data
   const 공무들 = (공무들raw ?? []) as unknown as { id: number; 이름: string }[]
 
   if (공무들.length === 0) {
@@ -63,34 +81,14 @@ export default async function GongmuPage({
     )
   }
 
-  const ids = 공무들.map((g) => g.id)
-
-  const [plansResult, monthRowsResult, weekRowsResult] = await Promise.all([
-    supabase
-      .from('공무_월간계획')
-      .select('공무_id, 구분, 월간계획금액')
-      .in('공무_id', ids)
-      .eq('year', calYear)
-      .eq('month', calMonth),
-    supabase
-      .from('공무_주간보고')
-      .select('공무_id, 구분, 금주실적, year, week_no')
-      .in('공무_id', ids)
-      .in('year', isoYears)
-      .in('week_no', weekNos),
-    supabase
-      .from('공무_주간보고')
-      .select('공무_id, 구분, 금주실적')
-      .in('공무_id', ids)
-      .eq('year', displayWeekYear)
-      .eq('week_no', displayWeek),
-  ])
-
-  const plans = (plansResult.data ?? []) as unknown as { 공무_id: number; 구분: string; 월간계획금액: number }[]
+  const ids = new Set(공무들.map((g) => g.id))
+  const plans = ((plansResult.data ?? []) as unknown as { 공무_id: number; 구분: string; 월간계획금액: number }[])
+    .filter((row) => ids.has(row.공무_id))
   const validMonthPairs = new Set(getWeeksInMonth(calYear, calMonth).map((w) => `${w.isoYear}-${w.week}`))
   const monthRows = ((monthRowsResult.data ?? []) as unknown as { 공무_id: number; 구분: string; 금주실적: number; year: number; week_no: number }[])
-    .filter((r) => validMonthPairs.has(`${r.year}-${r.week_no}`))
-  const weekRows = (weekRowsResult.data ?? []) as unknown as { 공무_id: number; 구분: string; 금주실적: number }[]
+    .filter((r) => ids.has(r.공무_id) && validMonthPairs.has(`${r.year}-${r.week_no}`))
+  const weekRows = ((weekRowsResult.data ?? []) as unknown as { 공무_id: number; 구분: string; 금주실적: number }[])
+    .filter((row) => ids.has(row.공무_id))
 
   // 전체 KPI
   const 총계획공사 = plans.filter((p) => p.구분 === '공사').reduce((s, p) => s + p.월간계획금액, 0)
