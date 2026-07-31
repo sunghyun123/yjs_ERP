@@ -183,7 +183,8 @@ export function OutSheet({ onClose, 선종들, 드럼들, 초기전압, 공사�
                   {!sel.드럼별 && (
                     <>
                       드럼마다 같은 사용 길이
-                      <input type="number" inputMode="numeric" className={`${numInp} w-[76px]`} value={sel.균등사용}
+                      <input type="number" inputMode="numeric" aria-label="드럼마다 같은 사용 길이"
+                        className={`${numInp} w-[116px] flex-none placeholder:text-[12px] placeholder:font-medium`} value={sel.균등사용}
                         placeholder="비우면 출고 중"
                         onChange={(e) => updateSel(c.key, { 균등사용: e.target.value })} />
                       m
