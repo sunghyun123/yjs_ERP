@@ -1,6 +1,6 @@
 'use client'
 
-import * as XLSX from 'xlsx'
+import { useState } from 'react'
 import type { PivotProjectRow } from './PivotProjectTable'
 import type { SalesChartRow } from './SalesChart'
 import { captureClientEvent, captureServerBackedEvent } from '@/lib/analytics/client'
@@ -14,7 +14,12 @@ type Props = {
 const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월']
 
 export function ExcelExportButton({ pivotData, chartData, year }: Props) {
-  function handleExport() {
+  const [exporting, setExporting] = useState(false)
+
+  async function handleExport() {
+    if (exporting) return
+    setExporting(true)
+
     captureClientEvent('excel_export_started', {
       entity_type: 'excel',
       action_type: 'export',
@@ -22,6 +27,7 @@ export function ExcelExportButton({ pivotData, chartData, year }: Props) {
     })
 
     try {
+      const XLSX = await import('xlsx')
       const wb = XLSX.utils.book_new()
 
       // 시트 1: 공사별 (연간 합계, 이익률 제거)
@@ -78,12 +84,15 @@ export function ExcelExportButton({ pivotData, chartData, year }: Props) {
         result: 'failure',
         error_code: 'excel_write_failed',
       })
+    } finally {
+      setExporting(false)
     }
   }
 
   return (
     <button
-      onClick={handleExport}
+      onClick={() => void handleExport()}
+      disabled={exporting}
       className="inline-flex items-center gap-1.5 h-9 px-3 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-md transition-colors"
     >
       ⬇ 엑셀 내보내기

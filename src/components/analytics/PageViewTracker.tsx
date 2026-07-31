@@ -2,17 +2,13 @@
 
 import { Suspense, useEffect, useRef } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { captureClientEvent, identifyAnalyticsUser } from '@/lib/analytics/client'
+import { captureClientEvent } from '@/lib/analytics/client'
 import { getRouteAnalytics } from '@/lib/analytics/events'
 
 function PageViewTrackerInner() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const lastKey = useRef<string | null>(null)
-
-  useEffect(() => {
-    identifyAnalyticsUser()
-  }, [])
 
   useEffect(() => {
     if (!pathname) return

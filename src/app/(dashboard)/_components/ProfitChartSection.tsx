@@ -7,7 +7,11 @@ import { build이력누계, calc준공잔여성과, load성과재료 } from '../
 import { partsKST } from '@/lib/kst'
 import { ProfitChart } from './ProfitChart'
 
-export async function ProfitChartSection() {
+export async function ProfitChartSection({
+  성과재료Promise,
+}: {
+  성과재료Promise: ReturnType<typeof load성과재료>
+}) {
   const supabase = await createClient()
 
   // 서버 시계는 UTC라 new Date().getFullYear()는 KST 1/1 00~09시에 전년을 준다 → partsKST 사용
@@ -19,7 +23,7 @@ export async function ProfitChartSection() {
     supabase.from('투입실적').select('*, 투입실적상세(투입구분, 주간수량, 야간수량)').gte('투입일', yearStart).lt('투입일', yearEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
     // 매출손익 페이지와 같은 재료·같은 규칙 — 한쪽만 안 거치면 같은 "성과"가 다른 숫자가 된다
-    load성과재료(supabase),
+    성과재료Promise,
   ])
 
   // 쿼리 실패 시 0으로 폴백돼 손익이 0처럼 보이는 것을 막는다.

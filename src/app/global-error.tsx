@@ -2,10 +2,10 @@
 
 // App Router 전역 에러 경계.
 // React 렌더 중 발생한 에러는 경계(error boundary)가 가로채 window.onerror로 흘러가지 않는다.
-// 따라서 capture_exceptions(자동 캡처)로는 누락되고, 여기서 명시적으로 PostHog에 보낸다.
+// 따라서 전역 브라우저 리스너로는 누락되고, 여기서 명시적으로 PostHog에 보낸다.
 // global-error는 루트 레이아웃을 대체하므로 <html>/<body>를 직접 렌더해야 한다.
-import posthog from 'posthog-js'
 import { useEffect } from 'react'
+import { captureClientException } from '@/lib/analytics/client-exception'
 
 export default function GlobalError({
   error,
@@ -15,8 +15,7 @@ export default function GlobalError({
   reset: () => void
 }) {
   useEffect(() => {
-    // posthog가 미초기화(개발/토큰 없음)면 내부적으로 no-op이라 안전.
-    posthog.captureException(error)
+    captureClientException(error)
   }, [error])
 
   return (
