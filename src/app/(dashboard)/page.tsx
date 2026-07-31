@@ -3,8 +3,12 @@ import { KpiCards, KpiCardsSkeleton } from './_components/KpiCards'
 import { ProfitChartSection, ProfitChartSkeleton } from './_components/ProfitChartSection'
 import { UnregisteredProjects, UnregisteredProjectsSkeleton } from './_components/UnregisteredProjects'
 import { TypeStatusDonutSection, TypeStatusDonutSkeleton } from './_components/TypeStatusDonutSection'
+import { createClient } from '@/lib/supabase/server'
+import { load성과재료 } from './_lib/junggong-seonggwa'
 
 export default function DashboardPage() {
+  const 성과재료Promise = createClient().then(load성과재료)
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
       <div>
@@ -17,11 +21,11 @@ export default function DashboardPage() {
       </div>
 
       <Suspense fallback={<KpiCardsSkeleton />}>
-        <KpiCards />
+        <KpiCards 성과재료Promise={성과재료Promise} />
       </Suspense>
 
       <Suspense fallback={<ProfitChartSkeleton />}>
-        <ProfitChartSection />
+        <ProfitChartSection 성과재료Promise={성과재료Promise} />
       </Suspense>
 
       <Suspense fallback={<TypeStatusDonutSkeleton />}>

@@ -70,6 +70,7 @@ function getMonthlyPeriod(now: Date) {
 export async function getMonthlyKpiData(
   supabase: SupabaseClient<Database>,
   now = new Date(),
+  성과재료Promise: ReturnType<typeof load성과재료> = load성과재료(supabase),
 ): Promise<MonthlyKpiData> {
   const period = getMonthlyPeriod(now)
 
@@ -81,7 +82,7 @@ export async function getMonthlyKpiData(
       .lt('투입일', period.monthEnd),
     supabase.from('공사단가').select('*').order('적용시작일'),
     // 공사이력 전 기간 + 수주(준공 컬럼). 매출손익·홈 차트와 같은 재료·같은 규칙을 쓴다.
-    load성과재료(supabase),
+    성과재료Promise,
   ])
 
   const firstError = 투입실적결과.error ?? 단가결과.error

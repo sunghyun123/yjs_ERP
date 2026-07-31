@@ -31,6 +31,42 @@ export async function getServerDistinctId() {
 }
 
 export async function captureServerEvent(event: AnalyticsEventName, properties: AnalyticsProperties = {}) {
+  await captureServerEvents([{ event, properties }])
+}
+
+export async function captureServerEvents(
+  events: { event: AnalyticsEventName; properties?: AnalyticsProperties }[],
+) {
+  const config = getPostHogConfig()
+  if (!config || events.length === 0) return
+
+  const distinctId = await getServerDistinctId()
+  if (!distinctId) return
+
+  const client = new PostHog(config.token, {
+    host: config.host,
+    flushAt: 1,
+    flushInterval: 0,
+  })
+
+  for (const { event, properties = {} } of events) {
+    client.capture({
+      distinctId,
+      event,
+      properties: sanitizeAnalyticsProperties({
+        ...properties,
+        source: properties.source ?? 'server',
+        environment: 'production',
+      }),
+    })
+  }
+  await client.shutdown()
+}
+
+export async function captureServerException(
+  error: unknown,
+  properties: AnalyticsProperties = {},
+) {
   const config = getPostHogConfig()
   if (!config) return
 
@@ -43,14 +79,10 @@ export async function captureServerEvent(event: AnalyticsEventName, properties: 
     flushInterval: 0,
   })
 
-  client.capture({
-    distinctId,
-    event,
-    properties: sanitizeAnalyticsProperties({
-      ...properties,
-      source: 'server',
-      environment: 'production',
-    }),
-  })
+  await client.captureExceptionImmediate(error, distinctId, sanitizeAnalyticsProperties({
+    ...properties,
+    source: 'client',
+    environment: 'production',
+  }))
   await client.shutdown()
 }

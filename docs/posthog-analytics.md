@@ -35,16 +35,22 @@ Allowed properties are sanitized by allowlist in
 
 ## Event Flow
 
-- `instrumentation-client.ts` initializes PostHog in production only.
+- The browser does not load `posthog-js`; client events are batched to the
+  server in a microtask and sent by `posthog-node`.
 - Autocapture, automatic pageview, pageleave, and session replay are disabled.
-- SDK URL properties `$current_url`, `$pathname`, `$initial_current_url`, and
-  `$referrer` are removed before sending.
+- Client exceptions are sent to `/api/analytics/client-error`; the server-side
+  PostHog SDK creates the exception event, so the full browser error SDK is not
+  part of the client bundle.
+- The browser sends only allowlisted properties, so raw URLs and referrers are
+  never added to analytics events.
 - `PageViewTracker` manually captures `page_viewed` with `route_key`,
   `page_group`, and `filter_count` only.
-- `/api/analytics/identity` hashes `Supabase user.id` with
-  `POSTHOG_USER_HASH_SALT` and returns only the hash.
+- The server hashes `Supabase user.id` with `POSTHOG_USER_HASH_SALT`; the hash
+  is never returned to the browser during normal analytics flow.
 - `/api/analytics/capture` lets client workflows confirm server-side success
   events without exposing private row data.
+- `/api/analytics/client-error` accepts bounded error fields and forwards them
+  through the server-side PostHog SDK.
 
 ## Implemented Events
 
