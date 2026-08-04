@@ -12,7 +12,8 @@ export default async function MaterialsPage() {
 
   const [선종res, 품목res, 수주res, 드럼raw, 드럼기록raw, 품목기록raw] = await Promise.all([
     supabase.from('자재_선종').select('*').order('전압').order('정렬'),
-    supabase.from('자재_품목').select('*').order('분류').order('정렬'),
+    // 정렬 하나가 대분류 그룹 순서와 그룹 안 순서를 같이 담는다(설계표 1..72) — 그룹핑은 이 순서에 기댄다
+    supabase.from('자재_품목').select('*').order('정렬'),
     // 공사명 콤보 옵션: 최근 수주부터 (자유 입력도 허용되므로 완전할 필요 없음)
     supabase.from('수주').select('공사명').order('id', { ascending: false }).limit(300),
     fetchAll<자재_드럼Row>((f, t) => supabase.from('자재_드럼').select('*').order('id').range(f, t) as never),

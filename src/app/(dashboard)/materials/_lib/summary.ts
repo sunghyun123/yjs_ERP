@@ -48,7 +48,7 @@ export async function getMaterialsSummary(
   // 선종·품목은 정렬 순서가 계약의 라인 순서를 결정하므로 order를 그대로 가져간다.
   const [선종res, 품목res] = await Promise.all([
     supabase.from('자재_선종').select('*').order('정렬'),
-    supabase.from('자재_품목').select('*').order('분류').order('정렬'),
+    supabase.from('자재_품목').select('*').order('정렬'),
   ])
   if (선종res.error) throw new Error(`선종 조회 실패: ${선종res.error.message}`)
   if (품목res.error) throw new Error(`품목 조회 실패: ${품목res.error.message}`)
@@ -92,14 +92,18 @@ export async function getMaterialsSummary(
     return { voltage, lines }
   })
 
-  // 기타 자재: 수량 0 품목은 제외. 품목들raw가 (분류, 정렬)로 정렬돼 있으므로
-  // 삽입순 Map이 곧 분류순 그룹 + 정렬순 항목이 된다.
+  // 기타 자재: 수량 0 품목은 제외. 품목들raw가 정렬순이므로 삽입순 Map이 곧
+  // 대분류순 그룹 + 정렬순 항목이 된다.
+  // 계약(category/name 2단)은 그대로 두고 3단을 접어 넣는다 — category=대분류,
+  // name=중분류+소분류. 대시보드는 계약 모양이 안 바뀌므로 손댈 게 없다.
   const etcMap = new Map<string, EtcGroup>()
   for (const p of 품목들) {
     if (p.수량 === 0) continue
-    const g = etcMap.get(p.분류)
-    if (g) g.items.push({ name: p.품명, count: p.수량, unit: p.단위 })
-    else etcMap.set(p.분류, { category: p.분류, items: [{ name: p.품명, count: p.수량, unit: p.단위 }] })
+    const name = [p.중분류, p.소분류].filter(Boolean).join(' ') || p.대분류
+    const item = { name, count: p.수량, unit: p.단위 }
+    const g = etcMap.get(p.대분류)
+    if (g) g.items.push(item)
+    else etcMap.set(p.대분류, { category: p.대분류, items: [item] })
   }
 
   return {
