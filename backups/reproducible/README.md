@@ -12,7 +12,11 @@ Commit-safe contents:
 Do not commit generated row-level data here. Put generated files under
 `generated/`; that folder is ignored by default.
 
-Recommended flow:
+> 2026-08-04: 초기 이관이 끝나 이 흐름은 더 이상 실행되지 않는다. 원본 엑셀은
+> 레포 밖으로 옮겼고, `npm run backup:inventory` 와 `scripts/migrate-*.ts` 는
+> 각각 제거·주석처리됐다. 아래는 당시 절차의 기록이다.
+
+Recommended flow (당시):
 1. Run `npm run backup:inventory` to inspect workbook structure.
 2. Save generated inventory to `backups/reproducible/generated/` for private
    handoff, or summarize it manually in `docs/backup-inventory.md`.
