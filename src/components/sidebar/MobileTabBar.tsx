@@ -4,8 +4,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef } from 'react'
-import { LayoutDashboard, ClipboardList, PenLine, Activity, TrendingUp, Package, FileText } from 'lucide-react'
+import { LayoutDashboard, ClipboardList, PenLine, Activity, TrendingUp, Package, FileText, Monitor } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { DASHBOARD_URL } from '@/lib/dashboard-link'
 
 // 자재관리까지 기본 노출, 맨 뒤 공무는 스와이프해야 보인다(사용 빈도 순서 — 사용자 결정)
 const tabs = [
@@ -54,6 +55,18 @@ export function MobileTabBar() {
             </Link>
           )
         })}
+
+        {/* 대시보드 바로가기 — ERP 밖이라 active 상태가 없다(pathname 과 무관).
+            맨 뒤에 두는 이유: 스와이프해야 보이는 자리 = 하루에 몇 번 쓰는 이동. */}
+        <a
+          href={DASHBOARD_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-none w-[15.4vw] min-w-[58px] flex flex-col items-center justify-center gap-1 text-[11px] font-medium text-gray-400 transition-colors"
+        >
+          <Monitor className="size-5" />
+          대시보드
+        </a>
       </div>
     </nav>
   )
