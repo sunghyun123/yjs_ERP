@@ -1,6 +1,6 @@
 # Backup Inventory
 
-Last updated: 2026-06-17
+Last updated: 2026-08-04
 
 This inventory separates private source data, reproducible engineering evidence,
 and public portfolio material. The current repository contains real business
@@ -15,6 +15,10 @@ data in Excel source files, so public artifacts must be anonymized or aggregated
 | Portfolio evidence | `backups/portfolio/`, `docs/portfolio-case-study.md` | Commit only anonymized material | Case study, synthetic samples, masked screenshots, aggregate metrics | Yes, after manual review |
 
 ## Current Source Inventory
+
+> 2026-08-04 기준: 아래 엑셀 파일들은 **레포에 더 이상 없다.** 초기 이관이 끝난 뒤
+> 레포 밖 개인 폴더로 옮겼다. 표는 이관 당시 원본이 어떤 모양이었는지에 대한
+> 기록으로만 남긴다.
 
 The workbook metadata below uses sheet names, row counts, column counts, and
 headers only. Do not paste row values into public docs.
@@ -31,7 +35,7 @@ headers only. Do not paste row values into public docs.
 
 | Asset | Purpose | Public-safe? | Notes |
 | --- | --- | --- | --- |
-| `scripts/migrate-*.ts` | Imports Excel source data to Supabase tables | Partially | Script logic is useful; comments/output may include real identifiers during execution |
+| `scripts/migrate-*.ts` | Imports Excel source data to Supabase tables | Partially | **2026-08-04 아카이브(전 줄 주석처리, 실행 불가).** 이관은 끝났고 원본 엑셀도 레포에 없다. 이관 방식의 근거로만 보관 |
 | `scripts/check-신구비교.ts` | Compares legacy ERP totals with Supabase totals | No as-is | Contains row-level project codes and amounts; keep private or rewrite to aggregate before sharing |
 | `scripts/failed_rows.json` | Migration failure diagnostics | No | Treat as private row-level evidence |
 | `supabase/*.sql` | Whitelist/auth support schema | Partially | Review for table names and policies; never include real whitelist values |
@@ -65,45 +69,27 @@ backups/
 Only README/process files are intended for git. Generated folders are ignored by
 default and should be promoted manually only after review.
 
-## Automated Local Backup
+## Automated Local Backup (폐지 — 2026-08-04)
 
-Create a private backup bundle now:
+로컬 엑셀 원본을 매일 묶던 백업(`npm run backup:data`, 윈도우 예약 작업
+"YJS ERP Daily Data Backup", `scripts/backup-data.ts` /
+`scripts/backup-inventory.ts` / `scripts/register-daily-backup.ps1`)은 제거했다.
+지난 백업 산출물 `backups/private/<timestamp>-data-backup/` 은 그대로 둔다.
 
-```powershell
-npm run backup:data
-```
+폐지 이유와, 폐지 전에 남긴 교훈:
 
-Each run creates a new ignored folder:
+- 이 백업이 지키던 대상은 루트의 구ERP 엑셀 원본인데, 초기 이관이 끝난 뒤
+  그 파일들은 레포 밖으로 옮겨졌다. 지킬 대상이 없어졌다.
+- **2026-07-06 이후 이 작업은 매일 실패하고 있었고 한 달 동안 아무도 몰랐다.**
+  원인은 소스 파일 4개 중 `수주대장조회.xlsx` 가 사라지고 `매출손익.xlsx` 의
+  이름이 바뀐 것. 스크립트는 `process.exit(1)` 로 제대로 실패했지만, 새벽 2시에
+  아무도 안 보는 콘솔에서 실패했다(마지막 성공 백업 = 2026-07-06,
+  2026-08-04 실행 결과 `LastTaskResult=1`).
+- 교훈: 백업은 "돌게 만들었다"가 아니라 **"실패했을 때 내가 알게 되는가"**
+  까지 가야 완성이다. 아래 DB 백업은 `backups/private/db-backup.log` 에 기록을
+  남기지만, 실패를 사람에게 **밀어서 알리는** 경로는 아직 없다.
 
-```text
-backups/private/<timestamp>-data-backup/
-  <yyyy-mm-dd>.backup.xlsx
-  manifest.json
-  workbook-inventory.json
-```
-
-The backup workbook contains four operational sheets:
-- `공사현황`
-- `매출손익`
-- `수주대장조회`
-- `투입실적현황`
-
-`거래처 데이터.xlsx` is intentionally excluded from the daily backup because it is
-mostly static reference data. Keep it in a separate private snapshot when it
-changes.
-
-`manifest.json` contains source file names, sizes, checksums, output workbook
-checksum, and the exclusion reason. `workbook-inventory.json` contains workbook
-metadata only.
-
-Register the daily Windows scheduled task:
-
-```powershell
-.\scripts\register-daily-backup.ps1 -Time "02:00"
-```
-
-The task runs `npm run backup:data` once per day and writes a new timestamped
-folder under `backups/private/`.
+되살릴 일이 생기면 git 히스토리에서 위 세 스크립트를 꺼내면 된다.
 
 ## Automated Supabase DB Backup
 

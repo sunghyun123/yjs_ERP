@@ -34,7 +34,7 @@ Migration commands:
 
 | Check | Method | Pass criteria | Result | Evidence path |
 | --- | --- | --- | --- | --- |
-| Workbook readability | `npm run backup:inventory` | All expected workbooks open and headers match inventory | TBD |  |
+| Workbook readability | 워크북 직접 열람 (`backup:inventory` 는 2026-08-04 제거) | All expected workbooks open and headers match inventory | TBD |  |
 | Row count reconciliation | Migration script output plus DB count query | Difference is 0 or documented | TBD |  |
 | Required field completeness | DB query for null/blank critical fields | No unexpected blanks | TBD |  |
 | Referential integrity | DB query for missing client/project references | No unresolved foreign keys | TBD |  |
