@@ -29,12 +29,87 @@ export function derive드럼(드럼들: 자재_드럼Row[], 기록들: 자재_�
 
 export interface Derived품목 extends 자재_품목Row {
   수량: number
+  최근비고: string | null // 마지막으로 비고가 적힌 기록의 그 비고 (저장하지 않고 기록에서 파생)
 }
 
 export function derive품목(품목들: 자재_품목Row[], 기록들: 자재_품목기록Row[]): Derived품목[] {
   const sums = new Map<number, number>()
-  for (const r of 기록들) sums.set(r.품목_id, (sums.get(r.품목_id) ?? 0) + r.변화량)
-  return 품목들.map((p) => ({ ...p, 수량: sums.get(p.id) ?? 0 }))
+  const 최근 = new Map<number, 자재_품목기록Row>()
+  for (const r of 기록들) {
+    sums.set(r.품목_id, (sums.get(r.품목_id) ?? 0) + r.변화량)
+    // 비고 없는 기록(＋/− 연타)은 건너뛴다 — 마지막 기록이 아니라 '마지막으로 적힌 비고'를 보여준다
+    if (r.비고 === null || r.비고.trim() === '') continue
+    const cur = 최근.get(r.품목_id)
+    // 같은 날짜면 나중에 입력된 쪽(id가 큰 쪽)이 최근
+    if (!cur || r.일자 > cur.일자 || (r.일자 === cur.일자 && r.id > cur.id)) 최근.set(r.품목_id, r)
+  }
+  return 품목들.map((p) => ({ ...p, 수량: sums.get(p.id) ?? 0, 최근비고: 최근.get(p.id)?.비고 ?? null }))
+}
+
+/** 행에 찍는 짧은 이름. 대분류·중분류는 화면의 카드/소제목이 이미 말해주므로 가장 아래 단계만. */
+export function 품목라벨(p: 자재_품목Row): string {
+  return p.소분류 || p.중분류 || p.대분류
+}
+
+/** 맥락 없이 홀로 서는 이름(피드 한 줄, 검색 대상). 비어 있는 단계는 건너뛴다. */
+export function 품목전체명(p: 자재_품목Row): string {
+  return [p.대분류, p.중분류, p.소분류].filter(Boolean).join(' ')
+}
+
+export interface 중분류그룹 {
+  중분류: string
+  소제목: boolean // false면 이 그룹의 품목이 곧 중분류 자신 — 소제목과 행이 같은 글자로 겹친다
+  품목들: Derived품목[]
+}
+export interface 대분류그룹 {
+  대분류: string
+  총수: number
+  재고수: number // 수량 > 0 인 품목 수 — 접힌 카드에서도 "여기 뭔가 있다"를 보여주는 신호
+  중분류들: 중분류그룹[]
+}
+
+// 검색은 공백을 지우고 비교한다: '직선용325'로도 '직선용 접속재 325'를 찾게.
+const norm = (s: string) => s.toLowerCase().replace(/\s+/g, '')
+
+function 검색토큰(q: string): string[] {
+  return q.trim().split(/\s+/).map(norm).filter(Boolean)
+}
+
+/**
+ * 기타 자재를 대분류 > 중분류 2단으로 묶는다(그룹·항목 순서 = 품목들이 넘어온 순서 = 정렬).
+ * q가 있으면 토큰 전부를 포함하는 품목만 남기고, 남은 품목이 없는 그룹은 통째로 뺀다.
+ */
+export function group기타자재(품목들: Derived품목[], q = ''): 대분류그룹[] {
+  const tokens = 검색토큰(q)
+  const groups = new Map<string, 대분류그룹>()
+  const 중분류맵 = new Map<string, 중분류그룹>()
+
+  for (const p of 품목들) {
+    if (tokens.length > 0) {
+      const hay = norm(품목전체명(p))
+      if (!tokens.every((t) => hay.includes(t))) continue
+    }
+    let g = groups.get(p.대분류)
+    if (!g) {
+      g = { 대분류: p.대분류, 총수: 0, 재고수: 0, 중분류들: [] }
+      groups.set(p.대분류, g)
+    }
+    g.총수 += 1
+    if (p.수량 > 0) g.재고수 += 1
+
+    const key = `${p.대분류}|${p.중분류}`
+    let m = 중분류맵.get(key)
+    if (!m) {
+      m = { 중분류: p.중분류, 소제목: false, 품목들: [] }
+      중분류맵.set(key, m)
+      g.중분류들.push(m)
+    }
+    m.품목들.push(p)
+    // 소분류를 가진 품목이 하나라도 있어야 중분류가 '묶음 이름'이 된다.
+    // (TR엘보 접속재처럼 소분류가 없으면 중분류 자체가 품목이라 소제목을 달면 같은 글자가 두 번 나온다)
+    if (p.중분류 !== '' && p.소분류 !== '') m.소제목 = true
+  }
+  return [...groups.values()]
 }
 
 export interface 드럼칩 {
@@ -186,7 +261,7 @@ export function buildFeed(
     const 품목of = new Map(품목들.map((p) => [p.id, p]))
     const groups = new Map<string, { rec: 자재_품목기록Row; sum: number }>()
     for (const r of 품목기록들) {
-      const key = `${r.품목_id}|${r.일자}|${r.변화량 > 0 ? '+' : '-'}|${r.공사명 ?? ''}`
+      const key = `${r.품목_id}|${r.일자}|${r.변화량 > 0 ? '+' : '-'}|${r.비고 ?? ''}`
       const g = groups.get(key)
       if (g) g.sum += r.변화량
       else groups.set(key, { rec: r, sum: r.변화량 })
@@ -196,8 +271,8 @@ export function buildFeed(
       if (!p) continue
       items.push({
         key: `etc-${key}`, type: sum > 0 ? '입고' : '출고', 일자: rec.일자, 생성일: rec.생성일,
-        line1: `${p.분류} ${p.품명} ${fmt(Math.abs(sum))}${p.단위}`,
-        line2: rec.공사명 ?? '수량 조정',
+        line1: `${품목전체명(p)} ${fmt(Math.abs(sum))}${p.단위}`,
+        line2: rec.비고 ?? '수량 조정',
       })
     }
   }

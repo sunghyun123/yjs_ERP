@@ -577,15 +577,19 @@ export type Database = {
         Relationships: []
       }
       자재_품목: {
-        Row: { id: number; 분류: string; 품명: string; 단위: string; 정렬: number }
-        Insert: { id?: number; 분류: string; 품명: string; 단위?: string; 정렬?: number }
-        Update: { id?: number; 분류?: string; 품명?: string; 단위?: string; 정렬?: number }
+        // 3단 계층(대분류 > 중분류 > 소분류). 없는 단계는 null이 아니라 '' — unique 제약이
+        // null끼리를 서로 다른 값으로 봐서 중복이 조용히 통과하는 걸 막는다.
+        Row: { id: number; 대분류: string; 중분류: string; 소분류: string; 단위: string; 정렬: number }
+        Insert: { id?: number; 대분류: string; 중분류?: string; 소분류?: string; 단위?: string; 정렬?: number }
+        Update: { id?: number; 대분류?: string; 중분류?: string; 소분류?: string; 단위?: string; 정렬?: number }
         Relationships: []
       }
       자재_품목기록: {
-        Row: { id: number; 품목_id: number; 변화량: number; 일자: string; 공사명: string | null; 생성일: string; 작성자: string | null }
-        Insert: { id?: number; 품목_id: number; 변화량: number; 일자: string; 공사명?: string | null; 생성일?: string; 작성자?: string | null }
-        Update: { id?: number; 품목_id?: number; 변화량?: number; 일자?: string; 공사명?: string | null; 생성일?: string; 작성자?: string | null }
+        // 비고 = 건별 자유 메모(입고처·공사명·지역 등). 수기 대장이 그 칸을 그렇게 쓰고 있어서
+        // '공사명'이라는 이름을 버렸다 — 담기는 값에 대한 거짓말이 된다.
+        Row: { id: number; 품목_id: number; 변화량: number; 일자: string; 비고: string | null; 생성일: string; 작성자: string | null }
+        Insert: { id?: number; 품목_id: number; 변화량: number; 일자: string; 비고?: string | null; 생성일?: string; 작성자?: string | null }
+        Update: { id?: number; 품목_id?: number; 변화량?: number; 일자?: string; 비고?: string | null; 생성일?: string; 작성자?: string | null }
         Relationships: []
       }
     }
