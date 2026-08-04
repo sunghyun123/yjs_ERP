@@ -15,9 +15,12 @@ import {
   ChevronRight,
   LogOut,
   Package,
+  Monitor,
+  ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { signOut } from '@/app/actions/auth'
+import { DASHBOARD_URL } from '@/lib/dashboard-link'
 
 const SIDEBAR_BG = '#1e2d5a'
 const ACTIVE_BG = '#2d45a8'
@@ -152,6 +155,22 @@ export function Sidebar({ userName, isAdmin }: SidebarProps) {
           </>
         )}
       </nav>
+
+      {/* 대시보드 바로가기 — 앱 밖으로 나가므로 next/link 가 아니라 순수 <a>.
+          새 탭으로 여는 이유: ERP 폼 작성 중에 눌러도 입력이 날아가지 않는다.
+          rel="noopener" 없이 _blank 를 쓰면 열린 쪽에서 window.opener 로 이 탭을 조작할 수 있다. */}
+      <div className="px-3 pt-3 border-t border-white/10 shrink-0">
+        <a
+          href={DASHBOARD_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-white/10 transition-colors"
+        >
+          <Monitor className="size-4 shrink-0" />
+          <span className="flex-1">대시보드</span>
+          <ExternalLink className="size-3.5 opacity-60 shrink-0" />
+        </a>
+      </div>
 
       {/* 사용자 정보 + 로그아웃 */}
       <div className="px-3 py-3 border-t border-white/10 shrink-0">
