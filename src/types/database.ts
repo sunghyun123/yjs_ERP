@@ -296,6 +296,7 @@ export type Database = {
           접속_야: number
           외주1: number
           외주2: number
+          기타재료비: number
           생성자: string | null
           생성일: string
           수정자: string | null
@@ -329,6 +330,7 @@ export type Database = {
           접속_야?: number
           외주1?: number
           외주2?: number
+          기타재료비?: number
           생성자?: string | null
           생성일?: string
           수정자?: string | null
@@ -362,6 +364,7 @@ export type Database = {
           접속_야?: number
           외주1?: number
           외주2?: number
+          기타재료비?: number
           생성자?: string | null
           생성일?: string
           수정자?: string | null
