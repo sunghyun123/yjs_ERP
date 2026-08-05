@@ -31,7 +31,10 @@ import { cn } from '@/lib/utils'
 import { formatKRW } from '@/lib/format'
 import {
   calc합계,
+  calc합계상세,
   calc투입금액상세,
+  calc일반관리비상세,
+  일반관리비율,
   get동적투입구분목록,
   legacyRowTo상세,
   merge상세목록,
@@ -43,7 +46,7 @@ import type { 공사단가Row, 투입실적Update } from '@/types/database'
 import type { 투입실적행 } from '../_types'
 
 type 상세Map = Record<string, { 주간수량: number; 야간수량: number }>
-type 편집값 = { 상세: 상세Map; 외주1: number; 외주2: number }
+type 편집값 = { 상세: 상세Map; 외주1: number; 외주2: number; 기타재료비: number }
 
 function n(v: unknown): number {
   const num = Number(v)
@@ -126,6 +129,7 @@ export function HistoryTable({
       상세: to상세Map(getRow상세(투입구분목록, row)),
       외주1: row.외주1,
       외주2: row.외주2,
+      기타재료비: n(row.기타재료비),
     }
   }
 
@@ -186,14 +190,23 @@ export function HistoryTable({
     : []
   const 현재외주1 = editMode && 편집 ? 편집.외주1 : selectedRow?.외주1 ?? 0
   const 현재외주2 = editMode && 편집 ? 편집.외주2 : selectedRow?.외주2 ?? 0
+  const 현재기타재료비 = editMode && 편집 ? 편집.기타재료비 : n(selectedRow?.기타재료비)
+  const 현재사외금액 = {
+    투입일: selectedRow?.투입일 ?? '',
+    외주1: 현재외주1,
+    외주2: 현재외주2,
+    기타재료비: 현재기타재료비,
+  }
   const 현재투입금액 = selectedRow
-    ? calc투입금액상세(
-      { 투입일: selectedRow.투입일, 외주1: 현재외주1, 외주2: 현재외주2 },
-      현재상세목록,
-      단가목록,
-    )
+    ? calc투입금액상세(현재사외금액, 현재상세목록, 단가목록)
     : 0
-  const 현재합계 = 현재투입금액 * 1.06
+  // 관리비는 사내 몫에만 붙으므로 투입금액×6%로 되돌려 계산하면 안 된다.
+  const 현재일반관리비 = selectedRow
+    ? calc일반관리비상세(selectedRow.투입일, 현재상세목록, 단가목록)
+    : 0
+  const 현재합계 = selectedRow
+    ? calc합계상세(현재사외금액, 현재상세목록, 단가목록)
+    : 0
 
   const columns = useMemo(() => [
     ch.accessor('투입일', {
@@ -296,6 +309,7 @@ export function HistoryTable({
       ...상세목록ToLegacyUpdate(rows),
       외주1: 편집.외주1,
       외주2: 편집.외주2,
+      기타재료비: 편집.기타재료비,
       수정자: user?.id ?? null,
       수정일: new Date().toISOString(),
     }
@@ -525,17 +539,21 @@ export function HistoryTable({
                     </tbody>
                   </table>
 
-                  {(현재외주1 > 0 || 현재외주2 > 0 || editMode) && (
+                  {(현재외주1 > 0 || 현재외주2 > 0 || 현재기타재료비 > 0 || editMode) && (
                     <div className="mt-3">
-                      <p className="text-xs text-gray-400 font-medium mb-1.5">외주 금액</p>
+                      <p className="text-xs text-gray-400 font-medium mb-1.5">외주 · 기타 재료비 (일반관리비 미포함)</p>
                       <div className="grid grid-cols-2 gap-2">
-                        {(['외주1', '외주2'] as const).map((key) => (
-                          <div key={key}>
-                            <p className="text-xs text-gray-500 mb-0.5">{key}</p>
+                        {([
+                          { key: '외주1', label: '외주1' },
+                          { key: '외주2', label: '외주2' },
+                          { key: '기타재료비', label: '기타 재료비' },
+                        ] as const).map(({ key, label }) => (
+                          <div key={key} className={key === '기타재료비' ? 'col-span-2' : undefined}>
+                            <p className="text-xs text-gray-500 mb-0.5">{label}</p>
                             {editMode && 편집 ? (
                               <input type="number" min="0" step="1000" value={편집[key]} onChange={(e) => set편집((prev) => prev ? { ...prev, [key]: Number(e.target.value) || 0 } : prev)} className="w-full h-8 px-2 rounded border border-gray-200 text-sm text-right focus:border-blue-400 focus:outline-none" />
                             ) : (
-                              <p className="text-sm tabular-nums">{formatKRW(selectedRow[key])}</p>
+                              <p className="text-sm tabular-nums">{formatKRW(n(selectedRow[key]))}</p>
                             )}
                           </div>
                         ))}
@@ -557,8 +575,10 @@ export function HistoryTable({
                         <p className="text-xs font-bold tabular-nums">{formatKRW(현재투입금액)}</p>
                       </div>
                       <div className="rounded-lg p-3 bg-white/10">
-                        <p className="text-[10px] mb-1" style={{ color: '#a8b8e0' }}>일반관리비 (6%)</p>
-                        <p className="text-xs font-bold tabular-nums">{formatKRW(Math.round(현재투입금액 * 0.06))}</p>
+                        <p className="text-[10px] mb-1" style={{ color: '#a8b8e0' }}>
+                          일반관리비 ({Math.round(일반관리비율 * 100)}%)
+                        </p>
+                        <p className="text-xs font-bold tabular-nums">{formatKRW(현재일반관리비)}</p>
                       </div>
                       <div className="rounded-lg p-3 border border-white/25 bg-white/15">
                         <p className="text-[10px] mb-1 text-white/80">합계</p>

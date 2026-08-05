@@ -106,8 +106,19 @@ export function 상세목록ToLegacyUpdate(상세목록: 투입상세수량[]) {
   return payload
 }
 
-export function calc투입금액상세(
-  row: Pick<투입실적Row, '투입일' | '외주1' | '외주2'>,
+export const 일반관리비율 = 0.06
+
+// 일반관리비가 붙지 않는 사외 지출.
+// 외주는 영전사가 시공하지 않고, 기타재료비는 입력한 값을 그대로 쓴다.
+export type 사외금액입력 = Pick<투입실적Row, '외주1' | '외주2' | '기타재료비'>
+
+export function calc사외금액(row: 사외금액입력): number {
+  return n(row.외주1) + n(row.외주2) + n(row.기타재료비)
+}
+
+// 일반관리비 6%가 붙는 사내(영전사) 투입금액 = 투입구분별 수량×단가 + 재료비.
+export function calc사내투입금액(
+  투입일: string,
   상세목록: 투입상세수량[],
   단가목록: 공사단가Row[],
 ): number {
@@ -116,24 +127,54 @@ export function calc투입금액상세(
 
   for (const detail of 상세목록) {
     if (detail.투입구분 === 재료비투입구분) continue
-    const 단가 = get단가(단가목록, detail.투입구분, row.투입일)
+    const 단가 = get단가(단가목록, detail.투입구분, 투입일)
     직접노무비 += n(detail.주간수량) * 단가.주간단가
     직접노무비 += n(detail.야간수량) * 단가.야간단가
   }
 
-  const 재료비단가 = get단가(단가목록, 재료비투입구분, row.투입일)
+  const 재료비단가 = get단가(단가목록, 재료비투입구분, 투입일)
   const 재료비 = (n(상용직?.주간수량) + n(상용직?.야간수량)) * 재료비단가.주간단가
 
-  return 직접노무비 + 재료비 + n(row.외주1) + n(row.외주2)
+  return 직접노무비 + 재료비
+}
+
+export function calc일반관리비상세(
+  투입일: string,
+  상세목록: 투입상세수량[],
+  단가목록: 공사단가Row[],
+): number {
+  return Math.round(calc사내투입금액(투입일, 상세목록, 단가목록) * 일반관리비율)
+}
+
+// 투입금액 = 사내 + 사외 (일반관리비 제외한 실제 지출액)
+export function calc투입금액상세(
+  row: Pick<투입실적Row, '투입일'> & 사외금액입력,
+  상세목록: 투입상세수량[],
+  단가목록: 공사단가Row[],
+): number {
+  return calc사내투입금액(row.투입일, 상세목록, 단가목록) + calc사외금액(row)
+}
+
+// 합계 = 사내 + 사내×6% + 사외.
+// 소비자(수주대장·매출손익·홈KPI·대시보드 프로듀서)가 전부 이 함수를 거치므로
+// 관리비 공식은 여기 한 곳에만 산다.
+export function calc합계상세(
+  row: Pick<투입실적Row, '투입일'> & 사외금액입력,
+  상세목록: 투입상세수량[],
+  단가목록: 공사단가Row[],
+): number {
+  return calc투입금액상세(row, 상세목록, 단가목록)
+    + calc일반관리비상세(row.투입일, 상세목록, 단가목록)
+}
+
+function row상세(row: 투입실적With상세): 투입상세수량[] {
+  return row.투입실적상세?.length ? row.투입실적상세 : legacyRowTo상세(row)
 }
 
 export function calc투입금액(row: 투입실적With상세, 단가목록: 공사단가Row[]): number {
-  const 상세목록 = row.투입실적상세?.length ? row.투입실적상세 : legacyRowTo상세(row)
-  return calc투입금액상세(row, 상세목록, 단가목록)
+  return calc투입금액상세(row, row상세(row), 단가목록)
 }
 
-// 합계 = 투입금액 + 일반관리비(6%) — 매출손익 리포트에서 사용
 export function calc합계(row: 투입실적With상세, 단가목록: 공사단가Row[]): number {
-  const 투입금액 = calc투입금액(row, 단가목록)
-  return 투입금액 * 1.06
+  return calc합계상세(row, row상세(row), 단가목록)
 }

@@ -18,6 +18,8 @@ import { formatKRW } from '@/lib/format'
 import { todayKST } from '@/lib/kst'
 import {
   calc투입금액상세,
+  calc일반관리비상세,
+  일반관리비율,
   get동적투입구분목록,
   legacyRowTo상세,
   merge상세목록,
@@ -36,6 +38,7 @@ const schema = z.object({
   투입일: z.string().min(1, { error: '날짜를 입력하세요' }),
   외주1: amt,
   외주2: amt,
+  기타재료비: amt,
 })
 
 type FormValues = z.infer<typeof schema>
@@ -107,7 +110,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { 수주_id: 0, 투입일: default날짜 ?? today(), 외주1: 0, 외주2: 0 },
+    defaultValues: { 수주_id: 0, 투입일: default날짜 ?? today(), 외주1: 0, 외주2: 0, 기타재료비: 0 },
   })
 
   const values = watch()
@@ -115,12 +118,19 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
   const 수주id = values.수주_id
   const 상세목록 = useMemo(() => to상세목록(상세), [상세])
 
+  const 기준일 = 투입일 || today()
   const 투입금액 = calc투입금액상세(
-    { 투입일: 투입일 || today(), 외주1: n(values.외주1), 외주2: n(values.외주2) },
+    {
+      투입일: 기준일,
+      외주1: n(values.외주1),
+      외주2: n(values.외주2),
+      기타재료비: n(values.기타재료비),
+    },
     상세목록,
     단가목록,
   )
-  const 일반관리비 = Math.round(투입금액 * 0.06)
+  // 일반관리비는 사내(투입구분별 수량) 몫에만 붙는다 — 외주·기타재료비는 제외.
+  const 일반관리비 = calc일반관리비상세(기준일, 상세목록, 단가목록)
   const 합계 = 투입금액 + 일반관리비
 
   useEffect(() => {
@@ -132,6 +142,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
     set상세(to상세Map(merge상세목록(투입구분목록, rows)))
     setValue('외주1', row.외주1)
     setValue('외주2', row.외주2)
+    setValue('기타재료비', n(row.기타재료비))
   }, [setValue, 투입구분목록])
 
   useEffect(() => {
@@ -161,6 +172,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
             //    사용자가 직접 잡고 있는 투입일은 건드리지 말고 데이터 필드만 초기화한다.
             setValue('외주1', 0)
             setValue('외주2', 0)
+            setValue('기타재료비', 0)
             set상세(기본상세)
           }
           set실적로딩(false)
@@ -267,7 +279,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
   }, [wsHydrated, wsSave, 선택수주, 검색어, 투입일])
 
   function 초기화() {
-    reset({ 수주_id: 수주id, 투입일, 외주1: 0, 외주2: 0 })
+    reset({ 수주_id: 수주id, 투입일, 외주1: 0, 외주2: 0, 기타재료비: 0 })
     set상세(기본상세)
     set기존Id(null)
   }
@@ -316,6 +328,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
           ...legacyPayload,
           외주1: data.외주1,
           외주2: data.외주2,
+          기타재료비: data.기타재료비,
           수정자: uid,
           수정일: new Date().toISOString(),
         }
@@ -329,6 +342,7 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
           ...legacyPayload,
           외주1: data.외주1,
           외주2: data.외주2,
+          기타재료비: data.기타재료비,
           생성자: uid,
         }
          
@@ -509,7 +523,8 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
           </div>
 
           <div className="bg-white rounded-xl shadow-sm p-4">
-            <p className="text-sm font-semibold text-gray-700 mb-3">외주 금액</p>
+            <p className="text-sm font-semibold text-gray-700">외주 · 기타 재료비</p>
+            <p className="text-xs text-gray-400 mt-0.5 mb-3">영전사 시공분이 아니라 일반관리비(6%)가 붙지 않습니다</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="외주1" className="text-xs text-gray-600">외주1 (원)</Label>
@@ -518,6 +533,10 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
               <div className="space-y-1.5">
                 <Label htmlFor="외주2" className="text-xs text-gray-600">외주2 (원)</Label>
                 <Input id="외주2" type="number" inputMode="numeric" min="0" step="1000" className="h-10 text-right tabular-nums" {...register('외주2', numOpts)} />
+              </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label htmlFor="기타재료비" className="text-xs text-gray-600">기타 재료비 (원)</Label>
+                <Input id="기타재료비" type="number" inputMode="numeric" min="0" step="1000" className="h-10 text-right tabular-nums" {...register('기타재료비', numOpts)} />
               </div>
             </div>
           </div>
@@ -534,8 +553,11 @@ export function InputForm({ 단가목록, default수주Id, default날짜 }: Inpu
                 <p className="text-sm font-bold tabular-nums">{formatKRW(투입금액)}</p>
               </div>
               <div>
-                <p className="text-[11px] mb-0.5" style={{ color: '#a8b8e0' }}>일반관리비 (6%)</p>
+                <p className="text-[11px] mb-0.5" style={{ color: '#a8b8e0' }}>
+                  일반관리비 ({Math.round(일반관리비율 * 100)}%)
+                </p>
                 <p className="text-sm font-bold tabular-nums">{formatKRW(일반관리비)}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: '#6b80b8' }}>외주 · 기타 재료비 제외</p>
               </div>
               <div className="pt-3 border-t border-white/20">
                 <p className="text-[11px] mb-1 text-white/70">합계</p>
