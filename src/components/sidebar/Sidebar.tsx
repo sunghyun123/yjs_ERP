@@ -94,6 +94,10 @@ export function Sidebar({ userName, isAdmin }: SidebarProps) {
                 <Link
                   key={href}
                   href={href}
+                  // All dashboard pages are dynamic. Next.js 16 otherwise only
+                  // prefetches the shared loading boundary, so the data request
+                  // does not start until the user clicks the menu item.
+                  prefetch
                   className={cn(
                     'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
                     active ? 'text-white' : 'hover:bg-white/10',
@@ -140,6 +144,7 @@ export function Sidebar({ userName, isAdmin }: SidebarProps) {
                     <Link
                       key={href}
                       href={href}
+                      prefetch
                       className={cn(
                         'flex items-center px-3 py-1.5 rounded-md text-[13px] transition-colors',
                         active ? 'text-white' : 'hover:bg-white/10',

@@ -44,6 +44,9 @@ export function MobileTabBar() {
             <Link
               key={href}
               href={href}
+              // Force a full prefetch for these dynamic routes. The default
+              // only fetches the loading boundary in Next.js 16.
+              prefetch
               data-active={active}
               className={cn(
                 'flex-none w-[15.4vw] min-w-[58px] flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors',
