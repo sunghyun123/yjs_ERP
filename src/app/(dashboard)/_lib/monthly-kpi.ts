@@ -10,6 +10,11 @@ import {
   load성과재료,
   sum준공잔여성과,
 } from './junggong-seonggwa'
+import {
+  build월성과내역,
+  sum월성과내역,
+  type 월성과내역Row,
+} from './monthly-revenue-breakdown'
 import type { 투입원가재료 } from './dashboard-data'
 
 export type MonthlyKpiData = {
@@ -36,6 +41,15 @@ export type MonthlyKpiData = {
     revenueDelta: string
     monthlyInput: string
     monthlyProfit: string
+  }
+  /**
+   * 이번 달 실적을 공사 한 줄씩으로 펼친 것 (대시보드 총 공정률 도넛의 '실적 상세' 팝업용).
+   * totalThousand 는 rows 의 합이다 — 표를 손으로 더한 값과 도넛이 어긋나지 않게 하려는 것.
+   * amounts.monthlyRevenue(원)를 천원으로 반올림한 값과는 몇 천원 다를 수 있다(행 단위 반올림 차이).
+   */
+  breakdown: {
+    rows: 월성과내역Row[]
+    totalThousand: number
   }
   updatedAt: string
 }
@@ -126,6 +140,17 @@ export async function getMonthlyKpiData(
   const revenueDelta = monthlyRevenue - prevMonthComparableRevenue
   const monthlyProfit = monthlyRevenue - monthlyInput
 
+  // 위 monthlyRevenue 와 같은 재료·같은 규칙(공사이력 + 준공 잔여성과)을 공사별로 펼친 것.
+  // 계산기를 새로 만든 게 아니라 같은 합을 쪼개 놓은 것이라 두 값이 갈라질 구조가 없다.
+  const breakdownRows = build월성과내역(
+    공사이력전체,
+    수주목록,
+    이력누계,
+    투입실적목록,
+    period.monthStart,
+    period.monthEnd,
+  )
+
   return {
     year: period.year,
     month: period.month,
@@ -144,6 +169,10 @@ export async function getMonthlyKpiData(
       revenueDelta: `${revenueDelta >= 0 ? '+' : ''}${formatEok(revenueDelta)}`,
       monthlyInput: formatEok(monthlyInput),
       monthlyProfit: formatEok(monthlyProfit),
+    },
+    breakdown: {
+      rows: breakdownRows,
+      totalThousand: sum월성과내역(breakdownRows),
     },
     updatedAt: now.toISOString(),
   }
