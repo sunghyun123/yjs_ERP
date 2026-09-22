@@ -37,6 +37,7 @@ yarn-error.log*
 # private source/business data
 /*.xlsx
 /scripts/failed_rows.json
+/tmp/equipment/
 # 레거시 ERP 화면 캡처 (실데이터 포함 가능성 — 커밋 금지)
 /docs/mockups/legacy-captures/
 
