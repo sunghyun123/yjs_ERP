@@ -37,6 +37,7 @@ const navGroups = [
   ],
   [{ href: '/materials', label: '자재관리', icon: Package }],
   [{ href: '/gongmu', label: '공무', icon: FileText }],
+  [{ href: '/assets', label: '영전사 전산 현황', icon: Monitor }],
 ] as const
 
 const adminNav = [

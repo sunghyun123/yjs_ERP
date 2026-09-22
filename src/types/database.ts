@@ -3,9 +3,11 @@
 
 export type 역할타입 = 'admin' | 'user'
 
+import type { EquipmentFunctions, EquipmentTables } from '@/lib/equipment/types'
+
 export type Database = {
   public: {
-    Tables: {
+    Tables: EquipmentTables & {
       사용자: {
         Row: {
           id: string
@@ -597,7 +599,7 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: EquipmentFunctions
     Enums: Record<string, never>
   }
 }
