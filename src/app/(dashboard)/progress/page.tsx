@@ -44,6 +44,11 @@ export default async function Page({
   const 수주목록 = (수주결과.data ?? []) as unknown as 수주목록항목[]
   const 공무담당자목록 = (공무담당자결과.data ?? []) as unknown as { id: number; 이름: string }[]
 
+  // 담당자 목록이 비면 수정 시트가 담당이 지정된 모든 행을 "삭제된 담당자 #id"로 표시한다(저장값은 맞지만 문구가 틀림).
+  // RLS에 막혀도 에러 없이 빈 배열이 오므로 0명도 실패로 본다. 입력은 막지 않고 경고만 띄운다.
+  const 담당자조회실패 = !!공무담당자결과.error || 공무담당자목록.length === 0
+  if (담당자조회실패) console.error('[progress] 공무담당자 조회 실패 또는 0명', 공무담당자결과.error)
+
   const historyHref = `/progress?tab=history&date_from=${date_from}&date_to=${date_to}`
 
   return (
@@ -72,6 +77,12 @@ export default async function Page({
           현황
         </Link>
       </div>
+
+      {담당자조회실패 && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm mb-4">
+          공무 담당자 목록을 불러오지 못했습니다. 담당 공무 표시가 틀릴 수 있으니 새로고침해 주세요.
+        </div>
+      )}
 
       {tab === 'history' ? (
         <ProgressHistoryTable date_from={date_from} date_to={date_to} 공무담당자목록={공무담당자목록} />

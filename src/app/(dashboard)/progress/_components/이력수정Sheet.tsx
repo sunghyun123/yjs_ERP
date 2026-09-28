@@ -80,10 +80,12 @@ export function HistoryEditSheet({
   const handleSave = async () => {
     if (!row) return
     setSaving(true)
+    // 바뀐 칸만 보낸다. 시트를 열어둔 사이 다른 곳(공무 페이지 담당 지정 등)에서 고친 칸을
+    // 이 시트가 열 때 읽은 옛 값으로 덮어쓰지 않게 하려는 것. 바뀐 게 없으면 요청 없이 성공으로 끝난다.
     const 결과 = await update공사이력(createClient(), row.id, {
-      작업일자: editDate,
-      성과금액: editAmount,
-      담당공무_id: edit담당공무Id,
+      ...(editDate !== row.작업일자 && { 작업일자: editDate }),
+      ...(editAmount !== row.성과금액 && { 성과금액: editAmount }),
+      ...(edit담당공무Id !== row.담당공무_id && { 담당공무_id: edit담당공무Id }),
     })
     setSaving(false)
     if (!결과.ok) { showToast(false, 저장실패메시지(결과.reason)); return }
