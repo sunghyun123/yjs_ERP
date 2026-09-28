@@ -31,7 +31,7 @@ export function GongmuActualsView({
   return (
     <div className="p-4 md:p-6" style={{ maxWidth: 1280, margin: '0 auto' }}>
       {/* 헤더 · 월 이동 */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">공무</h1>
           <p className="text-sm text-gray-500 mt-0.5">{yy}년 {mm}월 · ERP 공사 진행 실적</p>
@@ -67,7 +67,7 @@ export function GongmuActualsView({
 
       {/* 요약 카드 */}
       <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <p className="text-xs font-semibold text-gray-400 mb-1">{선택.선택주.label} 실적</p>
             <p className="text-2xl font-bold text-[#1e2d5a] tabular-nums">{천원표기(실적.선택주합천원)}</p>

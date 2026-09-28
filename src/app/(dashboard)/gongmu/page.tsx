@@ -1,4 +1,5 @@
 // src/app/(dashboard)/gongmu/page.tsx
+import { unstable_rethrow } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { todayKST } from '@/lib/kst'
@@ -40,6 +41,9 @@ async function load(기간: { from: string; to: string }): Promise<{ 담당자�
       ),
     ])
     if (담당결과.error) throw new Error(`공무담당자 조회 실패: ${담당결과.error.message}`)
+    // RLS에 막히면 에러가 아니라 200 + 빈 배열이 온다. 담당자가 0명일 리는 없으므로 실패로 본다 —
+    // 그냥 그리면 합계 0에 "미지정 없음 ✓"이라는 틀린 초록불이 뜬다. (이력 0행은 월초에 정상이라 검사하지 않는다)
+    if (!담당결과.data?.length) throw new Error('공무담당자 0명 — 권한(RLS) 또는 데이터 문제')
     return {
       담당자목록: (담당결과.data ?? []) as unknown as 담당자[],
       행들: 이력.map((r) => ({
@@ -53,6 +57,7 @@ async function load(기간: { from: string; to: string }): Promise<{ 담당자�
       })),
     }
   } catch (e) {
+    unstable_rethrow(e) // redirect()·동적 렌더 신호 같은 Next 내부 제어 흐름은 삼키지 않는다
     console.error('[gongmu] ERP 실적 조회 실패', e)
     return null
   }

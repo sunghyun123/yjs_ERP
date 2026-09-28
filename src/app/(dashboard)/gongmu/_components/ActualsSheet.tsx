@@ -20,17 +20,26 @@ function AssignRow({ 행, 담당자목록 }: { 행: 실적행; 담당자목록: 
   const router = useRouter()
   const [선택, set선택] = useState<number | null>(null)
   const [저장중, set저장중] = useState(false)
+  // 저장 성공 후 refresh로 이 행이 사라질 때까지 버튼을 잠가둔다 — 그 사이 다시 눌리면 같은 요청이 또 나간다
+  const [완료, set완료] = useState(false)
   const [에러, set에러] = useState<string | null>(null)
 
   const save = async () => {
     if (선택 == null) return
     set저장중(true)
     set에러(null)
-    const 결과 = await update공사이력(createClient(), 행.id, { 담당공무_id: 선택 })
-    set저장중(false)
-    if (!결과.ok) { set에러(저장실패메시지(결과.reason)); return }
-    // 서버 컴포넌트를 다시 그려 집계를 새로 받는다 — 이 행은 담당자 카드로 옮겨간다
-    router.refresh()
+    try {
+      const 결과 = await update공사이력(createClient(), 행.id, { 담당공무_id: 선택 })
+      if (!결과.ok) { set에러(저장실패메시지(결과.reason)); return }
+      set완료(true)
+      // 서버 컴포넌트를 다시 그려 집계를 새로 받는다 — 이 행은 담당자 카드로 옮겨간다
+      router.refresh()
+    } catch (e) {
+      console.error('[gongmu] 담당 지정 실패', e)
+      set에러(저장실패메시지('error'))
+    } finally {
+      set저장중(false)
+    }
   }
 
   return (
@@ -44,8 +53,8 @@ function AssignRow({ 행, 담당자목록 }: { 행: 실적행; 담당자목록: 
           <option value="">담당 선택</option>
           {담당자목록.map((g) => <option key={g.id} value={g.id}>{g.이름}</option>)}
         </select>
-        <Button size="sm" className="h-8 bg-[#1e2d5a] hover:bg-[#2d45a8]" onClick={save} disabled={선택 == null || 저장중}>
-          {저장중 ? <Loader2 className="size-3.5 animate-spin" /> : '저장'}
+        <Button size="sm" className="h-8 bg-[#1e2d5a] hover:bg-[#2d45a8]" onClick={save} disabled={선택 == null || 저장중 || 완료}>
+          {저장중 ? <Loader2 className="size-3.5 animate-spin" /> : 완료 ? '저장됨' : '저장'}
         </Button>
       </div>
       {에러 && <p className="text-xs text-red-600">{에러}</p>}
@@ -103,7 +112,7 @@ export function ActualsSheet({
                         <div className="min-w-0">
                           <p className="font-medium text-gray-800 truncate">{r.공사명}</p>
                           <p className="text-xs text-gray-400">
-                            <span className="font-mono">{r.지중no}</span> · {r.작업일자.slice(5).replace('-', '/')}
+                            <span className="font-mono">{r.지중no}</span> · {Number(r.작업일자.slice(5, 7))}/{Number(r.작업일자.slice(8, 10))}
                           </p>
                         </div>
                         <span className="shrink-0 font-semibold tabular-nums text-gray-800">{천원표기(r.천원)}</span>
