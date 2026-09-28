@@ -29,7 +29,13 @@ export async function GET(req: NextRequest) {
 
     const [data, split] = await Promise.all([
       getMonthlyKpiData(supabase, now, 성과재료Promise, 투입재료Promise),
-      getMonthlySplit(supabase, period, 성과재료Promise, 투입재료Promise),
+      // split 만의 실패(기성 전 테이블 조회 등)는 기존 칸까지 끌고 내려가지 않는다 — split: null 로 보내면
+      // 새 대시보드는 대체값 경로로 가고, split 을 모르는 옛 대시보드는 아무 영향이 없다.
+      // (공유 재료가 실패하면 getMonthlyKpiData 도 실패하므로 그때는 예전처럼 500)
+      getMonthlySplit(supabase, period, 성과재료Promise, 투입재료Promise).catch((error: unknown) => {
+        console.error('[kpi/monthly-performance] split 계산 실패 — split: null 로 응답', error)
+        return null
+      }),
     ])
     // split 은 '추가'다 — 기존 칸(amounts·breakdown 등)의 값과 의미는 그대로 두어 옛 대시보드가 깨지지 않게 한다
     return NextResponse.json({ ...data, split })
