@@ -215,6 +215,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     if (선택수주Id == null) return
     const supabase = createClient()
     const { data } = await supabase.from('공사이력')
+      // ⚠️ 담당공무_id 필수: 아래 캐스트 때문에 tsc가 빠진 컬럼을 못 잡는다. 빼면 이력 수정 저장이 담당을 null로 지운다.
       .select('id, 작업일자, 성과금액, 담당공무_id')
       .eq('수주_id', 선택수주Id)
       .order('작업일자', { ascending: false }) as { data: 이력레코드[] | null }
@@ -246,6 +247,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     const supabase = createClient()
     return Promise.all([
       supabase.from('공사이력')
+        // ⚠️ 담당공무_id 필수: 아래 캐스트 때문에 tsc가 빠진 컬럼을 못 잡는다. 빼면 이력 수정 저장이 담당을 null로 지운다.
         .select('id, 작업일자, 성과금액, 담당공무_id')
         .eq('수주_id', id)
         .order('작업일자', { ascending: false }) as unknown as Promise<{ data: 이력레코드[] | null }>,
@@ -333,6 +335,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
       성과금액,
       작업내용: 작업내용 || null,
       담당공무_id: 담당공무Id,
+    // ⚠️ 담당공무_id 필수: 아래 캐스트 때문에 tsc가 빠진 컬럼을 못 잡는다. 빼면 이력 수정 저장이 담당을 null로 지운다.
     }).select('id, 작업일자, 성과금액, 담당공무_id').single()
     set저장중(false)
     if (error) {

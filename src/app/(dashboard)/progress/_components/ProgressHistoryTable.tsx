@@ -35,6 +35,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo, 공
   const fetchData = useCallback(() => {
     const supabase = createClient()
     const query = supabase.from('공사이력')
+      // ⚠️ 담당공무_id 필수: 아래 캐스트 때문에 tsc가 빠진 컬럼을 못 잡는다. 빼면 이력 수정 저장이 담당을 null로 지운다.
       .select('id, 작업일자, 성과금액, 수주_id, 담당공무_id, 수주!수주_id(지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율, 준공여부)')
       .gte('작업일자', dateFrom)
       .lte('작업일자', dateTo)
@@ -70,6 +71,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo, 공
     setEditRecords([])
     const supabase = createClient()
     const { data, error } = await supabase.from('공사이력')
+      // ⚠️ 담당공무_id 필수: 아래 캐스트 때문에 tsc가 빠진 컬럼을 못 잡는다. 빼면 이력 수정 저장이 담당을 null로 지운다.
       .select('id, 작업일자, 성과금액, 담당공무_id')
       .eq('수주_id', row.수주_id) as { data: 이력레코드[] | null; error: unknown }
     setEditLoading(false)
