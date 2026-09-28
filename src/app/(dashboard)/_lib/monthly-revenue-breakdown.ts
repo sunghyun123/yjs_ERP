@@ -10,6 +10,8 @@
  *   ① 그 달 공사이력.성과금액        → 공사별로 합치고, 성과가 찍힌 날짜를 모은다
  *   ② 그 달 준공 공사의 준공 잔여성과 → 같은 공사면 ①에 더해 한 줄로 합친다 (음수 가능)
  * ②만 있는 공사는 그 달 작업일이 없으므로 일자가 빈 배열이 된다.
+ *
+ * build월시공내역은 ①만(시공 실적) 행마다 반올림한 판본이다 — 대시보드 도넛용(2026-09-28).
  */
 import { legacyRowTo상세, type 투입실적With상세 } from './calc'
 import {
@@ -17,6 +19,8 @@ import {
   type 공사이력Row as 성과이력Row,
   type 준공수주Row,
 } from './junggong-seonggwa'
+// 반올림 규칙을 공무 페이지와 '같은 함수'로 맞춘다 — 규칙을 복사하면 한쪽만 바뀌는 날 두 화면이 갈라진다
+import { 천원 } from '../gongmu/_lib/erp-실적'
 
 export type 월성과내역Row = {
   수주_id: number
@@ -45,6 +49,42 @@ function has야간(row: 투입실적With상세): boolean {
   return 목록.some((d) => Number(d.야간수량) > 0)
 }
 
+/** [from, to) 투입실적 중 야간이 있었던 (수주_id|날짜) 집합 — 공사이력엔 야간 정보가 없어 여기서 빌려온다 */
+function build야간날(투입실적: 투입실적With상세[], from: string, to: string): Set<string> {
+  const 야간날 = new Set<string>()
+  for (const row of 투입실적) {
+    const 날짜 = String(row.투입일 ?? '')
+    if (날짜 < from || 날짜 >= to) continue
+    if (has야간(row)) 야간날.add(야간키(row.수주_id, 날짜))
+  }
+  return 야간날
+}
+
+/** 공사별 (천원, 날짜들) → 화면 행. 0천원 행은 감추고, 금액 큰 순 → 지중no 순으로 고정한다 */
+function to내역Rows(
+  집계: Iterable<[number, { 금액천원: number; 날짜: Set<string> }]>,
+  수주맵: Map<number, 준공수주Row>,
+  야간날: Set<string>,
+): 월성과내역Row[] {
+  const rows: 월성과내역Row[] = []
+  for (const [수주_id, v] of 집계) {
+    // 0천원 행은 감춘다 — 합계에 0을 보태던 행이라 총액은 바뀌지 않는다
+    if (v.금액천원 === 0) continue
+    const 수주 = 수주맵.get(수주_id)
+    const 날짜목록 = [...v.날짜].sort()
+    rows.push({
+      수주_id,
+      지중no: 수주?.지중no ?? '',
+      공사명: 수주?.공사명 ?? '(공사명 없음)',
+      금액천원: v.금액천원,
+      일자: 날짜목록.map(일).filter(Number.isInteger),
+      야간일자: 날짜목록.filter((d) => 야간날.has(야간키(수주_id, d))).map(일).filter(Number.isInteger),
+    })
+  }
+  // 금액 큰 순. 같으면 지중no로 고정해 매 조회마다 순서가 흔들리지 않게 한다
+  return rows.sort((a, b) => b.금액천원 - a.금액천원 || a.지중no.localeCompare(b.지중no, 'ko'))
+}
+
 /**
  * [from, to) 기간의 공사별 성과 내역. (from/to 는 'YYYY-MM-DD', to 는 미포함)
  *
@@ -61,15 +101,9 @@ export function build월성과내역(
   to: string,
 ): 월성과내역Row[] {
   const 수주맵 = new Map(수주목록.map((o) => [o.id, o]))
-
   // 야간 여부는 공사이력에 아예 없는 정보라 투입실적에서 (수주_id + 같은 날)로 빌려온다.
   // 투입 입력이 안 된 날은 야간이어도 표기가 안 붙는다 — 금액과 무관한 표기라 감수한다.
-  const 야간날 = new Set<string>()
-  for (const row of 투입실적) {
-    const 날짜 = String(row.투입일 ?? '')
-    if (날짜 < from || 날짜 >= to) continue
-    if (has야간(row)) 야간날.add(야간키(row.수주_id, 날짜))
-  }
+  const 야간날 = build야간날(투입실적, from, to)
 
   type 집계 = { 금액원: number; 날짜: Set<string> }
   const 집계맵 = new Map<number, 집계>()
@@ -96,25 +130,48 @@ export function build월성과내역(
     get집계(r.수주_id).금액원 += r.금액
   }
 
-  const rows: 월성과내역Row[] = []
-  for (const [수주_id, v] of 집계맵) {
-    const 금액천원 = Math.round(v.금액원 / 1000)
-    // 0천원 행은 감춘다 — 합계에 0을 보태던 행이라 총액은 바뀌지 않는다
-    if (금액천원 === 0) continue
-    const 수주 = 수주맵.get(수주_id)
-    const 날짜목록 = [...v.날짜].sort()
-    rows.push({
-      수주_id,
-      지중no: 수주?.지중no ?? '',
-      공사명: 수주?.공사명 ?? '(공사명 없음)',
-      금액천원,
-      일자: 날짜목록.map(일).filter(Number.isInteger),
-      야간일자: 날짜목록.filter((d) => 야간날.has(야간키(수주_id, d))).map(일).filter(Number.isInteger),
-    })
-  }
+  // 이 함수는 공사별 원 합계를 한 번 반올림한다(2026-09-11 규칙, 기존 breakdown 칸 그대로 유지)
+  const 천원집계 = [...집계맵].map(
+    ([id, v]) =>
+      [id, { 금액천원: Math.round(v.금액원 / 1000), 날짜: v.날짜 }] as [
+        number,
+        { 금액천원: number; 날짜: Set<string> },
+      ],
+  )
+  return to내역Rows(천원집계, 수주맵, 야간날)
+}
 
-  // 금액 큰 순. 같으면 지중no로 고정해 매 조회마다 순서가 흔들리지 않게 한다
-  return rows.sort((a, b) => b.금액천원 - a.금액천원 || a.지중no.localeCompare(b.지중no, 'ko'))
+/**
+ * [from, to) 공사별 **시공 실적** — 대시보드 도넛의 분자 (2026-09-28).
+ *
+ * build월성과내역과 두 가지가 다르다:
+ *   1) 준공 보정(②)을 더하지 않는다. 월간 목표가 시공분만이라, 분자에 준공 보정이 섞이면 기준이 어긋난다.
+ *   2) 공사이력 **행마다** 천원으로 반올림한다. 공무 페이지(gongmu/_lib/erp-실적.ts)와 같은 규칙이라
+ *      두 화면의 9월 합계가 1천원까지 같아진다.
+ */
+export function build월시공내역(
+  공사이력전체: 성과이력Row[],
+  수주목록: 준공수주Row[],
+  투입실적: 투입실적With상세[],
+  from: string,
+  to: string,
+): 월성과내역Row[] {
+  const 수주맵 = new Map(수주목록.map((o) => [o.id, o]))
+  const 야간날 = build야간날(투입실적, from, to)
+
+  const 집계맵 = new Map<number, { 금액천원: number; 날짜: Set<string> }>()
+  for (const row of 공사이력전체) {
+    // 날짜는 문자열로만 비교한다 — new Date()를 쓰면 서버 시계(UTC)가 KST 달력을 밀어버린다
+    if (row.작업일자 < from || row.작업일자 >= to) continue
+    let v = 집계맵.get(row.수주_id)
+    if (!v) {
+      v = { 금액천원: 0, 날짜: new Set<string>() }
+      집계맵.set(row.수주_id, v)
+    }
+    v.금액천원 += 천원(row.성과금액)
+    v.날짜.add(row.작업일자)
+  }
+  return to내역Rows(집계맵, 수주맵, 야간날)
 }
 
 /** 표에 보이는 행들의 합 — 도넛의 '실적'은 이 값이어야 한다 (따로 계산하지 않는다) */
