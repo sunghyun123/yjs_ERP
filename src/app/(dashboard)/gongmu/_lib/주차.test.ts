@@ -71,4 +71,10 @@ describe('resolve선택', () => {
     expect(resolve선택('2026-09-28', '2026-9').월).toBe('2026-10')
     expect(resolve선택('2026-09-28', '2026-10').다음가능).toBe(false)
   })
+  it('연 경계: 12/28 주는 2027년 1월 1주차', () => {
+    const s = resolve선택('2026-12-28')
+    expect(s.월).toBe('2027-01')
+    expect(s.선택주.월요일).toBe('2026-12-28')
+    expect(s.선택주.label).toBe('1주차 12/28~1/3')
+  })
 })
