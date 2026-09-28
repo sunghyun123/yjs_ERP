@@ -38,7 +38,8 @@ export type 담당묶음 = {
 export type 담당자별실적 = { 묶음: 담당묶음[]; 선택주합천원: number; 월누적합천원: number }
 
 export function 천원(원: number | null): number {
-  return Math.round((원 ?? 0) / 1000)
+  // || 0: -1~-499원 행이 -0이 되어 화면에 "-0천원"으로 찍히는 것을 막는다
+  return Math.round((원 ?? 0) / 1000) || 0
 }
 
 function 주기준기간(주목록: 주정보[]): { from: string; to: string } {
@@ -97,7 +98,7 @@ export function build담당자별실적(
     if (r.월요일 === 선택월요일) g.선택주천원 += r.천원
   }
 
-  const 묶음 = [...담당.values(), ...[...삭제됨.values()].sort((a, b) => a.key.localeCompare(b.key)), 미지정]
+  const 묶음 = [...담당.values(), ...[...삭제됨.values()].sort((a, b) => a.담당공무_id! - b.담당공무_id!), 미지정]
   return {
     묶음,
     선택주합천원: 묶음.reduce((s, g) => s + g.선택주천원, 0),
@@ -135,7 +136,8 @@ export function build달력비교(행들: 원이력행[], 월: 연월, 주목록
     if (in달 && !in주) 빠짐.set(r.작업일자, (빠짐.get(r.작업일자) ?? 0) + k)
   }
   const 목록 = (m: Map<string, number>) =>
-    [...m].sort(([a], [b]) => a.localeCompare(b)).map(([날짜, 천원]) => ({ 날짜, 천원 }))
+    // 합이 0인 날은 숫자를 바꾸지 않으므로 '포함/제외' 사유로 적지 않는다
+    [...m].filter(([, v]) => v !== 0).sort(([a], [b]) => a.localeCompare(b)).map(([날짜, 천원]) => ({ 날짜, 천원 }))
   return { 달력천원, 주기준천원, 차이천원: 주기준천원 - 달력천원, 포함된날: 목록(포함), 빠진날: 목록(빠짐) }
 }
 
@@ -156,6 +158,6 @@ export function 설명줄(b: 달력비교, 월: 연월): string {
   if (b.빠진날.length > 0) 사유.push(`${b.빠진날.map((d) => md(d.날짜)).join(', ')} 실적 제외(다른 달 주차 소속)`)
   return (
     `달력 기준 ${m}월: ${b.달력천원.toLocaleString('ko-KR')}천원 · ` +
-    `차이 ${sign}${Math.abs(b.차이천원).toLocaleString('ko-KR')}천원 = ${사유.join(', ')}`
+    `차이 ${sign}${Math.abs(b.차이천원).toLocaleString('ko-KR')}천원 = ${사유.join(' / ')}`
   )
 }
