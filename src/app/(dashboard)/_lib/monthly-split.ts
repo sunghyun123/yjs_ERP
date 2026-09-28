@@ -12,8 +12,14 @@
  *
  * DB에 아무것도 쓰지 않는다(읽기 시점 파생).
  */
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database'
+import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { 천원 } from '../gongmu/_lib/erp-실적'
-import type { 준공수주Row } from './junggong-seonggwa'
+import type { load성과재료, 준공수주Row } from './junggong-seonggwa'
+import { build월시공내역, sum월성과내역, type 월성과내역Row } from './monthly-revenue-breakdown'
+import type { MonthlyPeriod } from './monthly-kpi'
+import type { 투입원가재료 } from './dashboard-data'
 
 export type 정산기성Row = {
   id: number
@@ -107,4 +113,57 @@ export function build월정산내역(
 /** 표에 보이는 행들의 합 — 캡션의 '정산'은 이 값이어야 한다 (따로 계산하지 않는다) */
 export function sum월정산내역(rows: 월정산내역Row[]): number {
   return rows.reduce((sum, r) => sum + r.금액천원, 0)
+}
+
+export type MonthlySplit = {
+  construction: { rows: 월성과내역Row[]; totalThousand: number }
+  settlement: { rows: 월정산내역Row[]; totalThousand: number }
+}
+
+/**
+ * 대시보드 API 응답의 split 칸.
+ * period·성과재료·투입재료는 route 가 한 번 만들어 getMonthlyKpiData 와 나눠 쓴다 —
+ * 같은 달, 같은 행을 봐야 기존 칸과 split 이 서로 다른 순간의 DB를 설명하는 일이 없다.
+ */
+export async function getMonthlySplit(
+  supabase: SupabaseClient<Database>,
+  period: Pick<MonthlyPeriod, 'monthStart' | 'monthEnd'>,
+  성과재료Promise: ReturnType<typeof load성과재료>,
+  투입재료Promise: Promise<투입원가재료>,
+): Promise<MonthlySplit> {
+  const [성과재료, 투입재료, 기성전체] = await Promise.all([
+    성과재료Promise,
+    투입재료Promise,
+    // 준공 차감 누계가 전 기간이어야 해서 기간으로 자르지 않는다. 1000행에서 조용히 잘리지 않게 끝까지 받는다
+    fetchAllRows('기성', (from, to) =>
+      supabase
+        .from('기성')
+        .select('id, 수주_id, 차수, 기성일, 기성액_공급가')
+        .order('id')
+        .range(from, to),
+    ),
+  ])
+
+  const 투입실적 = 투입재료.투입실적.filter(
+    (row) => row.투입일 >= period.monthStart && row.투입일 < period.monthEnd,
+  )
+  const constructionRows = build월시공내역(
+    성과재료.공사이력,
+    성과재료.수주,
+    투입실적,
+    period.monthStart,
+    period.monthEnd,
+  )
+  const settlementRows = build월정산내역(
+    // supabase-js 가 이 select 문자열의 타입을 못 풀어 ParserError 를 낸다(다른 로더들과 같은 사정) —
+    // 필드가 바뀌면 위 .select() 문자열과 정산기성Row 를 손으로 맞춰야 한다
+    기성전체 as unknown as 정산기성Row[],
+    성과재료.수주,
+    period.monthStart,
+    period.monthEnd,
+  )
+  return {
+    construction: { rows: constructionRows, totalThousand: sum월성과내역(constructionRows) },
+    settlement: { rows: settlementRows, totalThousand: sum월정산내역(settlementRows) },
+  }
 }
