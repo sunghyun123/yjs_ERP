@@ -54,7 +54,7 @@ export type MonthlyKpiData = {
   updatedAt: string
 }
 
-function getMonthlyPeriod(now: Date) {
+export function getMonthlyPeriod(now: Date) {
   // 서버 런타임은 UTC라 now.getMonth()/getDate()가 KST와 어긋날 수 있다(자정 무렵 하루/한 달 밀림).
   // KST 기준 연/월/일로 고정한다.
   const { year, month, day } = partsKST(now)
@@ -82,15 +82,17 @@ function getMonthlyPeriod(now: Date) {
   }
 }
 
-export async function getMonthlyKpiData(
-  supabase: SupabaseClient<Database>,
-  now = new Date(),
-  성과재료Promise: ReturnType<typeof load성과재료> = load성과재료(supabase),
-  투입원가재료Promise?: Promise<투입원가재료>,
-): Promise<MonthlyKpiData> {
-  const period = getMonthlyPeriod(now)
+export type MonthlyPeriod = ReturnType<typeof getMonthlyPeriod>
 
-  const 자체투입재료Promise = 투입원가재료Promise ?? Promise.all([
+/**
+ * 그 달 투입실적(+상세)과 공사단가. getMonthlyKpiData 와 대시보드 split(야간 표기)이 같은 행을 쓰도록
+ * route 가 한 번 불러 두 계산에 나눠 준다.
+ */
+export function load투입원가재료(
+  supabase: SupabaseClient<Database>,
+  period: Pick<MonthlyPeriod, 'year' | 'monthStart' | 'monthEnd'>,
+): Promise<투입원가재료> {
+  return Promise.all([
     supabase
       .from('투입실적')
       .select('*, 투입실적상세(투입구분, 주간수량, 야간수량)')
@@ -106,6 +108,17 @@ export async function getMonthlyKpiData(
       단가: (단가결과.data ?? []) as 공사단가Row[],
     }
   })
+}
+
+export async function getMonthlyKpiData(
+  supabase: SupabaseClient<Database>,
+  now = new Date(),
+  성과재료Promise: ReturnType<typeof load성과재료> = load성과재료(supabase),
+  투입원가재료Promise?: Promise<투입원가재료>,
+): Promise<MonthlyKpiData> {
+  const period = getMonthlyPeriod(now)
+
+  const 자체투입재료Promise = 투입원가재료Promise ?? load투입원가재료(supabase, period)
 
   const [투입재료, 성과재료] = await Promise.all([
     자체투입재료Promise,
