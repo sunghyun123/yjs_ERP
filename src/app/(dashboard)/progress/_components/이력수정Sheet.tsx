@@ -12,8 +12,9 @@ import { Loader2, Save, Trash2 } from 'lucide-react'
 import type { 공사이력행 } from '../_types'
 import { PerformanceInput } from './성과Input'
 import { 직전누계 } from '../_lib/percent'
+import { delete공사이력, update공사이력, 저장실패메시지 } from '../_lib/update-공사이력'
 
-export type 이력레코드 = { id: number; 작업일자: string; 성과금액: number | null }
+export type 이력레코드 = { id: number; 작업일자: string; 성과금액: number | null; 담당공무_id: number | null }
 
 // 이력수정 시트 (컴포넌트 함수명은 ASCII 대문자 시작 — react-hooks 린트가 훅 검사를 하는 조건)
 export function HistoryEditSheet({
@@ -22,6 +23,7 @@ export function HistoryEditSheet({
   row,
   records,
   loading,
+  공무담당자목록,
   onSaved,
   onDeleted,
   showToast,
@@ -31,12 +33,14 @@ export function HistoryEditSheet({
   row: 공사이력행 | null
   records: 이력레코드[]          // 그 공사 전체 이력(직전누계 계산용). 호출부가 준비해 넘긴다.
   loading: boolean               // records 불러오는 중이면 % 입력 자리에 스피너
+  공무담당자목록: { id: number; 이름: string }[]
   onSaved: () => void            // 저장 성공 → 호출부가 재조회/닫기
   onDeleted: () => void          // 삭제 성공 → 호출부가 재조회/닫기
   showToast: (ok: boolean, msg: string) => void
 }) {
   const [editDate, setEditDate] = useState('')
   const [editAmount, setEditAmount] = useState<number | null>(null)
+  const [edit담당공무Id, setEdit담당공무Id] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -48,6 +52,9 @@ export function HistoryEditSheet({
     if (row) {
       setEditDate(row.작업일자)
       setEditAmount(row.성과금액)
+      // DB 값으로 출발해야 한다 — 저장이 담당공무_id를 항상 보내므로, 여기서 null로 출발하면
+      // 날짜만 고친 저장이 기존 담당을 지운다.
+      setEdit담당공무Id(row.담당공무_id)
     }
   }
 
@@ -65,15 +72,23 @@ export function HistoryEditSheet({
     [records, editDate, row],
   )
 
+  // 목록에 없는 담당(삭제된 담당자)이 걸린 행이면 드롭다운에 그 값을 따로 보여준다 —
+  // 안 보여주면 select가 "미지정"처럼 보이는데 저장은 옛 id를 그대로 보내 화면과 저장값이 어긋난다.
+  const 목록에없는담당 =
+    edit담당공무Id != null && !공무담당자목록.some((g) => g.id === edit담당공무Id) ? edit담당공무Id : null
+
   const handleSave = async () => {
     if (!row) return
     setSaving(true)
-    const supabase = createClient()
-    const { error } = await supabase.from('공사이력')
-      .update({ 작업일자: editDate, 성과금액: editAmount })
-      .eq('id', row.id)
+    // 바뀐 칸만 보낸다. 시트를 열어둔 사이 다른 곳(공무 페이지 담당 지정 등)에서 고친 칸을
+    // 이 시트가 열 때 읽은 옛 값으로 덮어쓰지 않게 하려는 것. 바뀐 게 없으면 요청 없이 성공으로 끝난다.
+    const 결과 = await update공사이력(createClient(), row.id, {
+      ...(editDate !== row.작업일자 && { 작업일자: editDate }),
+      ...(editAmount !== row.성과금액 && { 성과금액: editAmount }),
+      ...(edit담당공무Id !== row.담당공무_id && { 담당공무_id: edit담당공무Id }),
+    })
     setSaving(false)
-    if (error) { showToast(false, '저장에 실패했습니다.'); return }
+    if (!결과.ok) { showToast(false, 저장실패메시지(결과.reason)); return }
     showToast(true, '수정되었습니다.')
     onSaved()
   }
@@ -81,10 +96,12 @@ export function HistoryEditSheet({
   const handleDelete = async () => {
     if (!row) return
     setDeleting(true)
-    const supabase = createClient()
-    const { error } = await supabase.from('공사이력').delete().eq('id', row.id)
+    const 결과 = await delete공사이력(createClient(), row.id)
     setDeleting(false)
-    if (error) { showToast(false, '삭제에 실패했습니다.'); return }
+    if (!결과.ok) {
+      showToast(false, 결과.reason === 'not-updated' ? '삭제되지 않았습니다 (권한이 없거나 이미 삭제된 이력).' : '삭제에 실패했습니다.')
+      return
+    }
     showToast(true, '삭제되었습니다.')
     onDeleted()
   }
@@ -117,6 +134,22 @@ export function HistoryEditSheet({
                 직전누계={edit직전누계}
               />
             )}
+          </div>
+          <div>
+            <Label className="text-xs text-gray-600 mb-1.5 block">담당 공무</Label>
+            <select
+              className="h-9 w-full rounded-lg border border-input bg-background text-sm px-3 outline-none focus:border-ring"
+              value={edit담당공무Id ?? ''}
+              onChange={(e) => setEdit담당공무Id(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">미지정</option>
+              {목록에없는담당 != null && (
+                <option value={목록에없는담당}>삭제된 담당자 #{목록에없는담당}</option>
+              )}
+              {공무담당자목록.map((g) => (
+                <option key={g.id} value={g.id}>{g.이름}</option>
+              ))}
+            </select>
           </div>
           <Button className="w-full bg-[#1e2d5a] hover:bg-[#2d45a8]" onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}

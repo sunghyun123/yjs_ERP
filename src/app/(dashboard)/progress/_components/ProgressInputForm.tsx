@@ -13,7 +13,6 @@ import { formatKRW } from '@/lib/format'
 import { todayKST } from '@/lib/kst'
 import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 import type { 수주목록항목, 공사이력행 } from '../_types'
-import type { 공사이력Row } from '@/types/database'
 import { PerformanceInput } from './성과Input'
 import { 준공Badge } from './준공Badge'
 import { HistoryEditSheet, type 이력레코드 } from './이력수정Sheet'
@@ -172,7 +171,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
   const [작업일자, set작업일자] = useState(() => default날짜 ?? todayKST())
   const [성과금액, set성과금액] = useState<number | null>(null)
   const [editRow, setEditRow] = useState<공사이력행 | null>(null)
-  const [이력목록, set이력목록] = useState<Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[]>([])
+  const [이력목록, set이력목록] = useState<이력레코드[]>([])
   // 지금 화면의 이력목록이 어느 수주 것인지 꼬리표 — 로딩중을 state 저장 없이 렌더 중 파생하기 위함
   const [조회된수주Id, set조회된수주Id] = useState<number | null>(null)
 
@@ -216,9 +215,10 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     if (선택수주Id == null) return
     const supabase = createClient()
     const { data } = await supabase.from('공사이력')
-      .select('id, 작업일자, 성과금액')
+      // ⚠️ 담당공무_id 필수: 아래 캐스트 때문에 tsc가 빠진 컬럼을 못 잡는다. 빼면 이력 수정 저장이 담당을 null로 지운다.
+      .select('id, 작업일자, 성과금액, 담당공무_id')
       .eq('수주_id', 선택수주Id)
-      .order('작업일자', { ascending: false }) as { data: Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[] | null }
+      .order('작업일자', { ascending: false }) as { data: 이력레코드[] | null }
     set이력목록(data ?? [])
   }
 
@@ -230,6 +230,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
       작업일자: rec.작업일자,
       성과금액: rec.성과금액,
       수주_id: 선택수주Id,
+      담당공무_id: rec.담당공무_id,
       수주: {
         지중no: 선택수주.지중no,
         공사명: 선택수주.공사명,
@@ -246,9 +247,10 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     const supabase = createClient()
     return Promise.all([
       supabase.from('공사이력')
-        .select('id, 작업일자, 성과금액')
+        // ⚠️ 담당공무_id 필수: 아래 캐스트 때문에 tsc가 빠진 컬럼을 못 잡는다. 빼면 이력 수정 저장이 담당을 null로 지운다.
+        .select('id, 작업일자, 성과금액, 담당공무_id')
         .eq('수주_id', id)
-        .order('작업일자', { ascending: false }) as unknown as Promise<{ data: Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>[] | null }>,
+        .order('작업일자', { ascending: false }) as unknown as Promise<{ data: 이력레코드[] | null }>,
       supabase.from('수주').select('공무담당자_id').eq('id', id).single(),
     ]).then(([이력결과, 수주결과]) => {
       set이력목록(이력결과.data ?? [])
@@ -333,7 +335,8 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
       성과금액,
       작업내용: 작업내용 || null,
       담당공무_id: 담당공무Id,
-    }).select('id, 작업일자, 성과금액').single()
+    // ⚠️ 담당공무_id 필수: 아래 캐스트 때문에 tsc가 빠진 컬럼을 못 잡는다. 빼면 이력 수정 저장이 담당을 null로 지운다.
+    }).select('id, 작업일자, 성과금액, 담당공무_id').single()
     set저장중(false)
     if (error) {
       const msg = error.message?.includes('unique') ? '해당 날짜에 이미 등록된 이력이 있습니다.' : '저장에 실패했습니다.'
@@ -342,7 +345,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
     }
     showToast(true, '저장되었습니다.')
     // 반환행을 이력목록에 추가 → 누계·최근·직전 자동 재파생(백필 시 최근일 덮어쓰기 버그 없음).
-    if (inserted) set이력목록((prev) => [...prev, inserted as unknown as Pick<공사이력Row, 'id' | '작업일자' | '성과금액'>])
+    if (inserted) set이력목록((prev) => [...prev, inserted as unknown as 이력레코드])
     set성과금액(null)
     set작업일자(todayKST())
     set작업내용('')
@@ -521,6 +524,7 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
         row={editRow}
         records={이력목록}
         loading={false}
+        공무담당자목록={공무담당자목록}
         onSaved={() => { setEditRow(null); reload이력목록() }}
         onDeleted={() => { setEditRow(null); reload이력목록() }}
         showToast={showToast}
