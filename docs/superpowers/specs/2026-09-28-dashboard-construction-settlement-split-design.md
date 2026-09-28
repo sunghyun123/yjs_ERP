@@ -95,22 +95,23 @@ monthlyRevenue = 그 달 공사이력 성과금액 + 그 달 준공 건의 (준�
 
 | 파일 | 변경 |
 |---|---|
-| `src/app/(dashboard)/_lib/monthly-kpi.ts` | `getMonthlyPeriod`를 export한다. 나머지는 변경 없음 |
-| `src/app/(dashboard)/_lib/monthly-split.ts` (신규) | 아래 순수 함수 2개 + 조회 함수 1개 |
+| `src/app/(dashboard)/_lib/monthly-kpi.ts` | `getMonthlyPeriod`를 export하고, 그 달 투입실적·단가 조회를 `load투입원가재료(supabase, period)`로 뽑아 export한다. 계산은 변경 없음 |
+| `src/app/(dashboard)/_lib/monthly-revenue-breakdown.ts` | `build월시공내역` 추가. 야간 표기 헬퍼를 `build월성과내역`과 공유해야 해서 같은 파일에 둔다. `build월성과내역`의 결과는 변경 없음 |
+| `src/app/(dashboard)/_lib/monthly-split.ts` (신규) | `build월정산내역`(순수 함수) + `getMonthlySplit`(조회) |
 | `src/app/(dashboard)/_lib/monthly-split.test.ts` (신규) | §6 |
 | `src/app/api/kpi/monthly-performance/route.ts` | `load성과재료`를 한 번만 부르고, 그 promise를 `getMonthlyKpiData`와 `getMonthlySplit`에 함께 넘긴다. 응답에 `split`을 붙인다 |
 
-### `monthly-split.ts`
-- `build월시공내역(공사이력전체, 수주목록, 투입실적, from, to)`
-  - `[from, to)`의 공사이력(`준공정산=false`는 `load성과재료`가 이미 걸러 준다)을 행마다 `Math.round(원/1000) || 0`으로 바꾼 뒤 공사별로 합친다.
+### 함수
+- `build월시공내역(공사이력전체, 수주목록, 투입실적, from, to)` (`monthly-revenue-breakdown.ts`)
+  - `[from, to)`의 공사이력(`준공정산=false`는 `load성과재료`가 이미 걸러 준다)을 행마다 공무 페이지의 `천원()`(`gongmu/_lib/erp-실적.ts`)을 **import해서** 천원으로 바꾼 뒤 공사별로 합친다. 같은 함수를 써야 두 화면의 반올림 규칙이 갈라질 자리가 없다.
   - 일자와 야간일자는 `build월성과내역`과 같은 방식이다(야간은 투입실적의 수주_id + 같은 날로 빌려온다).
-- `build월정산내역(기성전체, 수주목록, from, to)`
+- `build월정산내역(기성전체, 수주목록, from, to)` (`monthly-split.ts`)
   - 기성: `기성일`이 `[from, to)` 안인 행마다 한 줄. 구분은 `기성 {차수}차`(차수가 없으면 `기성`)이다.
   - 준공: `준공여부 && 준공일 ∈ [from, to) && 준공액_공급가 != null`인 수주마다 한 줄. 금액 = 준공액 − 그 수주의 **기성 전 기간 누계**.
   - 기성누계는 `기성일`이 비어 있는 행까지 포함해 **전 기간**으로 만든다. 월 목록에서는 `기성일`이 빈 행이 빠진다(귀속시킬 달이 없다).
-- `getMonthlySplit(supabase, now, 성과재료Promise, 투입실적)`
+- `getMonthlySplit(supabase, period, 성과재료Promise, 투입재료Promise)` (`monthly-split.ts`)
   - 기성 전 행을 `fetchAllRows`로 받는다(현재 226행, 1000행에서 조용히 잘리는 것을 막는다).
-  - 투입실적은 `getMonthlyKpiData`가 이미 읽은 그 달 행을 재사용할 수 있으면 재사용한다. 구현 계획에서 경로를 정한다.
+  - 성과재료·투입재료 promise는 route가 한 번 만들어 `getMonthlyKpiData`와 함께 쓴다. `period`도 route가 `getMonthlyPeriod(now)`로 한 번 정해 넘긴다.
 
 날짜는 전부 `'YYYY-MM-DD'` 문자열로 비교한다. `new Date()`로 날짜를 읽지 않는다. 오늘의 달은 `partsKST()`를 쓰는 `getMonthlyPeriod`가 정한다.
 
@@ -142,7 +143,7 @@ monthlyRevenue = 그 달 공사이력 성과금액 + 그 달 준공 건의 (준�
 
 ## 6. 검증
 
-### ERP (vitest, `monthly-split.test.ts`)
+### ERP (vitest, `monthly-split.test.ts` + `monthly-revenue-breakdown.test.ts`)
 - 시공 반올림: 499원 행 2개 → 공사 합계 0천원(행마다 반올림). 원 합계를 먼저 반올림하는 방식과 결과가 다른 사례를 넣는다.
 - 준공 금회지불액이 기성 **전 기간** 누계로 차감되는지: 5월 기성 + 9월 준공.
 - 기성이 없는 준공 → 금액 = 준공액.
