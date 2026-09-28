@@ -48,6 +48,19 @@ describe('delete공사이력', () => {
     const { client } = fakeClient({ data: [], error: null })
     await expect(delete공사이력(client, 5)).resolves.toEqual({ ok: false, reason: 'not-updated' })
   })
+  it('에러면 error', async () => {
+    const { client } = fakeClient({ data: null, error: { message: 'boom' } })
+    await expect(delete공사이력(client, 5)).resolves.toEqual({ ok: false, reason: 'error' })
+  })
+})
+
+describe('update공사이력 — 빈 patch', () => {
+  it('보낼 칸이 없으면 요청 없이 성공 (0행을 "권한 없음"으로 오진하지 않는다)', async () => {
+    const { client, calls } = fakeClient({ data: [], error: null })
+    await expect(update공사이력(client, 5, {})).resolves.toEqual({ ok: true })
+    await expect(update공사이력(client, 5, { 담당공무_id: undefined })).resolves.toEqual({ ok: true })
+    expect(calls).toEqual({})
+  })
 })
 
 describe('저장실패메시지', () => {
