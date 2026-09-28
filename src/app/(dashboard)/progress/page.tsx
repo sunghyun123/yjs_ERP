@@ -74,7 +74,7 @@ export default async function Page({
       </div>
 
       {tab === 'history' ? (
-        <ProgressHistoryTable date_from={date_from} date_to={date_to} />
+        <ProgressHistoryTable date_from={date_from} date_to={date_to} 공무담당자목록={공무담당자목록} />
       ) : (
         <ProgressInputForm
           수주목록={수주목록}

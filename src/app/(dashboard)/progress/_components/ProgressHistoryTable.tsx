@@ -11,9 +11,9 @@ import type { 공사이력행 } from '../_types'
 import { HistoryEditSheet, type 이력레코드 } from './이력수정Sheet'
 import { 준공Badge } from './준공Badge'
 
-type Props = { date_from: string; date_to: string }
+type Props = { date_from: string; date_to: string; 공무담당자목록: { id: number; 이름: string }[] }
 
-export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: Props) {
+export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo, 공무담당자목록 }: Props) {
   const [dateFrom, setDateFrom] = useState(initFrom)
   const [dateTo, setDateTo]     = useState(initTo)
   const [rows, setRows]         = useState<공사이력행[]>([])
@@ -35,7 +35,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
   const fetchData = useCallback(() => {
     const supabase = createClient()
     const query = supabase.from('공사이력')
-      .select('id, 작업일자, 성과금액, 수주_id, 수주!수주_id(지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율, 준공여부)')
+      .select('id, 작업일자, 성과금액, 수주_id, 담당공무_id, 수주!수주_id(지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율, 준공여부)')
       .gte('작업일자', dateFrom)
       .lte('작업일자', dateTo)
       .order('작업일자', { ascending: false })
@@ -70,7 +70,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
     setEditRecords([])
     const supabase = createClient()
     const { data, error } = await supabase.from('공사이력')
-      .select('id, 작업일자, 성과금액')
+      .select('id, 작업일자, 성과금액, 담당공무_id')
       .eq('수주_id', row.수주_id) as { data: 이력레코드[] | null; error: unknown }
     setEditLoading(false)
     if (error) { showToast(false, '이력을 불러오지 못했습니다. 원 단위로만 수정할 수 있습니다.'); return }
@@ -201,6 +201,7 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo }: P
         row={editRow}
         records={editRecords}
         loading={editLoading}
+        공무담당자목록={공무담당자목록}
         onSaved={() => { setEditRow(null); refetch() }}
         onDeleted={() => { setEditRow(null); refetch() }}
         showToast={showToast}
