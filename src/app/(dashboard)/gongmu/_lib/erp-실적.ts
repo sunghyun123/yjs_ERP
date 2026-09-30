@@ -161,3 +161,34 @@ export function 설명줄(b: 달력비교, 월: 연월): string {
     `차이 ${sign}${Math.abs(b.차이천원).toLocaleString('ko-KR')}천원 = ${사유.join(' / ')}`
   )
 }
+
+export type 공사묶음 = {
+  수주_id: number
+  지중no: string
+  공사명: string
+  /** 행마다 반올림된 천원의 합 — 주 소계·카드 숫자와 같은 재료라 어긋나지 않는다 */
+  천원: number
+  /** 진행한 날짜 오름차순, 중복 제거 */
+  날짜들: string[]
+  행: 실적행[]
+}
+
+/**
+ * 한 주 안의 이력을 공사(수주)별로 한 줄에 묶는다 — 주간공정회의록이 같은 공사를 날짜별로 쪼개지 않고
+ * 한 건으로 적는 방식과 맞춘다. 순서는 그 공사를 처음 진행한 날짜순(입력이 작업일자순이므로 등장 순서).
+ */
+export function 공사별로묶기(행들: 실적행[]): 공사묶음[] {
+  const m = new Map<number, 공사묶음>()
+  for (const r of 행들) {
+    let g = m.get(r.수주_id)
+    if (!g) {
+      g = { 수주_id: r.수주_id, 지중no: r.지중no, 공사명: r.공사명, 천원: 0, 날짜들: [], 행: [] }
+      m.set(r.수주_id, g)
+    }
+    g.행.push(r)
+    g.천원 += r.천원
+    if (!g.날짜들.includes(r.작업일자)) g.날짜들.push(r.작업일자)
+  }
+  for (const g of m.values()) g.날짜들.sort()
+  return [...m.values()]
+}
