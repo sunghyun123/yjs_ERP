@@ -32,6 +32,13 @@ export type 월성과내역Row = {
   일자: number[]
   /** 위 일자 중 야간 투입이 있었던 날 */
   야간일자: number[]
+  /**
+   * 위 일자의 전체 날짜('YYYY-MM-DD'). 대시보드 split 은 금요일 기준 주차로 잘라 달을 넘나든다
+   * (9월 실적에 8/31) — '일'만으로는 어느 달의 31일인지 알 수 없어 함께 보낸다.
+   */
+  날짜: string[]
+  /** 위 날짜 중 야간 투입이 있었던 날 */
+  야간날짜: string[]
 }
 
 function 야간키(수주_id: number, 날짜: string): string {
@@ -79,6 +86,8 @@ function to내역Rows(
       금액천원: v.금액천원,
       일자: 날짜목록.map(일).filter(Number.isInteger),
       야간일자: 날짜목록.filter((d) => 야간날.has(야간키(수주_id, d))).map(일).filter(Number.isInteger),
+      날짜: 날짜목록,
+      야간날짜: 날짜목록.filter((d) => 야간날.has(야간키(수주_id, d))),
     })
   }
   // 금액 큰 순. 같으면 지중no로 고정해 매 조회마다 순서가 흔들리지 않게 한다
