@@ -75,6 +75,21 @@ export function 달의주목록(ym: 연월): 주정보[] {
   return out
 }
 
+/** 주 목록이 덮는 기간 [from, to) — 첫 주 월요일 ~ 마지막 주 일요일 다음 날. to는 미포함. */
+export function 주목록기간(주목록: 주정보[]): { from: string; to: string } {
+  return { from: 주목록[0].월요일, to: addDays(주목록[주목록.length - 1].월요일, 7) }
+}
+
+/**
+ * 오늘이 속한 주의 소속월과 그 달 주차들이 덮는 기간.
+ * 대시보드 실적(도넛·담당자별 진척)이 공무 화면·주간업무 보고서와 같은 달·같은 날짜를 보게 하려고 쓴다 (2026-10-23).
+ * 예) 오늘 9/28(월) → 그 주 금요일 10/2 → 10월, 기간 9/28~11/1.
+ */
+export function 금주소속월기간(오늘: string): { 월: 연월; from: string; to: string } {
+  const 월 = 소속월Of(월요일Of(오늘))
+  return { 월, ...주목록기간(달의주목록(월)) }
+}
+
 export type 선택상태 = {
   월: 연월
   주목록: 주정보[]

@@ -18,7 +18,6 @@ import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { 천원 } from '../gongmu/_lib/erp-실적'
 import type { load성과재료, 준공수주Row } from './junggong-seonggwa'
 import { build월시공내역, sum월성과내역, type 월성과내역Row } from './monthly-revenue-breakdown'
-import type { MonthlyPeriod } from './monthly-kpi'
 import type { 투입원가재료 } from './dashboard-data'
 
 export type 정산기성Row = {
@@ -37,6 +36,8 @@ export type 월정산내역Row = {
   구분: string
   /** 계산서 날짜의 '일' */
   일: number
+  /** 계산서 날짜 'YYYY-MM-DD' — 대시보드 기간이 달을 넘나들어 '일'만으로는 달을 모른다 */
+  날짜: string
   /** 천원, 음수 가능(환수) — 0으로 깎지 않는다 */
   금액천원: number
 }
@@ -80,6 +81,7 @@ export function build월정산내역(
       ...이름(g.수주_id),
       구분: g.차수 ? `기성 ${g.차수}차` : '기성',
       일: 일(g.기성일),
+      날짜: g.기성일,
       금액천원: 천원(g.기성액_공급가),
     })
   }
@@ -93,6 +95,7 @@ export function build월정산내역(
       ...이름(o.id),
       구분: '준공',
       일: 일(o.준공일),
+      날짜: o.준공일,
       금액천원: 천원(o.준공액_공급가 - (기성누계.get(o.id) ?? 0)),
     })
   }
@@ -116,18 +119,25 @@ export function sum월정산내역(rows: 월정산내역Row[]): number {
 }
 
 export type MonthlySplit = {
+  /** 이 실적이 속한 달 'YYYY-MM' — 금요일 기준 주차의 소속월(공무 화면과 같은 규칙) */
+  month: string
+  /** 집계 기간 [from, to). to 는 미포함 */
+  from: string
+  to: string
   construction: { rows: 월성과내역Row[]; totalThousand: number }
   settlement: { rows: 월정산내역Row[]; totalThousand: number }
 }
 
 /**
  * 대시보드 API 응답의 split 칸.
- * period·성과재료·투입재료는 route 가 한 번 만들어 getMonthlyKpiData 와 나눠 쓴다 —
- * 같은 달, 같은 행을 봐야 기존 칸과 split 이 서로 다른 순간의 DB를 설명하는 일이 없다.
+ * 기간은 달력 월이 아니라 금요일 기준 주차의 달이다(gongmu/_lib/주차.ts 금주소속월기간, 2026-10-23) —
+ * 사장님이 대시보드·ERP 공무 화면·주간업무 보고서의 금액을 나란히 맞춰 보시므로, 보고서를 쓰는 담당자들의
+ * 기준(달에 걸친 주는 금요일의 달)을 따른다. 시공·정산 둘 다 같은 기간이라 카드 하나에 기준이 하나다.
+ * 성과재료는 route 가 한 번 읽어 getMonthlyKpiData 와 나눠 쓴다 — 같은 순간의 DB를 설명하게.
  */
 export async function getMonthlySplit(
   supabase: SupabaseClient<Database>,
-  period: Pick<MonthlyPeriod, 'monthStart' | 'monthEnd'>,
+  기간: { 월: string; from: string; to: string },
   성과재료Promise: ReturnType<typeof load성과재료>,
   투입재료Promise: Promise<투입원가재료>,
 ): Promise<MonthlySplit> {
@@ -145,24 +155,27 @@ export async function getMonthlySplit(
   ])
 
   const 투입실적 = 투입재료.투입실적.filter(
-    (row) => row.투입일 >= period.monthStart && row.투입일 < period.monthEnd,
+    (row) => row.투입일 >= 기간.from && row.투입일 < 기간.to,
   )
   const constructionRows = build월시공내역(
     성과재료.공사이력,
     성과재료.수주,
     투입실적,
-    period.monthStart,
-    period.monthEnd,
+    기간.from,
+    기간.to,
   )
   const settlementRows = build월정산내역(
     // supabase-js 가 이 select 문자열의 타입을 못 풀어 ParserError 를 낸다(다른 로더들과 같은 사정) —
     // 필드가 바뀌면 위 .select() 문자열과 정산기성Row 를 손으로 맞춰야 한다
     기성전체 as unknown as 정산기성Row[],
     성과재료.수주,
-    period.monthStart,
-    period.monthEnd,
+    기간.from,
+    기간.to,
   )
   return {
+    month: 기간.월,
+    from: 기간.from,
+    to: 기간.to,
     construction: { rows: constructionRows, totalThousand: sum월성과내역(constructionRows) },
     settlement: { rows: settlementRows, totalThousand: sum월정산내역(settlementRows) },
   }

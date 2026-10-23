@@ -6,7 +6,7 @@
  *    카드 숫자가 1천원이라도 다르면 보는 사람에게 그건 '틀린 표'다(대시보드 실적 팝업과 같은 원칙).
  * 검산식: 담당자 합 + 삭제된 담당자 + 미지정 = 주 기준 기간의 공사 진행 합계.
  */
-import { addDays, 월요일Of, 다음달, type 연월, type 주정보 } from './주차'
+import { 월요일Of, 다음달, 주목록기간, type 연월, type 주정보 } from './주차'
 
 export type 담당자 = { id: number; 이름: string }
 
@@ -42,9 +42,8 @@ export function 천원(원: number | null): number {
   return Math.round((원 ?? 0) / 1000) || 0
 }
 
-function 주기준기간(주목록: 주정보[]): { from: string; to: string } {
-  return { from: 주목록[0].월요일, to: addDays(주목록[주목록.length - 1].월요일, 7) }
-}
+// 대시보드도 같은 함수로 기간을 정한다 — 규칙을 복사하면 한쪽만 바뀌는 날 두 화면 숫자가 갈라진다
+const 주기준기간 = 주목록기간
 
 function 달력기간(월: 연월): { from: string; to: string } {
   return { from: `${월}-01`, to: `${다음달(월)}-01` }
