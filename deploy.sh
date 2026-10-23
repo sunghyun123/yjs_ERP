@@ -36,7 +36,10 @@ npm install
 
 echo ""
 echo "[3/4] npm run build"
-npm run build
+# CI=1: SSH로 직접 실행하면 next build 가 터미널을 감지해 업그레이드 메뉴를 띄우고
+# 서버의 Claude Code 에게 의존성 업그레이드를 맡기려 한다(2026-10-23 실제로 발생 — 운영 폴더에 worktree·커밋이 생김).
+# 의존성 업그레이드는 로컬에서 테스트한 뒤 배포하므로, 배포 빌드에서는 메뉴를 끈다.
+CI=1 npm run build
 
 echo ""
 echo "[4/4] pm2 reload"
