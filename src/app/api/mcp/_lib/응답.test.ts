@@ -31,6 +31,8 @@ describe('입력 해석', () => {
     for (const bad of ['1999', '2101', '20x5', '2025.5', '25']) {
       expect(parse연도(bad, 지금).ok).toBe(false)
     }
+    // 빈 문자열은 '파라미터 없음'이 아니다 — 기본값으로 바꾸지 않고 거절
+    expect(parse연도('', 지금).ok).toBe(false)
   })
 
   it('month: 없으면 null(연간), current는 서버 기준 이번 달, 1~12만', () => {
@@ -40,12 +42,14 @@ describe('입력 해석', () => {
     for (const bad of ['0', '13', 'abc', '3.5', '-1']) {
       expect(parse월(bad, 지금).ok).toBe(false)
     }
+    expect(parse월('', 지금).ok).toBe(false)
   })
 
   it('completed_year: 없으면 null(필터 없음)', () => {
     expect(parse준공연도(null, 지금)).toEqual({ ok: true, value: null })
     expect(parse준공연도('current', 지금)).toEqual({ ok: true, value: 2026 })
     expect(parse준공연도('1999', 지금).ok).toBe(false)
+    expect(parse준공연도('', 지금).ok).toBe(false)
   })
 })
 
@@ -115,7 +119,7 @@ describe('build손익응답', () => {
 
   it('금액은 원 단위 정수로 반올림', () => {
     const r = build손익응답(결과([행(4, 'D', { 1: [100.4, 0.6] })]), 2026, 1)
-    expect(r.공사[0]).toMatchObject({ 성과: 100, 투입: 1, 손익: 100 })
+    expect(r.공사[0]).toMatchObject({ 성과: 100, 투입: 1, 손익: 99 })
   })
 })
 
@@ -136,10 +140,15 @@ describe('build공사목록응답', () => {
     expect(r.기준).toEqual({ 준공연도: 2026 })
     expect(r.건수).toBe(1)
     expect(r.공사.map((p) => p.지중no)).toEqual(['A'])
+    expect(r.제외).toEqual({ '준공됐지만 준공일 없음': 1 })
   })
 
   it('그 해 준공이 0건이면 정상(건수 0)', () => {
-    expect(build공사목록응답(rows, 2030)).toEqual({ 기준: { 준공연도: 2030 }, 건수: 0, 공사: [] })
+    expect(build공사목록응답(rows, 2030)).toEqual({
+      기준: { 준공연도: 2030 }, 건수: 0,
+      공사: [],
+      제외: { '준공됐지만 준공일 없음': 1 },
+    })
   })
 
   it('수주 전체가 0건이면 조회가 깨진 것 — 에러', () => {

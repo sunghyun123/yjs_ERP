@@ -41,18 +41,18 @@ function 연도해석(raw: string, 지금: 지금, 이름: string): 해석<numbe
 }
 
 /**
- * year: 없으면 올해.
+ * year: 없으면(파라미터 자체가 없으면) 올해. 빈 문자열('')은 없음이 아니라 잘못된 값이라 거절한다.
  * 매출손익 화면과 달리 잘못된 값을 올해로 바꾸지 않고 거절한다(→ 400).
  * "2025년"을 물었는데 2026년 숫자를 받아 2025년이라고 답하는 사고를 막는다.
  */
 export function parse연도(raw: string | null, 지금: 지금): 해석<number> {
-  if (raw === null || raw === '') return { ok: true, value: 지금.year }
+  if (raw === null) return { ok: true, value: 지금.year }
   return 연도해석(raw, 지금, 'year')
 }
 
-/** month: 없으면 null(연간). 'current' 또는 1~12. */
+/** month: 없으면(파라미터 없음) null(연간). 'current' 또는 1~12. 빈 문자열은 거절. */
 export function parse월(raw: string | null, 지금: 지금): 해석<number | null> {
-  if (raw === null || raw === '') return { ok: true, value: null }
+  if (raw === null) return { ok: true, value: null }
   if (raw === 'current') return { ok: true, value: 지금.month }
   const m = /^\d{1,2}$/.test(raw) ? Number(raw) : NaN
   if (!(m >= 1 && m <= 12)) {
@@ -61,9 +61,9 @@ export function parse월(raw: string | null, 지금: 지금): 해석<number | nu
   return { ok: true, value: m }
 }
 
-/** completed_year: 없으면 null(준공 필터 없음). */
+/** completed_year: 없으면(파라미터 없음) null(준공 필터 없음). 빈 문자열은 거절. */
 export function parse준공연도(raw: string | null, 지금: 지금): 해석<number | null> {
-  if (raw === null || raw === '') return { ok: true, value: null }
+  if (raw === null) return { ok: true, value: null }
   return 연도해석(raw, 지금, 'completed_year')
 }
 
@@ -103,12 +103,16 @@ export function build손익응답(결과: 공사별손익결과, 연도: number,
       continue
     }
 
+    // 반올림은 성과·투입에 먼저 하고 손익은 반올림된 값끼리 뺀다 — 읽는 쪽이 LLM이라
+    // 행마다 성과−투입을 다시 검산할 수 있고, 원 단위 오차 때문에 안 맞으면 숫자 전체를 의심한다
+    const 성과r = Math.round(성과)
+    const 투입r = Math.round(투입)
     const 행: 손익행 = {
       지중no: r.지중no,
       공사명: r.공사명,
-      성과: Math.round(성과),
-      투입: Math.round(투입),
-      손익: Math.round(성과 - 투입),
+      성과: 성과r,
+      투입: 투입r,
+      손익: 성과r - 투입r,
     }
     if (준공반영액 !== undefined) 행.준공반영액 = Math.round(준공반영액)
     공사.push(행)
@@ -123,14 +127,14 @@ export function build손익응답(결과: 공사별손익결과, 연도: number,
   const 성과합 = 기간.reduce((s, m) => s + m.성과, 0)
   const 투입합 = 기간.reduce((s, m) => s + m.투입, 0)
 
+  // 합계도 같은 이유로 반올림된 성과·투입에서 손익을 낸다
+  const 합계성과 = Math.round(성과합)
+  const 합계투입 = Math.round(투입합)
+
   return {
     기준: { 연도, 월 },
     단위: '원',
-    합계: {
-      성과: Math.round(성과합),
-      투입: Math.round(투입합),
-      손익: Math.round(성과합 - 투입합),
-    },
+    합계: { 성과: 합계성과, 투입: 합계투입, 손익: 합계성과 - 합계투입 },
     공사,
     제외: { '성과·투입 모두 0인 공사': 제외 },
   }
@@ -147,6 +151,7 @@ export type 공사목록응답 = {
   기준: { 준공연도?: number }
   건수: number
   공사: 공사목록행[]
+  제외?: { '준공됐지만 준공일 없음': number }
 }
 
 /**
@@ -159,5 +164,12 @@ export function build공사목록응답(rows: 공사목록행[], 준공연도: n
   if (준공연도 === null) return { 기준: {}, 건수: rows.length, 공사: rows }
   const 접두 = `${준공연도}-`
   const 공사 = rows.filter((r) => r.준공여부 && r.준공일 !== null && r.준공일.startsWith(접두))
-  return { 기준: { 준공연도 }, 건수: 공사.length, 공사 }
+  // 준공일이 없는 준공 건은 어느 해에도 셀 수 없다 — 0건처럼 숨기지 않고 건수를 남긴다(구ERP 이관분 등)
+  const 일없음 = rows.filter((r) => r.준공여부 && r.준공일 === null).length
+  return {
+    기준: { 준공연도 },
+    건수: 공사.length,
+    공사,
+    제외: { '준공됐지만 준공일 없음': 일없음 },
+  }
 }
