@@ -21,7 +21,10 @@ export async function GET(req: NextRequest) {
 
   try {
     const supabase = createAdminClient()
-    const 결과 = aggregate공사별손익(await load공사별손익재료(supabase, 연도.value), 연도.value)
+    const 재료 = await load공사별손익재료(supabase, 연도.value)
+    // 수주가 0건이면 기간이 빈 게 아니라 조회가 깨진 것(키 오설정 시 RLS가 빈 결과를 조용히 줌) — 0원 손익으로 내보내지 않는다
+    if (재료.수주.length === 0) throw new Error('수주 목록이 비어 있습니다. 조회가 정상이 아닙니다.')
+    const 결과 = aggregate공사별손익(재료, 연도.value)
     return NextResponse.json(build손익응답(결과, 연도.value, 월.value))
   } catch (e) {
     // 조회 실패를 빈 결과로 내보내지 않는다 — 그러면 Claude가 "손익 없음"이라고 답한다

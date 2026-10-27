@@ -92,6 +92,7 @@ describe('build손익응답', () => {
     ])
     expect(r.제외).toEqual({ '성과·투입 모두 0인 공사': 1 })
     expect(r.합계).toEqual({ 성과: 600, 투입: 400, 손익: 200 })
+    expect(r.건수).toEqual({ 플러스: 1, 마이너스: 1, 영: 0 })
   })
 
   it('준공반영액은 준공이 얹힌 달에만 붙는다', () => {
@@ -99,6 +100,7 @@ describe('build손익응답', () => {
     expect(r.공사.map((p) => p.지중no)).toEqual(['C'])
     expect(r.공사[0]).not.toHaveProperty('준공반영액')
     expect(r.제외['성과·투입 모두 0인 공사']).toBe(2)
+    expect(r.건수).toEqual({ 플러스: 1, 마이너스: 0, 영: 0 })
   })
 
   it('연간: 월을 안 주면 연간 합, 기준.월은 null', () => {
@@ -108,6 +110,12 @@ describe('build손익응답', () => {
     expect(r.공사[0].준공반영액).toBe(200)
     expect(r.합계).toEqual({ 성과: 650, 투입: 400, 손익: 250 })
     expect(r.제외['성과·투입 모두 0인 공사']).toBe(0)
+    expect(r.건수).toEqual({ 플러스: 2, 마이너스: 1, 영: 0 })
+  })
+
+  it('성과와 투입이 같은 공사(손익 0)는 영으로 센다', () => {
+    const r = build손익응답(결과([행(5, 'E', { 1: [50, 50] })]), 2026, 1)
+    expect(r.건수).toEqual({ 플러스: 0, 마이너스: 0, 영: 1 })
   })
 
   it('합계는 행이 아니라 월별 합계에서 낸다 (화면 KPI와 같은 원천)', () => {
