@@ -1,0 +1,16 @@
+{
+  "name": "yj-erp-mcp",
+  "version": "0.1.0",
+  "description": "ERP 공사 목록·공사별 손익 조회 MCP 중계 (Claude Desktop 확장)",
+  "main": "server/index.js",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "pack": "npx -y @anthropic-ai/mcpb@latest pack . dist/yj-erp.mcpb"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  }
+}

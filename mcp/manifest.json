@@ -1,0 +1,54 @@
+{
+  "manifest_version": "0.3",
+  "name": "yj-erp",
+  "display_name": "YJ ERP 조회",
+  "version": "0.1.0",
+  "description": "ERP에서 공사 목록(준공 여부)과 공사별 손익을 읽기 전용으로 가져옵니다.",
+  "author": {
+    "name": "YJ 경영지원"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"],
+      "env": {
+        "YJ_ERP_URL": "${user_config.server_url}",
+        "YJ_ERP_API_KEY": "${user_config.api_key}"
+      }
+    }
+  },
+  "user_config": {
+    "server_url": {
+      "type": "string",
+      "title": "ERP 서버 주소",
+      "description": "https:// 로 시작하는 ERP 주소",
+      "required": true,
+      "default": "https://erp.yjsboard.com"
+    },
+    "api_key": {
+      "type": "string",
+      "title": "ERP MCP 키",
+      "description": "ERP 서버의 ERP_MCP_API_KEY 값. 관리자에게 받습니다.",
+      "required": true,
+      "sensitive": true
+    }
+  },
+  "tools": [
+    {
+      "name": "get_constructions",
+      "description": "공사 목록(지중no·공사명·준공여부·준공일). 준공 연도로 거를 수 있습니다 (읽기 전용)."
+    },
+    {
+      "name": "get_profit",
+      "description": "매출손익 화면과 같은 공식의 공사별 성과·투입·손익. 연도·월 지정 (읽기 전용)."
+    }
+  ],
+  "compatibility": {
+    "platforms": ["win32", "darwin"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}
