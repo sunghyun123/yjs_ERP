@@ -15,7 +15,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { fetchAllRows } from '@/lib/supabase/fetch-all'
-import { 천원 } from '../gongmu/_lib/erp-실적'
+import { 천원, 삭제된담당자이름 } from '../gongmu/_lib/erp-실적'
 import type { load성과재료, 준공수주Row } from './junggong-seonggwa'
 import { build월시공내역, sum월성과내역, type 월시공내역Row } from './monthly-revenue-breakdown'
 import type { 투입원가재료 } from './dashboard-data'
@@ -40,6 +40,10 @@ export type 월정산내역Row = {
   날짜: string
   /** 천원, 음수 가능(환수) — 0으로 깎지 않는다 */
   금액천원: number
+  /** 정산 담당 = 그 공사의 수주.정산담당자_id. 공사 하나의 정산은 한 사람 몫이라 기성·준공 모두 같다 */
+  담당공무_id: number | null
+  /** 미지정이면 '' — 대시보드가 '담당 미지정' 칸으로 그린다 */
+  담당: string
 }
 
 function 일(날짜: string): number {
@@ -57,11 +61,20 @@ export function build월정산내역(
   수주목록: 준공수주Row[],
   from: string,
   to: string,
+  /** 공무담당자 id → 이름. 없는 id 는 공무 화면처럼 '삭제된 담당자 #id' */
+  담당이름: Map<number, string> = new Map(),
 ): 월정산내역Row[] {
   const 수주맵 = new Map(수주목록.map((o) => [o.id, o]))
   const 이름 = (수주_id: number) => {
     const o = 수주맵.get(수주_id)
-    return { 지중no: o?.지중no ?? '', 공사명: o?.공사명 ?? '(공사명 없음)' }
+    // 비어 있으면 '' 그대로 — 책임 공무 등 다른 칸으로 조용히 대체하지 않는다(잊으면 '정산 미지정'으로 드러나야 고친다)
+    const id = o?.정산담당자_id ?? null
+    return {
+      지중no: o?.지중no ?? '',
+      공사명: o?.공사명 ?? '(공사명 없음)',
+      담당공무_id: id,
+      담당: id == null ? '' : 담당이름.get(id) ?? 삭제된담당자이름(id),
+    }
   }
 
   // 기성 누계는 기성일이 빈 행(2026-06 이관분)까지 포함한 전 기간 — 날짜가 없어도 돈은 이미 청구됐다
@@ -167,13 +180,14 @@ export async function getMonthlySplit(
   const 투입실적 = 투입재료.투입실적.filter(
     (row) => row.투입일 >= 기간.from && row.투입일 < 기간.to,
   )
+  const 담당이름 = new Map(담당자.map((d) => [d.id, d.이름]))
   const constructionRows = build월시공내역(
     성과재료.공사이력,
     성과재료.수주,
     투입실적,
     기간.from,
     기간.to,
-    new Map(담당자.map((d) => [d.id, d.이름])),
+    담당이름,
   )
   const settlementRows = build월정산내역(
     // supabase-js 가 이 select 문자열의 타입을 못 풀어 ParserError 를 낸다(다른 로더들과 같은 사정) —
@@ -182,6 +196,7 @@ export async function getMonthlySplit(
     성과재료.수주,
     기간.from,
     기간.to,
+    담당이름,
   )
   return {
     month: 기간.월,
