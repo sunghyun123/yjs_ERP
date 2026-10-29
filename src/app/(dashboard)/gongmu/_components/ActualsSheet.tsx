@@ -10,6 +10,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { update공사이력, 저장실패메시지 } from '@/app/(dashboard)/progress/_lib/update-공사이력'
 import { 공사별로묶기, type 담당묶음, type 담당자, type 실적행 } from '../_lib/erp-실적'
 import type { 연월, 주정보 } from '../_lib/주차'
@@ -82,11 +83,12 @@ export function ActualsSheet({
         <SheetHeader>
           <SheetTitle className="text-base font-semibold text-left">{묶음?.이름}</SheetTitle>
           <SheetDescription className="text-left">
-            {Number(월.slice(5, 7))}월 누적 {천원표기(묶음?.월누적천원 ?? 0)} · {묶음?.건수 ?? 0}건
+            {Number(월.slice(5, 7))}월 누적 시공 {천원표기(묶음?.월누적천원 ?? 0)} · {묶음?.건수 ?? 0}건
+            {묶음 && 묶음.정산.건수 > 0 && <> · 정산 {천원표기(묶음.정산.월누적천원)} · {묶음.정산.건수}건</>}
           </SheetDescription>
         </SheetHeader>
         <div className="px-4 pb-6 space-y-5">
-          {묶음 && 묶음.건수 === 0 && (
+          {묶음 && 묶음.건수 === 0 && 묶음.정산.건수 === 0 && (
             <p className="text-sm text-gray-400">
               {묶음.종류 === '미지정' ? '미지정 이력이 없습니다 ✓' : '이 달에 등록된 실적이 없습니다.'}
             </p>
@@ -138,6 +140,36 @@ export function ActualsSheet({
               </section>
             )
           })}
+          {묶음 && 묶음.정산.건수 > 0 && (
+            <section>
+              <div className="flex justify-between items-baseline border-b border-emerald-200 pb-1 mb-2">
+                <h3 className="text-sm font-semibold text-emerald-700">정산 (계산서)</h3>
+                <span className="text-sm font-bold text-emerald-700 tabular-nums">{천원표기(묶음.정산.월누적천원)}</span>
+              </div>
+              {묶음.종류 === '미지정' && (
+                // 정산 담당은 공사 단위라 여기서 행마다 지정하지 않는다 — 수주대장의 '정산 담당'에서 고친다
+                <p className="text-xs text-amber-700 mb-2">정산 담당이 비어 있는 공사입니다. 수주대장에서 공사의 &apos;정산 담당&apos;을 지정하세요.</p>
+              )}
+              <ul className="space-y-2">
+                {묶음.정산.행.map((r, i) => (
+                  <li key={`${r.수주_id}-${r.구분}-${r.날짜}-${i}`} className="text-sm">
+                    <div className="flex justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-800 truncate">{r.공사명}</p>
+                        <p className="text-xs text-gray-400">
+                          <span className="font-mono">{r.지중no}</span> · {r.구분} · {md(r.날짜)}
+                          {r.월요일 === 선택월요일 && <span className="ml-1.5 text-blue-600">선택 주</span>}
+                        </p>
+                      </div>
+                      <span className={cn('shrink-0 font-semibold tabular-nums', r.금액천원 < 0 ? 'text-red-600' : 'text-gray-800')}>
+                        {천원표기(r.금액천원)}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           {묶음?.종류 === '담당' && 묶음.담당공무_id != null && (
             <Link
               href={`/gongmu/${묶음.담당공무_id}?month=${월}`}

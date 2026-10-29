@@ -5,8 +5,13 @@
  * ⚠️ 단위는 천원. 행마다 반올림하고 합계는 반올림된 행의 합이다 — 목록을 손으로 더한 값과
  *    카드 숫자가 1천원이라도 다르면 보는 사람에게 그건 '틀린 표'다(대시보드 실적 팝업과 같은 원칙).
  * 검산식: 담당자 합 + 삭제된 담당자 + 미지정 = 주 기준 기간의 공사 진행 합계.
+ *
+ * 정산(계산서) 줄은 2026-10-29 추가 — 묶음마다 `정산` 칸에 따로 모은다. 시공 숫자·합계·검산식에는 섞지 않는다:
+ * 정산 대부분은 이미 시공으로 잡힌 일의 청구라 더하면 같은 일을 두 번 센다(monthly-split.ts 머리말).
  */
 import { 월요일Of, 다음달, 주목록기간, type 연월, type 주정보 } from './주차'
+// type 만 가져온다 — monthly-split.ts 가 이 파일의 천원()을 쓰므로 값으로 가져오면 순환 import 가 된다
+import type { 월정산내역Row } from '../../_lib/monthly-split'
 
 export type 담당자 = { id: number; 이름: string }
 
@@ -22,6 +27,11 @@ export type 원이력행 = {
 
 export type 실적행 = 원이력행 & { 천원: number; 월요일: string }
 
+/** 정산 행 = 대시보드와 같은 build월정산내역 결과 + 그 날짜의 주(월요일) */
+export type 정산행 = 월정산내역Row & { 월요일: string }
+
+export type 정산칸 = { 선택주천원: number; 월누적천원: number; 건수: number; 행: 정산행[] }
+
 export type 담당묶음 = {
   /** 'p{id}' 담당 · 'x{id}' 삭제된 담당자 · 'none' 미지정 */
   key: string
@@ -33,9 +43,17 @@ export type 담당묶음 = {
   건수: number
   /** 작업일자 오름차순 */
   행: 실적행[]
+  /** 정산 담당(수주.정산담당자_id)으로 이 묶음에 온 계산서. 위 시공 숫자와 더하지 않는다 */
+  정산: 정산칸
 }
 
-export type 담당자별실적 = { 묶음: 담당묶음[]; 선택주합천원: number; 월누적합천원: number }
+export type 담당자별실적 = {
+  묶음: 담당묶음[]
+  선택주합천원: number
+  월누적합천원: number
+  정산선택주합천원: number
+  정산월누적합천원: number
+}
 
 export function 천원(원: number | null): number {
   // || 0: -1~-499원 행이 -0이 되어 화면에 "-0천원"으로 찍히는 것을 막는다
@@ -62,7 +80,10 @@ export function 삭제된담당자이름(담당공무_id: number): string {
 }
 
 function 빈묶음(key: string, 종류: 담당묶음['종류'], 담당공무_id: number | null, 이름: string): 담당묶음 {
-  return { key, 종류, 담당공무_id, 이름, 선택주천원: 0, 월누적천원: 0, 건수: 0, 행: [] }
+  return {
+    key, 종류, 담당공무_id, 이름, 선택주천원: 0, 월누적천원: 0, 건수: 0, 행: [],
+    정산: { 선택주천원: 0, 월누적천원: 0, 건수: 0, 행: [] },
+  }
 }
 
 export function build담당자별실적(
@@ -70,6 +91,8 @@ export function build담당자별실적(
   담당자목록: 담당자[],
   주목록: 주정보[],
   선택월요일: string,
+  /** build월정산내역 결과(정산 담당이 실린 계산서). 없으면 정산 칸은 모두 0 */
+  정산행들: 월정산내역Row[] = [],
 ): 담당자별실적 {
   const { from, to } = 주기준기간(주목록)
   const 대상: 실적행[] = 행들
@@ -83,30 +106,44 @@ export function build담당자별실적(
   const 삭제됨 = new Map<number, 담당묶음>()
   const 미지정 = 빈묶음('none', '미지정', null, '미지정')
 
+  // 시공과 정산이 같은 규칙으로 묶음을 찾는다 — 정산만 다른 규칙이면 같은 사람이 카드 두 장으로 갈라진다
+  const 묶음찾기 = (id: number | null): 담당묶음 => {
+    if (id == null) return 미지정
+    if (담당.has(id)) return 담당.get(id)!
+    // 담당자가 목록에서 지워진 행 — 미지정으로 치면 "지정했는데 미지정"이라는 거짓이 된다
+    if (!삭제됨.has(id)) 삭제됨.set(id, 빈묶음(`x${id}`, '삭제됨', id, 삭제된담당자이름(id)))
+    return 삭제됨.get(id)!
+  }
+
   for (const r of 대상) {
-    let g: 담당묶음
-    if (r.담당공무_id == null) {
-      g = 미지정
-    } else if (담당.has(r.담당공무_id)) {
-      g = 담당.get(r.담당공무_id)!
-    } else {
-      // 담당자가 목록에서 지워진 행 — 미지정으로 치면 "지정했는데 미지정"이라는 거짓이 된다
-      if (!삭제됨.has(r.담당공무_id)) {
-        삭제됨.set(r.담당공무_id, 빈묶음(`x${r.담당공무_id}`, '삭제됨', r.담당공무_id, 삭제된담당자이름(r.담당공무_id)))
-      }
-      g = 삭제됨.get(r.담당공무_id)!
-    }
+    const g = 묶음찾기(r.담당공무_id)
     g.행.push(r)
     g.건수 += 1
     g.월누적천원 += r.천원
     if (r.월요일 === 선택월요일) g.선택주천원 += r.천원
   }
 
+  // 정산: 시공과 같은 주 기준 기간으로 자른다(대시보드 split 과 같은 기간). 날짜는 문자열로만 비교한다
+  const 정산대상 = 정산행들
+    .filter((r) => r.날짜 >= from && r.날짜 < to)
+    .map((r) => ({ ...r, 월요일: 월요일Of(r.날짜) }))
+    .sort((a, b) => a.날짜.localeCompare(b.날짜) || a.지중no.localeCompare(b.지중no, 'ko'))
+  for (const r of 정산대상) {
+    const c = 묶음찾기(r.담당공무_id).정산
+    c.행.push(r)
+    c.건수 += 1
+    c.월누적천원 += r.금액천원
+    if (r.월요일 === 선택월요일) c.선택주천원 += r.금액천원
+  }
+
   const 묶음 = [...담당.values(), ...[...삭제됨.values()].sort((a, b) => a.담당공무_id! - b.담당공무_id!), 미지정]
   return {
     묶음,
+    // 시공 합계 — 검산식의 재료. 정산은 아래 따로
     선택주합천원: 묶음.reduce((s, g) => s + g.선택주천원, 0),
     월누적합천원: 묶음.reduce((s, g) => s + g.월누적천원, 0),
+    정산선택주합천원: 묶음.reduce((s, g) => s + g.정산.선택주천원, 0),
+    정산월누적합천원: 묶음.reduce((s, g) => s + g.정산.월누적천원, 0),
   }
 }
 
