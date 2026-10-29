@@ -130,6 +130,7 @@ export type Database = {
           수정자: string | null
           수정일: string | null
           공무담당자_id: number | null
+          정산담당자_id: number | null
         }
         Insert: {
           id?: number
@@ -165,6 +166,7 @@ export type Database = {
           수정자?: string | null
           수정일?: string | null
           공무담당자_id?: number | null
+          정산담당자_id?: number | null
         }
         Update: {
           id?: number
@@ -200,6 +202,7 @@ export type Database = {
           수정자?: string | null
           수정일?: string | null
           공무담당자_id?: number | null
+          정산담당자_id?: number | null
         }
         Relationships: []
       }

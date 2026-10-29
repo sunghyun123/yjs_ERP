@@ -42,6 +42,7 @@ const 행 = (over: Partial<수주행>): 수주행 => ({
   포장여부: false,
   자재청구여부: false,
   공무담당자_id: null,
+  정산담당자_id: null,
   발주자: null,
   원청사: { 거래처명: '정우전설' },
   기성: [],

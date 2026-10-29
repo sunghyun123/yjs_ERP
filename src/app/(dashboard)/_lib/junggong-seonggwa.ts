@@ -32,6 +32,12 @@ export type 준공수주Row = {
   수주금액_공급가: number | null
   보험료율: number | null
   하도전용율: number | null
+  /**
+   * 정산 담당(2026-10-29) — 대시보드 담당자별 '정산' 칸은 이 칸으로만 나뉜다(build월정산내역).
+   * 선택 칸인 이유: 매출 집계만 하는 호출부·테스트는 필요 없다. 아래 select 문자열에서 빠지면
+   * 캐스트(as unknown as) 때문에 tsc 가 못 잡고 전원이 '정산 미지정'으로 보이니 손으로 맞춰야 한다.
+   */
+  정산담당자_id?: number | null
 }
 
 export type 공사이력Row = {
@@ -80,7 +86,7 @@ export async function load성과재료(
       supabase
         .from('수주')
         .select(
-          'id, 지중no, 공사명, 공사구분, 준공여부, 준공일, 준공액_공급가, 수주금액_공급가, 보험료율, 하도전용율',
+          'id, 지중no, 공사명, 공사구분, 준공여부, 준공일, 준공액_공급가, 수주금액_공급가, 보험료율, 하도전용율, 정산담당자_id',
         )
         .order('지중no')
         .range(from, to),
