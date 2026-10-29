@@ -78,6 +78,13 @@ export function GongmuActualsView({
           </div>
         </div>
         <p className="text-xs text-gray-500 mt-3 border-t border-gray-100 pt-3">{설명}</p>
+        {/* 정산은 위 시공 합계와 더하지 않는다 — 정산 대부분은 이미 시공으로 잡힌 일의 계산서라 더하면 두 번 센다 */}
+        {(실적.정산월누적합천원 !== 0 || 실적.정산선택주합천원 !== 0) && (
+          <p className="text-xs text-gray-500 mt-2 tabular-nums">
+            정산(계산서) · {선택.선택주.label} {천원표기(실적.정산선택주합천원)} · {mm}월 누적 {천원표기(실적.정산월누적합천원)}
+            <span className="text-gray-400"> — 시공 실적과 따로 셉니다</span>
+          </p>
+        )}
       </div>
 
       {/* 담당자 카드 */}
@@ -87,7 +94,10 @@ export function GongmuActualsView({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {실적.묶음.map((g) => {
           const 미지정 = g.종류 === '미지정'
-          const 경고 = g.종류 !== '담당' && g.건수 > 0
+          const 정산있음 = g.정산.건수 > 0
+          // 시공이 없고 정산만 있는 사람(정산 담당)은 시공 0 블록을 그리지 않는다 — 카드의 큰 숫자가 그 사람의 실적이게
+          const 시공보임 = g.건수 > 0 || !정산있음
+          const 경고 = g.종류 !== '담당' && (g.건수 > 0 || 정산있음)
           return (
             <button
               key={g.key}
@@ -99,15 +109,28 @@ export function GongmuActualsView({
               )}
             >
               <p className={cn('font-bold mb-2', 경고 ? 'text-amber-800' : 'text-[#1e2d5a]')}>{g.이름}</p>
-              {미지정 && g.건수 === 0 ? (
+              {미지정 && g.건수 === 0 && !정산있음 ? (
                 <p className="text-sm text-green-600 font-semibold">미지정 없음 ✓</p>
               ) : (
                 <>
-                  <p className="text-xs text-gray-400">{선택.선택주.주차}주차</p>
-                  <p className="text-xl font-bold text-[#1e2d5a] tabular-nums mb-2">{천원표기(g.선택주천원)}</p>
-                  <p className="text-xs text-gray-500 tabular-nums">
-                    월 누적 {천원표기(g.월누적천원)} · {g.건수}건
-                  </p>
+                  {시공보임 && (
+                    <>
+                      <p className="text-xs text-gray-400">시공 · {선택.선택주.주차}주차</p>
+                      <p className="text-xl font-bold text-[#1e2d5a] tabular-nums mb-2">{천원표기(g.선택주천원)}</p>
+                      <p className="text-xs text-gray-500 tabular-nums">
+                        월 누적 {천원표기(g.월누적천원)} · {g.건수}건
+                      </p>
+                    </>
+                  )}
+                  {정산있음 && (
+                    <div className={cn(시공보임 && 'mt-3 pt-3 border-t border-gray-100')}>
+                      <p className="text-xs text-gray-400">정산 · {선택.선택주.주차}주차</p>
+                      <p className="text-xl font-bold text-emerald-700 tabular-nums mb-2">{천원표기(g.정산.선택주천원)}</p>
+                      <p className="text-xs text-gray-500 tabular-nums">
+                        월 누적 {천원표기(g.정산.월누적천원)} · {g.정산.건수}건
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
             </button>
