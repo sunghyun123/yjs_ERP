@@ -38,6 +38,12 @@ export type 공사이력Row = {
   작업일자: string
   수주_id: number
   성과금액: number | null
+  /**
+   * 시공 담당 — 대시보드 담당자별 진척이 이 칸으로 나뉜다(build월시공내역의 담당별).
+   * 선택 칸인 이유: 매출 집계만 하는 호출부·테스트는 이 칸이 필요 없다. 아래 select 문자열에 빠지면
+   * 캐스트(as unknown as) 때문에 tsc 가 못 잡고 전원이 '미지정'으로 보이니 손으로 맞춰야 한다.
+   */
+  담당공무_id?: number | null
 }
 
 export type 준공잔여성과 = {
@@ -65,7 +71,7 @@ export async function load성과재료(
     fetchAllRows('공사이력', (from, to) =>
       supabase
         .from('공사이력')
-        .select('작업일자, 수주_id, 성과금액')
+        .select('작업일자, 수주_id, 성과금액, 담당공무_id')
         .eq('준공정산', false)
         .order('id')
         .range(from, to),

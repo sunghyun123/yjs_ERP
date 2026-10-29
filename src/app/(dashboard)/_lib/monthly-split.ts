@@ -17,7 +17,7 @@ import type { Database } from '@/types/database'
 import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { 천원 } from '../gongmu/_lib/erp-실적'
 import type { load성과재료, 준공수주Row } from './junggong-seonggwa'
-import { build월시공내역, sum월성과내역, type 월성과내역Row } from './monthly-revenue-breakdown'
+import { build월시공내역, sum월성과내역, type 월시공내역Row } from './monthly-revenue-breakdown'
 import type { 투입원가재료 } from './dashboard-data'
 
 export type 정산기성Row = {
@@ -124,7 +124,8 @@ export type MonthlySplit = {
   /** 집계 기간 [from, to). to 는 미포함 */
   from: string
   to: string
-  construction: { rows: 월성과내역Row[]; totalThousand: number }
+  /** 행마다 담당별(공사이력.담당공무_id)이 붙는다 — 대시보드 담당자별 진척의 시공 칸은 이것만으로 나눈다 */
+  construction: { rows: 월시공내역Row[]; totalThousand: number }
   settlement: { rows: 월정산내역Row[]; totalThousand: number }
 }
 
@@ -141,7 +142,7 @@ export async function getMonthlySplit(
   성과재료Promise: ReturnType<typeof load성과재료>,
   투입재료Promise: Promise<투입원가재료>,
 ): Promise<MonthlySplit> {
-  const [성과재료, 투입재료, 기성전체] = await Promise.all([
+  const [성과재료, 투입재료, 기성전체, 담당자] = await Promise.all([
     성과재료Promise,
     투입재료Promise,
     // 준공 차감 누계가 전 기간이어야 해서 기간으로 자르지 않는다. 1000행에서 조용히 잘리지 않게 끝까지 받는다
@@ -152,6 +153,15 @@ export async function getMonthlySplit(
         .order('id')
         .range(from, to),
     ),
+    // 담당 이름표. 실패하면 split 전체를 실패시킨다 — 이름 없이 보내면 전원이 '삭제된 담당자'로 그려진다
+    // select('id, 이름') 은 supabase-js 가 한글 칸 이름을 못 풀어 타입이 깨진다 — 작은 표라 '*' 로 받아 캐스트 없이 쓴다
+    supabase
+      .from('공무담당자')
+      .select('*')
+      .then(({ data, error }) => {
+        if (error) throw error
+        return data ?? []
+      }),
   ])
 
   const 투입실적 = 투입재료.투입실적.filter(
@@ -163,6 +173,7 @@ export async function getMonthlySplit(
     투입실적,
     기간.from,
     기간.to,
+    new Map(담당자.map((d) => [d.id, d.이름])),
   )
   const settlementRows = build월정산내역(
     // supabase-js 가 이 select 문자열의 타입을 못 풀어 ParserError 를 낸다(다른 로더들과 같은 사정) —
