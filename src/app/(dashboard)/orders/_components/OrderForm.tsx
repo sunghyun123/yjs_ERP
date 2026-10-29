@@ -48,7 +48,6 @@ const schema = z.object({
   수주금액_공급가: z.number().nullable().optional(),
   보험료율:        z.number().min(0).max(100).nullable().optional(),
   하도전용율:      z.number().min(0).max(100).nullable().optional(),
-  공사담당:        z.string().optional(),
   감독자:          z.string().optional(),
   공무담당자_id:   z.number().int().nullable().optional(),
   정산담당자_id:   z.number().int().nullable().optional(),
@@ -272,7 +271,6 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
           수주금액_공급가: row.수주금액_공급가 ?? null,
           보험료율:        row.보험료율 != null ? row.보험료율 * 100 : null,
           하도전용율:      row.하도전용율 != null ? row.하도전용율 * 100 : null,
-          공사담당:        row.공사담당 ?? '',
           감독자:          row.감독자 ?? '',
           공무담당자_id:   row.공무담당자_id ?? null,
           // ⚠️ 빠지면 저장(전체 덮어쓰기) 때 정산 담당이 null 로 지워진다 — page.tsx select 에도 있어야 한다
@@ -332,7 +330,6 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
       수주금액_공급가: values.수주금액_공급가 ?? null,
       보험료율:        values.보험료율 != null ? values.보험료율 / 100 : null,
       하도전용율:      values.하도전용율 != null ? values.하도전용율 / 100 : null,
-      공사담당:        values.공사담당?.trim() || null,
       감독자:          values.감독자?.trim() || null,
       공무담당자_id:   values.공무담당자_id ?? null,
       정산담당자_id:   values.정산담당자_id ?? null,
@@ -747,13 +744,9 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
             {/* ── 담당자 ────────────────────────────────────────────────────── */}
             <Section title="담당자">
               <div className="grid grid-cols-3 gap-3">
-                <Field label="공사담당">
-                  <Input className="h-9 text-sm" {...register('공사담당')} />
-                </Field>
-                <Field label="감독자">
-                  <Input className="h-9 text-sm" {...register('감독자')} />
-                </Field>
-                <Field label="담당 공무">
+                {/* 시공 담당 = 수주.공무담당자_id — 공정 입력에서 공사이력 담당(대시보드 시공 칸)의 기본값이 된다.
+                    '공사담당'(자유 입력) 칸은 쓰이지 않아 뺐다(2026-10-29). 값은 DB에 남는다 — 저장 payload 에서도 뺐다 */}
+                <Field label="시공 담당">
                   <Controller
                     name="공무담당자_id"
                     control={control}
@@ -790,6 +783,9 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
                       </select>
                     )}
                   />
+                </Field>
+                <Field label="감독자">
+                  <Input className="h-9 text-sm" {...register('감독자')} />
                 </Field>
               </div>
             </Section>
