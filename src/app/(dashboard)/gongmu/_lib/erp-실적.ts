@@ -56,6 +56,11 @@ export function 조회기간(월: 연월, 주목록: 주정보[]): { from: strin
   return { from: w.from < c.from ? w.from : c.from, to: w.to > c.to ? w.to : c.to }
 }
 
+/** 목록에서 지워진 담당자의 표시 이름 — 대시보드 시공 담당별(monthly-revenue-breakdown.ts)도 이 함수를 쓴다 */
+export function 삭제된담당자이름(담당공무_id: number): string {
+  return `삭제된 담당자 #${담당공무_id}`
+}
+
 function 빈묶음(key: string, 종류: 담당묶음['종류'], 담당공무_id: number | null, 이름: string): 담당묶음 {
   return { key, 종류, 담당공무_id, 이름, 선택주천원: 0, 월누적천원: 0, 건수: 0, 행: [] }
 }
@@ -87,7 +92,7 @@ export function build담당자별실적(
     } else {
       // 담당자가 목록에서 지워진 행 — 미지정으로 치면 "지정했는데 미지정"이라는 거짓이 된다
       if (!삭제됨.has(r.담당공무_id)) {
-        삭제됨.set(r.담당공무_id, 빈묶음(`x${r.담당공무_id}`, '삭제됨', r.담당공무_id, `삭제된 담당자 #${r.담당공무_id}`))
+        삭제됨.set(r.담당공무_id, 빈묶음(`x${r.담당공무_id}`, '삭제됨', r.담당공무_id, 삭제된담당자이름(r.담당공무_id)))
       }
       g = 삭제됨.get(r.담당공무_id)!
     }

@@ -20,7 +20,7 @@ import {
   type 준공수주Row,
 } from './junggong-seonggwa'
 // 반올림 규칙을 공무 페이지와 '같은 함수'로 맞춘다 — 규칙을 복사하면 한쪽만 바뀌는 날 두 화면이 갈라진다
-import { 천원 } from '../gongmu/_lib/erp-실적'
+import { 천원, 삭제된담당자이름 } from '../gongmu/_lib/erp-실적'
 
 export type 월성과내역Row = {
   수주_id: number
@@ -40,6 +40,24 @@ export type 월성과내역Row = {
   /** 위 날짜 중 야간 투입이 있었던 날 */
   야간날짜: string[]
 }
+
+/** 한 공사 안에서 한 담당자의 몫 (2026-10-29) */
+export type 담당별시공 = {
+  담당공무_id: number | null
+  /** 미지정이면 '' — 대시보드가 '담당 미지정' 칸으로 그린다 */
+  담당: string
+  /** 공사이력 행마다 반올림해 더한 값 — 공무 화면 담당자 카드의 월 누적과 같은 규칙 */
+  금액천원: number
+  날짜: string[]
+  야간날짜: string[]
+}
+
+/**
+ * 시공 실적 한 줄 = 공사 하나. 담당별은 그 공사를 담당공무_id 로 다시 나눈 것이다.
+ * 시공 담당은 ERP 공사이력.담당공무_id 한 곳에서만 정한다 — 대시보드가 따로 배정하면 공무 화면과 숫자가 갈라진다.
+ * 담당별 금액의 합 = 금액천원 (둘 다 같은 행 단위 반올림 값을 더한 것)
+ */
+export type 월시공내역Row = 월성과내역Row & { 담당별: 담당별시공[] }
 
 function 야간키(수주_id: number, 날짜: string): string {
   return `${수주_id}|${날짜}`
@@ -164,23 +182,63 @@ export function build월시공내역(
   투입실적: 투입실적With상세[],
   from: string,
   to: string,
-): 월성과내역Row[] {
+  /** 공무담당자 id → 이름. 없는 id 는 공무 화면처럼 '삭제된 담당자 #id' */
+  담당이름: Map<number, string> = new Map(),
+): 월시공내역Row[] {
   const 수주맵 = new Map(수주목록.map((o) => [o.id, o]))
   const 야간날 = build야간날(투입실적, from, to)
 
-  const 집계맵 = new Map<number, { 금액천원: number; 날짜: Set<string> }>()
+  type 칸 = { 금액천원: number; 날짜: Set<string> }
+  const 새칸 = (): 칸 => ({ 금액천원: 0, 날짜: new Set<string>() })
+  const 집계맵 = new Map<number, 칸>()
+  // 수주_id → (담당공무_id|null) → 칸. 공사 금액과 같은 행 단위 천원을 더하므로 합이 1천원까지 맞는다
+  const 담당맵 = new Map<number, Map<number | null, 칸>>()
   for (const row of 공사이력전체) {
     // 날짜는 문자열로만 비교한다 — new Date()를 쓰면 서버 시계(UTC)가 KST 달력을 밀어버린다
     if (row.작업일자 < from || row.작업일자 >= to) continue
+    const 금액 = 천원(row.성과금액)
     let v = 집계맵.get(row.수주_id)
     if (!v) {
-      v = { 금액천원: 0, 날짜: new Set<string>() }
+      v = 새칸()
       집계맵.set(row.수주_id, v)
     }
-    v.금액천원 += 천원(row.성과금액)
+    v.금액천원 += 금액
     v.날짜.add(row.작업일자)
+
+    let 공사담당 = 담당맵.get(row.수주_id)
+    if (!공사담당) {
+      공사담당 = new Map()
+      담당맵.set(row.수주_id, 공사담당)
+    }
+    const id = row.담당공무_id ?? null
+    let d = 공사담당.get(id)
+    if (!d) {
+      d = 새칸()
+      공사담당.set(id, d)
+    }
+    d.금액천원 += 금액
+    d.날짜.add(row.작업일자)
   }
-  return to내역Rows(집계맵, 수주맵, 야간날)
+
+  const 이름 = (id: number | null) => (id == null ? '' : 담당이름.get(id) ?? 삭제된담당자이름(id))
+  return to내역Rows(집계맵, 수주맵, 야간날).map((r) => ({
+    ...r,
+    담당별: [...(담당맵.get(r.수주_id) ?? new Map<number | null, 칸>())]
+      // 0천원 몫은 감춘다 — 공사 줄과 같은 규칙, 합계에 0을 보태던 몫이라 합은 그대로다
+      .filter(([, d]) => d.금액천원 !== 0)
+      .map(([id, d]) => {
+        const 날짜 = [...d.날짜].sort()
+        return {
+          담당공무_id: id,
+          담당: 이름(id),
+          금액천원: d.금액천원,
+          날짜,
+          야간날짜: 날짜.filter((x) => 야간날.has(야간키(r.수주_id, x))),
+        }
+      })
+      // 금액 큰 순, 같으면 이름 순 — 매 조회마다 순서가 흔들리지 않게
+      .sort((a, b) => b.금액천원 - a.금액천원 || a.담당.localeCompare(b.담당, 'ko')),
+  }))
 }
 
 /** 표에 보이는 행들의 합 — 도넛의 '실적'은 이 값이어야 한다 (따로 계산하지 않는다) */
