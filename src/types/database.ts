@@ -600,6 +600,13 @@ export type Database = {
         Update: { id?: number; 품목_id?: number; 변화량?: number; 일자?: string; 비고?: string | null; 생성일?: string; 작성자?: string | null }
         Relationships: []
       }
+      이력카드_머리글자: {
+        // 카드 생성 화면의 번호 머리글자 규칙. 요율은 거래처에서 읽는다(여기 두지 않음).
+        Row: { id: number; 머리글자: string; 이름: string; 거래처_id: number | null; 사용: boolean; 정렬: number }
+        Insert: { id?: number; 머리글자: string; 이름: string; 거래처_id?: number | null; 사용?: boolean; 정렬?: number }
+        Update: { id?: number; 머리글자?: string; 이름?: string; 거래처_id?: number | null; 사용?: boolean; 정렬?: number }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: EquipmentFunctions
@@ -661,6 +668,7 @@ export type 자재_드럼Row     = Database['public']['Tables']['자재_드럼']
 export type 자재_드럼기록Row = Database['public']['Tables']['자재_드럼기록']['Row']
 export type 자재_품목Row     = Database['public']['Tables']['자재_품목']['Row']
 export type 자재_품목기록Row = Database['public']['Tables']['자재_품목기록']['Row']
+export type 이력카드_머리글자Row = Database['public']['Tables']['이력카드_머리글자']['Row']
 export type 자재_드럼Insert     = Database['public']['Tables']['자재_드럼']['Insert']
 export type 자재_드럼기록Insert = Database['public']['Tables']['자재_드럼기록']['Insert']
 export type 자재_품목기록Insert = Database['public']['Tables']['자재_품목기록']['Insert']

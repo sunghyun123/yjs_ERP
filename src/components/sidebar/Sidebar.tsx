@@ -10,6 +10,7 @@ import {
   Activity,
   TrendingUp,
   FileText,
+  ScrollText,
   Settings,
   ChevronDown,
   ChevronRight,
@@ -36,7 +37,10 @@ const navGroups = [
     { href: '/sales', label: '매출손익 현황', icon: TrendingUp },
   ],
   [{ href: '/materials', label: '자재관리', icon: Package }],
-  [{ href: '/gongmu', label: '공무', icon: FileText }],
+  [
+    { href: '/gongmu', label: '공무', icon: FileText },
+    { href: '/history-card', label: '이력 카드 생성', icon: ScrollText },
+  ],
   [{ href: '/assets', label: '영전사 전산 현황', icon: Monitor }],
 ] as const
 
@@ -45,6 +49,7 @@ const adminNav = [
   { href: '/admin/rates', label: '공사단가 관리' },
   { href: '/admin/gongmu', label: '공무담당자 관리' },
   { href: '/admin/sites', label: '공사현장 관리' },
+  { href: '/admin/history-card-prefixes', label: '이력카드 머리글자' },
   { href: '/admin/updates', label: '변경내역' },
 ] as const
 
