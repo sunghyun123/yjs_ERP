@@ -29,6 +29,13 @@ describe('추출WireSchema', () => {
   })
 })
 
+describe('work_draft 길이', () => {
+  it('9줄도 응답은 받고 toKorean이 8줄로 자른다', () => {
+    const w = 추출WireSchema.parse({ ...정상, work_draft: Array.from({ length: 9 }, (_, i) => `작업${i}`) })
+    expect(toKorean(w).공사시행초안).toHaveLength(8)
+  })
+})
+
 describe('추출JSONSchema', () => {
   it('strict 조건: 모든 칸 required, additionalProperties false', () => {
     expect([...추출JSONSchema.required].sort()).toEqual(Object.keys(추출JSONSchema.properties).sort())

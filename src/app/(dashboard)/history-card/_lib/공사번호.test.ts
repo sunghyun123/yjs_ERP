@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { 공사번호키, find기존수주, type 수주후보 } from './공사번호'
+import { 공사번호키, 조회가능, find기존수주, type 수주후보 } from './공사번호'
 
 const 행 = (id: number, 지중no: string, 공사번호: string | null): 수주후보 => ({
   id, 지중no, 공사명: `공사${id}`, 공사번호, 원청사_id: 4,
@@ -17,6 +17,14 @@ describe('공사번호키', () => {
     expect(공사번호키(null)).toBeNull()
     expect(공사번호키('')).toBeNull()
     expect(공사번호키('(01)')).toBeNull()
+  })
+})
+
+describe('조회가능', () => {
+  it('10자리 이상 숫자 키만 true', () => {
+    expect(조회가능('3917-2025-3862 (01)')).toBe(true)
+    expect(조회가능('26-100')).toBe(false)
+    expect(조회가능(null)).toBe(false)
   })
 })
 

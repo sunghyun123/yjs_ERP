@@ -1,5 +1,5 @@
 import { calc하도적용금액 } from '@/app/(dashboard)/orders/_lib/completion'
-import { find기존수주, type 수주후보 } from './공사번호'
+import { find기존수주, 조회가능, type 수주후보 } from './공사번호'
 import { suggest지중no } from './번호'
 import type { 추출결과 } from './extract'
 
@@ -69,7 +69,9 @@ export function build카드(입력: 카드입력): 카드결과 {
     공급가 = r.수주금액_공급가
     // 공식을 새로 쓰지 않는다 — 수주대장과 같은 함수(엄격판: 요율이 하나라도 없으면 null)
     영전사 = calc하도적용금액(공급가, r.보험료율, r.하도전용율)
-    if (공급가 != null && 영전사 == null) {
+    if (공급가 == null) {
+      warnings.push(`ERP의 ${r.지중no}에 공급가가 비어 있습니다. 수주대장에서 확인하세요.`)
+    } else if (영전사 == null) {
       warnings.push(`ERP의 ${r.지중no}에 요율이 비어 있어 영전사금액을 계산하지 못했습니다.`)
     }
     if (r.원청사_id != null && 규칙.거래처_id != null && r.원청사_id !== 규칙.거래처_id) {
@@ -80,9 +82,15 @@ export function build카드(입력: 카드입력): 카드결과 {
       번호 = null
       번호상태 = '확인 필요'
       warnings.push(`같은 공사번호의 수주가 ${기존.length}건 있습니다: ${기존.map(r => r.지중no).join(', ')}. 번호를 직접 고르세요.`)
+    } else if (!조회가능(추출.공사번호)) {
+      // 조회를 못 했는데 새 번호를 제안하면 이미 있는 공사에 번호가 하나 더 생긴다
+      번호 = null
+      번호상태 = '확인 필요'
+      warnings.push('공사번호를 읽지 못해 ERP에 이미 등록된 공사인지 확인하지 못했습니다. 번호를 직접 확인하세요.')
     } else {
       번호 = 추출.시공통보일자 ? suggest지중no(규칙.머리글자, 추출.시공통보일자, 수주목록.map(r => r.지중no)) : null
       번호상태 = 번호 ? '제안' : '확인 필요'
+      if (!번호) warnings.push('시공통보일자를 읽지 못해 번호를 제안하지 못했습니다.')
     }
     공사명 = 추출.공사명
     공급가 = 공급가액
@@ -94,7 +102,7 @@ export function build카드(입력: 카드입력): 카드결과 {
     }
   }
 
-  if (공급가 == null) warnings.push('공급가액을 알 수 없습니다.')
+  if (공급가 == null && 기존.length !== 1) warnings.push('공급가액을 알 수 없습니다.')
 
   const 날짜 = toYYMMDD(추출.시공통보일자)
   const 초안 = 추출.공사시행초안.map(한줄).filter((s): s is string => s !== null)

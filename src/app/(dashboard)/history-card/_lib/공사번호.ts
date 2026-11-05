@@ -19,9 +19,15 @@ export function 공사번호키(raw: string | null | undefined): string | null {
 // 한전 공사번호는 12자리(NNNN-YYYY-NNNN). CG의 '26-100'처럼 짧은 내부 번호와 우연히 겹치지 않게 한다.
 const 최소키길이 = 10
 
+/** 이 공사번호로 기존 수주를 찾아볼 수 있나. 못 읽었거나 너무 짧으면 '조회를 못 한 것'이지 '없는 것'이 아니다. */
+export function 조회가능(raw: string | null): boolean {
+  const key = 공사번호키(raw)
+  return key !== null && key.length >= 최소키길이
+}
+
 /** 같은 키의 수주를 전부 돌려준다. 2건 이상이면 고르는 건 호출한 쪽의 몫(첫 행을 조용히 고르지 않는다). */
 export function find기존수주(통보서공사번호: string | null, 수주목록: 수주후보[]): 수주후보[] {
+  if (!조회가능(통보서공사번호)) return []
   const key = 공사번호키(통보서공사번호)
-  if (key === null || key.length < 최소키길이) return []
   return 수주목록.filter(r => 공사번호키(r.공사번호) === key)
 }

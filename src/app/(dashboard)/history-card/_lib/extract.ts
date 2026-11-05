@@ -17,7 +17,7 @@ export const 추출WireSchema = z.object({
   overview: 문자,
   period_start: 문자,
   period_end: 문자,
-  work_draft: z.array(z.string()).max(8),
+  work_draft: z.array(z.string()),
 })
 
 const 문자칸 = { type: ['string', 'null'] } as const
@@ -86,7 +86,7 @@ export function toKorean(w: 추출WireResult): 추출결과 {
     공사개요: w.overview,
     공사기간_시작: w.period_start,
     공사기간_끝: w.period_end,
-    공사시행초안: w.work_draft,
+    공사시행초안: w.work_draft.slice(0, 8), // 선택 사항인 초안이 길다고 응답 전체를 실패시키지 않는다
   }
 }
 

@@ -73,6 +73,20 @@ describe('build카드 — 신규 수주', () => {
     expect(r.warnings.some(w => w.includes('영전사금액'))).toBe(true)
   })
 
+  it('거래처 요율이 일부 비면 영전사금액 확인 필요 + 경고', () => {
+    const r = build카드(기본입력({ 거래처요율: { 보험료제외율: null, 하도전용율: 0.85 } }))
+    expect(r.text).toContain('\t\t영전사금액\n\t\t\t확인 필요')
+    expect(r.warnings.some(w => w.includes('요율이 비어'))).toBe(true)
+  })
+
+  it('공사번호를 못 읽으면 번호를 제안하지 않는다 (조회를 못 한 것이지 없는 것이 아니다)', () => {
+    const r = build카드(기본입력({ 추출: { ...추출, 공사번호: null } }))
+    expect(r.번호상태).toBe('확인 필요')
+    expect(r.text.startsWith('확인 필요. ')).toBe(true)
+    expect(r.warnings.some(w => w.includes('공사번호를 읽지 못해'))).toBe(true)
+    expect(r.text).toContain('\t\t\t49,302천원')
+  })
+
   it('공사시행 초안이 비면 (AI 초안) 표시도 넣지 않는다', () => {
     const r = build카드(기본입력({ 추출: { ...추출, 공사시행초안: [] } }))
     expect(r.text).toContain('\t공사시행\n\t향후계획')
@@ -86,6 +100,12 @@ describe('build카드 — 기존 수주', () => {
     expect(r.text.split('\n')[0]).toBe('JY26-004. ERP 공사명')
     expect(r.text).toContain('\t\t공급가액\n\t\t\t12,000천원')
     expect(r.text).toContain('\t\t영전사금액\n\t\t\t8,991천원') // 12,000,000 × 0.925 × 0.81
+    expect(r.warnings).toEqual([])
+  })
+
+  it('수주의 공급가가 비면 그 사실을 경고 (일반 경고와 겹치지 않는다)', () => {
+    const r = build카드(기본입력({ 수주목록: [수주('JY26-004', '391720253862', { 수주금액_공급가: null })] }))
+    expect(r.warnings).toEqual(['ERP의 JY26-004에 공급가가 비어 있습니다. 수주대장에서 확인하세요.'])
   })
 
   it('수주의 요율이 비면 확인 필요 (공급가를 영전사금액으로 적지 않는다)', () => {
@@ -126,6 +146,7 @@ describe('build카드 — 검산과 빈 칸', () => {
     const r = build카드(기본입력({ 추출: { ...추출, 시공통보일자: null } }))
     expect(r.text.split('\n')[0]).toBe('확인 필요. 평촌동70 (주)금성 750kW 신설')
     expect(r.text).toContain('\t\t확인 필요 시공통보서 접수')
+    expect(r.warnings.filter(w => w.includes('시공통보일자'))).toHaveLength(1)
   })
 
   it('AI가 준 글자 안의 탭·줄바꿈은 공백으로 바꾼다 (가지 구조가 깨지지 않게)', () => {
