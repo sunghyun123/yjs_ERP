@@ -4,7 +4,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef } from 'react'
-import { LayoutDashboard, ClipboardList, PenLine, Activity, TrendingUp, Package, FileText, Monitor } from 'lucide-react'
+import { LayoutDashboard, ClipboardList, PenLine, Activity, TrendingUp, Package, FileText, Monitor, ScrollText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { DASHBOARD_URL } from '@/lib/dashboard-link'
 
@@ -17,6 +17,7 @@ const tabs = [
   { href: '/sales', label: '매출손익', icon: TrendingUp },
   { href: '/materials', label: '자재', icon: Package },
   { href: '/gongmu', label: '공무', icon: FileText },
+  { href: '/history-card', label: '이력카드', icon: ScrollText },
 ] as const
 
 export function MobileTabBar() {
