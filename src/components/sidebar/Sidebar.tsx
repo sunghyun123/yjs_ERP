@@ -49,6 +49,7 @@ const adminNav = [
   { href: '/admin/rates', label: '공사단가 관리' },
   { href: '/admin/gongmu', label: '공무담당자 관리' },
   { href: '/admin/sites', label: '공사현장 관리' },
+  { href: '/admin/history-card-prefixes', label: '이력카드 머리글자' },
   { href: '/admin/updates', label: '변경내역' },
 ] as const
 
