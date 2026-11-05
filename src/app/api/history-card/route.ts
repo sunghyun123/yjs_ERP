@@ -58,7 +58,10 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createClient()
 
-  // 규칙은 AI 호출 '전에' 읽는다 — 잘못된 요청에 요금을 쓰지 않는다
+  // 규칙은 AI 호출 '전에' 읽는다 — 잘못된 요청에 요금을 쓰지 않는다.
+  // 이 읽기가 AI 요금의 진짜 문지기다: 이력카드_머리글자의 RLS(is_whitelisted())는 auth.identities만 믿는다.
+  // 위 getDashboardAccess()의 403은 JWT user_metadata(사용자가 직접 고칠 수 있는 칸)에서 나오므로 1차 거름일 뿐이다.
+  // 화이트리스트 밖이면 RLS가 0행을 주고 → 아래 '사용 중인 머리글자가 아닙니다'(400)에서 AI 호출 전에 멈춘다.
   const { data: 규칙, error: 규칙Err } = (await supabase
     .from('이력카드_머리글자')
     .select('id, 머리글자, 거래처_id, 사용')

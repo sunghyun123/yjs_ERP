@@ -56,8 +56,21 @@ describe('통보서읽기', () => {
     await expect(통보서읽기(pdf, 옵션(f))).rejects.toMatchObject({ 단계: 'openai_json' })
   })
 
-  it('네트워크 실패·시간 초과는 UpstreamError', async () => {
+  it('시간 초과는 openai_timeout', async () => {
     const f = vi.fn(async () => { throw new DOMException('timeout', 'TimeoutError') }) as unknown as typeof fetch
-    await expect(통보서읽기(pdf, 옵션(f))).rejects.toBeInstanceOf(UpstreamError)
+    const 결과 = 통보서읽기(pdf, 옵션(f))
+    await expect(결과).rejects.toBeInstanceOf(UpstreamError)
+    await expect(결과).rejects.toMatchObject({ 단계: 'openai_timeout' })
+  })
+
+  it('네트워크 실패는 openai_network', async () => {
+    const f = vi.fn(async () => { throw new TypeError('fetch failed') }) as unknown as typeof fetch
+    await expect(통보서읽기(pdf, 옵션(f))).rejects.toMatchObject({ 단계: 'openai_network' })
+  })
+
+  it('200인데 본문이 JSON이 아니면 openai_body (본문 원문이 에러에 실리지 않는다)', async () => {
+    const f = vi.fn(async () => new Response('<html>secret body</html>', { status: 200 })) as unknown as typeof fetch
+    const 결과 = 통보서읽기(pdf, 옵션(f))
+    await expect(결과).rejects.toMatchObject({ 단계: 'openai_body', message: 'openai_body' })
   })
 })

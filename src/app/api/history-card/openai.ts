@@ -37,20 +37,31 @@ export async function 통보서읽기(pdf1쪽: Uint8Array, opts: 옵션): Promis
     text: { format: { type: 'json_schema', name: 'construction_notice', schema: 추출JSONSchema, strict: true } },
   }
 
+  // 50초: 운영 nginx의 proxy_read_timeout이 60초다(nginx/erp.yjsboard.com.conf).
+  // 그보다 오래 기다리면 브라우저는 이미 nginx의 504 HTML을 받았는데 우리는 계속 기다리며 요금이 나가고,
+  // 사용자가 다시 누르면 같은 통보서에 두 번 낸다. nginx보다 먼저 포기해야 우리 502 메시지가 화면에 닿는다.
+  const timeoutMs = opts.timeoutMs ?? 50_000
+
   let res: Response
   try {
     res = await fetchImpl('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: { Authorization: `Bearer ${opts.apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(opts.timeoutMs ?? 90_000),
+      signal: AbortSignal.timeout(timeoutMs),
     })
   } catch (e) {
     throw new UpstreamError(e instanceof DOMException && e.name === 'TimeoutError' ? 'openai_timeout' : 'openai_network')
   }
   if (!res.ok) throw new UpstreamError(`openai_http_${res.status}`)
 
-  const json = (await res.json()) as ResponsesBody
+  let json: ResponsesBody
+  try {
+    json = (await res.json()) as ResponsesBody
+  } catch {
+    // JSON이 아닌 본문의 SyntaxError 메시지엔 본문 앞부분이 실린다 → 단계명만 남기고 버린다
+    throw new UpstreamError('openai_body')
+  }
   if (json.status === 'incomplete') throw new UpstreamError('openai_incomplete')
 
   const contents = (json.output ?? []).filter(o => o.type === 'message').flatMap(o => o.content ?? [])
