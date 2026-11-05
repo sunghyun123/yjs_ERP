@@ -25,15 +25,16 @@ export function HistoryCardClient({ 규칙목록 }: { 규칙목록: 이력카드
 
   async function 보내기(file: File) {
     if (!올리기가능) return
-    if (file.size > 최대바이트) { set오류('PDF가 9MB를 넘습니다.'); return }
-    set처리중(true); set오류(null); set결과(null); set복사됨(false)
+    set처리중(true); set오류(null); set결과(null); set본문(''); set복사됨(false)
     try {
+      if (file.size > 최대바이트) { set오류('PDF가 9MB를 넘습니다.'); return }
       const fd = new FormData()
       fd.append('prefixId', String(규칙Id))
       fd.append('file', file)
       const res = await fetch('/api/history-card', { method: 'POST', body: fd })
       const json = await res.json().catch(() => null)
       if (!res.ok) { set오류(json?.error ?? `요청 실패 (${res.status})`); return }
+      if (!json || typeof json.text !== 'string') { set오류('서버 응답을 읽지 못했습니다.'); return }
       set결과(json as 카드결과)
       set본문((json as 카드결과).text)
     } catch {
@@ -45,8 +46,14 @@ export function HistoryCardClient({ 규칙목록 }: { 규칙목록: 이력카드
   }
 
   async function 복사() {
-    await navigator.clipboard.writeText(본문) // 탭 문자 그대로
-    set복사됨(true)
+    try {
+      await navigator.clipboard.writeText(본문) // 탭 문자 그대로
+      set복사됨(true)
+      set오류(null)
+    } catch {
+      set복사됨(false)
+      set오류('복사하지 못했습니다. 글을 직접 선택해 복사하세요.')
+    }
   }
 
   return (
@@ -104,8 +111,8 @@ export function HistoryCardClient({ 규칙목록 }: { 규칙목록: 이력카드
         <div className="space-y-2">
           {결과.warnings.length > 0 && (
             <ul className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800 space-y-1">
-              {결과.warnings.map(w => (
-                <li key={w} className="flex gap-1.5"><AlertTriangle className="size-4 shrink-0 mt-0.5" />{w}</li>
+              {결과.warnings.map((w, i) => (
+                <li key={i} className="flex gap-1.5"><AlertTriangle className="size-4 shrink-0 mt-0.5" />{w}</li>
               ))}
             </ul>
           )}

@@ -6,10 +6,13 @@ export const metadata = { title: '이력카드 머리글자 관리 | 영전사 E
 
 export default async function Page() {
   const supabase = await createClient()
-  const [{ data: 규칙 }, { data: 거래처 }] = await Promise.all([
+  const [{ data: 규칙, error: 규칙오류 }, { data: 거래처, error: 거래처오류 }] = await Promise.all([
     supabase.from('이력카드_머리글자').select().order('정렬').order('id'),
     supabase.from('거래처').select().order('거래처명'),
   ])
+  if (규칙오류 || 거래처오류) {
+    return <p className="p-4 md:p-6 text-sm text-red-600">머리글자 규칙을 읽지 못했습니다. 새로고침하거나 관리자에게 알려 주세요.</p>
+  }
   return (
     <div className="p-4 md:p-6">
       <div className="mb-5">

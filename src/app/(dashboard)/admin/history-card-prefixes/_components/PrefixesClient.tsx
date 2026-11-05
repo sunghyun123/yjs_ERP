@@ -15,7 +15,7 @@ const emptyForm: FormState = { 머리글자: '', 이름: '', 거래처_id: '', �
 
 const 요율표시 = (c: 거래처요약 | undefined) =>
   !c ? '없음 (카드에 확인 필요)'
-    : `${c.거래처명} · 보험료 ${c.보험료제외율 != null ? c.보험료제외율 * 100 : '-'}% · 하도 ${c.하도전용율 != null ? c.하도전용율 * 100 : '-'}%`
+    : `${c.거래처명} · 보험료 ${c.보험료제외율 != null ? +(c.보험료제외율 * 100).toFixed(3) : '-'}% · 하도 ${c.하도전용율 != null ? +(c.하도전용율 * 100).toFixed(3) : '-'}%`
 
 export function PrefixesClient({ initialRows, 거래처목록 }: { initialRows: 이력카드_머리글자Row[]; 거래처목록: 거래처요약[] }) {
   const [rows, setRows] = useState(initialRows)
