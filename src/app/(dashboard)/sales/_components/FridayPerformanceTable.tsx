@@ -1,15 +1,21 @@
 // src/app/(dashboard)/sales/_components/FridayPerformanceTable.tsx
+'use client'
+
+import { useState } from 'react'
+// ⚠️ type 으로만 — 값 import 하면 supabase 조회 코드가 브라우저 번들로 끌려온다
 import type { 금요일월성과 } from '../../_lib/금요일성과'
+import { FridayDetailDialog, type 줄키, type 표시월 } from './FridayDetailDialog'
 
 /**
  * 금요일 기준 월별 성과 — 시공 기록 / 준공 반영 / 성과 세 줄.
- * 상태가 없어 서버 컴포넌트로 둔다. 숫자는 받은 그대로 그리고 여기서 다시 계산하지 않는다.
+ * 숫자를 누르면 그 달 그 줄의 공사별 목록 팝업(PR-4, 설계 §7-8). 열린 팝업을 state 로 들어야 해서 클라이언트 컴포넌트다.
+ * 숫자는 받은 그대로 그리고 여기서 다시 계산하지 않는다 — 표 숫자 = 목록의 합은 _lib 이 보장한다.
  */
 
-const 줄: { key: '시공기록천원' | '준공반영천원' | '성과천원'; label: string; hint: string }[] = [
-  { key: '시공기록천원', label: '시공 기록', hint: '공무 화면 월 누적과 같은 숫자' },
-  { key: '준공반영천원', label: '준공 반영', hint: '준공액 − 시공 누계. 시공 기록에 없던 몫' },
-  { key: '성과천원', label: '성과', hint: '시공 기록 + 준공 반영' },
+const 줄: { 키: 줄키; key: '시공기록천원' | '준공반영천원' | '성과천원'; label: string; hint: string }[] = [
+  { 키: '시공', key: '시공기록천원', label: '시공 기록', hint: '공무 화면 월 누적과 같은 숫자' },
+  { 키: '반영', key: '준공반영천원', label: '준공 반영', hint: '준공액 − 시공 누계. 시공 기록에 없던 몫' },
+  { 키: '성과', key: '성과천원', label: '성과', hint: '시공 기록 + 준공 반영' },
 ]
 
 function 칸(v: number): string {
@@ -18,6 +24,11 @@ function 칸(v: number): string {
 }
 
 export function FridayPerformanceTable({ rows }: { rows: 금요일월성과[] }) {
+  const [열림, set열림] = useState<{ 월: string; 줄: 줄키 } | null>(null)
+  // rows 가 바뀌어(연도 이동) 그 달이 사라지면 자연히 null — 팝업이 닫힌다
+  const 열린월 =
+    (열림 && rows.find((r): r is 표시월 => r.표시 && r.월 === 열림.월)) || null
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[960px] text-sm tabular-nums">
@@ -37,7 +48,7 @@ export function FridayPerformanceTable({ rows }: { rows: 금요일월성과[] })
           </tr>
         </thead>
         <tbody>
-          {줄.map(({ key, label, hint }) => (
+          {줄.map(({ 키, key, label, hint }) => (
             <tr
               key={key}
               className={key === '성과천원' ? 'border-t border-gray-200 font-semibold' : 'border-b border-gray-50'}
@@ -46,12 +57,20 @@ export function FridayPerformanceTable({ rows }: { rows: 금요일월성과[] })
                 {label}
               </th>
               {rows.map((r) => (
-                <td
-                  key={r.월}
-                  className="py-2 px-2 text-right"
-                  style={{ color: r.표시 ? (r[key] < 0 ? '#dc2626' : '#374151') : '#d1d5db' }}
-                >
-                  {r.표시 ? 칸(r[key]) : '—'}
+                <td key={r.월} className="py-1 px-1 text-right">
+                  {r.표시 ? (
+                    <button
+                      type="button"
+                      onClick={() => set열림({ 월: r.월, 줄: 키 })}
+                      aria-label={`${Number(r.월.slice(5, 7))}월 ${label} 공사별 상세`}
+                      className="rounded px-1.5 py-1 underline decoration-gray-300 decoration-dotted underline-offset-4 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-500"
+                      style={{ color: r[key] < 0 ? '#dc2626' : '#374151' }}
+                    >
+                      {칸(r[key])}
+                    </button>
+                  ) : (
+                    <span className="px-1.5" style={{ color: '#d1d5db' }}>—</span>
+                  )}
                 </td>
               ))}
             </tr>
@@ -60,7 +79,13 @@ export function FridayPerformanceTable({ rows }: { rows: 금요일월성과[] })
       </table>
       <p className="mt-2 text-[11px] text-gray-400">
         단위 천원 · 한 주(월~일)는 금요일이 속한 달로 센다 · 2026년 9월 앞 달과 아직 오지 않은 달은 &apos;—&apos;
+        · 숫자를 누르면 공사별 상세 · 정산(청구 금액)은 성과가 아니라 공무 화면·대시보드에서 본다
       </p>
+      <FridayDetailDialog
+        월={열린월}
+        줄={열린월 ? 열림!.줄 : null}
+        onClose={() => set열림(null)}
+      />
     </div>
   )
 }
