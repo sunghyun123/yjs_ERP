@@ -1,7 +1,7 @@
 // src/app/(dashboard)/gongmu/_lib/주차.test.ts
 import { describe, expect, it } from 'vitest'
 import { formatKST } from '@/lib/kst'
-import { addDays, 월요일Of, 소속월Of, 달의주목록, resolve선택, 금주소속월기간 } from './주차'
+import { addDays, 월요일Of, 소속월Of, 달의주목록, resolve선택, 금주소속월기간, 조회가능월, 조회월기간 } from './주차'
 
 describe('날짜 산술', () => {
   it('addDays는 월·연 경계를 넘는다', () => {
@@ -85,5 +85,74 @@ describe('resolve선택', () => {
     expect(s.월).toBe('2027-01')
     expect(s.선택주.월요일).toBe('2026-12-28')
     expect(s.선택주.label).toBe('1주차 12/28~1/3')
+  })
+})
+
+describe('조회가능월 — 화면과 API가 같이 쓰는 범위 [최소월, 금주월]', () => {
+  it('하한·상한 포함', () => {
+    expect(조회가능월('2026-09', '2026-11')).toBe(true)
+    expect(조회가능월('2026-11', '2026-11')).toBe(true)
+  })
+  it('하한 앞·상한 뒤는 거절', () => {
+    expect(조회가능월('2026-08', '2026-11')).toBe(false)
+    expect(조회가능월('2026-12', '2026-11')).toBe(false)
+  })
+  it('YYYY-MM 형식이 아니면 거절 (문자열 비교가 날짜 비교가 되려면 0 채움 고정폭이어야 한다)', () => {
+    for (const m of ['2026-9', '2026-13', '2026-00', '2026-10-01', 'current', '', ' 2026-10']) {
+      expect(조회가능월(m, '2027-12')).toBe(false)
+    }
+  })
+})
+
+describe('조회월기간 — ?month= 해석', () => {
+  it('지난 달: 2026-10 → 금요일 기준 기간 9/28~11/1 (to 미포함 11/2)', () => {
+    expect(조회월기간('2026-10', '2026-11-10')).toEqual({
+      ok: true,
+      기간: { 월: '2026-10', from: '2026-09-28', to: '2026-11-02' },
+    })
+  })
+  it('하한 달: 2026-09 → 8/31~9/27 (to 미포함 9/28)', () => {
+    expect(조회월기간('2026-09', '2026-11-10')).toEqual({
+      ok: true,
+      기간: { 월: '2026-09', from: '2026-08-31', to: '2026-09-28' },
+    })
+  })
+  it('금주 달을 고르면 month 없는 응답의 split 과 같은 기간 (금주소속월기간과 같은 값)', () => {
+    const r = 조회월기간('2026-11', '2026-11-10')
+    expect(r).toEqual({ ok: true, 기간: 금주소속월기간('2026-11-10') })
+  })
+  it('KST 경계: 2026-11-30(월) 00:30 KST = UTC 11/29 15:30 → 12월이 허용된다', () => {
+    const 오늘 = formatKST(new Date('2026-11-29T15:30:00Z'))
+    expect(오늘).toBe('2026-11-30')
+    expect(조회월기간('2026-12', 오늘)).toEqual({
+      ok: true,
+      기간: { 월: '2026-12', from: '2026-11-30', to: '2026-12-28' },
+    })
+  })
+  it('같은 순간을 UTC 날짜(toISOString)로 읽으면 11/29 → 12월이 거절된다 — 호출부가 KST를 넘겨야 하는 이유', () => {
+    const utc날짜 = new Date('2026-11-29T15:30:00Z').toISOString().slice(0, 10)
+    expect(utc날짜).toBe('2026-11-29')
+    expect(조회월기간('2026-12', utc날짜).ok).toBe(false)
+  })
+  it('상한 뒤(금주 달 다음 달)는 오류, 문구에 허용 범위가 들어간다', () => {
+    const r = 조회월기간('2026-12', '2026-11-10')
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toContain('2026-09~2026-11')
+  })
+  it('하한 앞은 오류', () => {
+    expect(조회월기간('2026-08', '2026-11-10').ok).toBe(false)
+  })
+  it('형식 오류·빈 문자열은 오류, 문구가 범위 오류와 다르다', () => {
+    for (const m of ['2026-9', '2026-13', '', 'current', '2026-10-01']) {
+      const r = 조회월기간(m, '2026-11-10')
+      expect(r.ok).toBe(false)
+      if (!r.ok) expect(r.error).toContain('YYYY-MM')
+    }
+  })
+  it('연 경계: 2026-12-28(월)이면 금주 달은 2027-01 → 2027-01 허용, 기간 12/28~1/31 (to 미포함 2/1)', () => {
+    expect(조회월기간('2027-01', '2026-12-28')).toEqual({
+      ok: true,
+      기간: { 월: '2027-01', from: '2026-12-28', to: '2027-02-01' },
+    })
   })
 })
