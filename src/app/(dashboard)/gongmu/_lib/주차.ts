@@ -90,6 +90,42 @@ export function 금주소속월기간(오늘: string): { 월: 연월; from: stri
   return { 월, ...주목록기간(달의주목록(월)) }
 }
 
+const 연월형식 = /^\d{4}-(0[1-9]|1[0-2])$/
+
+/**
+ * 볼 수 있는 달 = [최소월, 금주가 속한 달]. 미래 달은 실적이 없고, 9월 앞은 금요일 기준 숫자를 쓰지 않는다(설계 §5-1).
+ * 공무 화면(resolve선택)과 대시보드 API(조회월기간)가 이 한 함수를 같이 쓴다 — 둘의 범위가 갈라지지 않게.
+ * 'YYYY-MM' 문자열 비교 = 날짜 비교(0 채움 고정폭이라). 그래서 형식 검사가 먼저다.
+ */
+export function 조회가능월(m: string, 금주월: 연월): boolean {
+  return 연월형식.test(m) && m >= 최소월 && m <= 금주월
+}
+
+export type 조회월결과 =
+  | { ok: true; 기간: { 월: 연월; from: string; to: string } }
+  | { ok: false; error: string }
+
+/**
+ * 대시보드 API ?month= → 그 달의 금요일 기준 기간 [from, to).
+ * 화면(resolve선택)과 달리 잘못된 값을 금주 달로 바꾸지 않고 오류로 돌려준다(→ 400).
+ * "9월을 달라"고 했는데 11월을 9월 칸에 그리는 사고를 막는다.
+ * @param 오늘 KST 'YYYY-MM-DD' — 호출부가 formatKST(now)로 넘긴다. 서버 시계(UTC) 날짜를 넘기면
+ *             새 달 첫 주 월요일 00~09시에 금주 달이 지난달로 잡혀 이번 달이 거절된다.
+ */
+export function 조회월기간(monthParam: string, 오늘: string): 조회월결과 {
+  const 금주월 = 소속월Of(월요일Of(오늘))
+  if (!연월형식.test(monthParam)) {
+    return { ok: false, error: `month는 YYYY-MM 형식이어야 합니다: '${monthParam}'` }
+  }
+  if (!조회가능월(monthParam, 금주월)) {
+    return {
+      ok: false,
+      error: `month는 ${최소월}~${금주월} 사이여야 합니다: '${monthParam}'`,
+    }
+  }
+  return { ok: true, 기간: { 월: monthParam, ...주목록기간(달의주목록(monthParam)) } }
+}
+
 export type 선택상태 = {
   월: 연월
   주목록: 주정보[]
@@ -107,7 +143,7 @@ export function resolve선택(오늘: string, monthParam?: string, weekParam?: s
   const 금주월요일 = 월요일Of(오늘)
   const 금주월 = 소속월Of(금주월요일)
   const m = monthParam ?? ''
-  const 유효 = /^\d{4}-(0[1-9]|1[0-2])$/.test(m) && m >= 최소월 && m <= 금주월
+  const 유효 = 조회가능월(m, 금주월)
   const 월 = 유효 ? m : 금주월
   const 주목록 = 달의주목록(월)
   const 선택주 =
