@@ -11,6 +11,10 @@
  *    반올림(천원)·준공 반영(calc준공잔여성과)을 전부 기존 함수에서 가져온다. 복사하면 한쪽만 바뀌는 날 화면이 갈라진다.
  * ⚠️ 시계를 읽지 않는다. '금주 소속월'은 호출부가 KST(todayKST)로 정해서 넘긴다 — 서버 시계는 UTC다.
  * DB에 아무것도 쓰지 않는다(읽기 시점 파생).
+ *
+ * PR-4(2026-11-10): 표시 달마다 공사별 목록 세 개(시공·준공 반영·성과)를 함께 싣는다 — 숫자를 누르면 뜨는 팝업의 재료.
+ * 표의 세 숫자는 이 목록들의 합에서 파생한다. 목록과 숫자를 따로 계산하면 둘이 어긋날 자리가 생긴다.
+ * ⚠️ 성과 목록에 build월성과내역 을 쓰지 않는다 — 공사별 원 합계를 한 번 반올림하는 규칙이라 표 숫자와 몇 천원 어긋난다.
  */
 import { 달의주목록, 주목록기간, 최소월, type 연월 } from '../gongmu/_lib/주차'
 import { 천원 } from '../gongmu/_lib/erp-실적'
@@ -19,8 +23,37 @@ import {
   calc준공잔여성과,
   type 공사이력Row,
   type 준공수주Row,
+  type 준공잔여성과,
 } from './junggong-seonggwa'
-import { build월시공내역, sum월성과내역 } from './monthly-revenue-breakdown'
+import { build월시공내역, sum월성과내역, type 월시공내역Row } from './monthly-revenue-breakdown'
+
+/** 준공 반영 팝업 한 줄 — 천원 단위. 칸끼리 식이 맞게: 준공액천원 − 시공누계천원 = 반영천원 */
+export type 준공반영내역Row = {
+  수주_id: number
+  지중no: string
+  공사명: string
+  준공일: string
+  준공액천원: number
+  /**
+   * = 준공액천원 − 반영천원. 실제 누계를 따로 반올림하면 줄마다 식이 1천원 어긋나서(10월 42줄 중 8줄)
+   * 표시용 누계는 식에서 거꾸로 구한다. 실제 누계와 최대 1천원 다를 수 있다(설계 §7-8).
+   */
+  시공누계천원: number
+  반영천원: number
+  /** 원 단위 시공 누계가 정확히 0 — 시공 입력 없이 준공. 표시값(시공누계천원 0)으로 판정하지 않는다 */
+  시공없음: boolean
+}
+
+/** 성과 팝업 한 줄 — 한 공사의 시공과 준공 반영을 합친 것 */
+export type 성과내역Row = {
+  수주_id: number
+  지중no: string
+  공사명: string
+  시공천원: number
+  반영천원: number
+  /** = 시공천원 + 반영천원 */
+  성과천원: number
+}
 
 export type 금요일월성과 =
   /** 최소월 앞이거나 금주 소속월 뒤 — 화면에 '—' */
@@ -31,11 +64,75 @@ export type 금요일월성과 =
       /** 금요일 기준 기간 [from, to), to 미포함 */
       from: string
       to: string
+      /** = sum(시공내역.금액천원) */
       시공기록천원: number
+      /** = sum(준공반영내역.반영천원) */
       준공반영천원: number
-      /** = 시공기록천원 + 준공반영천원 */
+      /** = 시공기록천원 + 준공반영천원 = sum(성과내역.성과천원) */
       성과천원: number
+      /** 대시보드 split 과 같은 함수(build월시공내역)의 결과 그대로 */
+      시공내역: 월시공내역Row[]
+      준공반영내역: 준공반영내역Row[]
+      성과내역: 성과내역Row[]
     }
+/**
+ * calc준공잔여성과(원 단위) → 팝업 줄(천원). 반영 0천원은 뺀다(시공 목록의 0천원 숨김과 같은 규칙 — 합계 불변).
+ * 반영 대상은 수주목록에서 나온 것이라 수주맵에 반드시 있다.
+ */
+function build준공반영내역(잔여: 준공잔여성과[], 수주맵: Map<number, 준공수주Row>): 준공반영내역Row[] {
+  const rows: 준공반영내역Row[] = []
+  for (const r of 잔여) {
+    const 반영천원 = 천원(r.금액)
+    if (반영천원 === 0) continue
+    const 수주 = 수주맵.get(r.수주_id)!
+    // calc준공잔여성과 가 준공액 null 을 이미 걸렀다
+    const 준공액원 = 수주.준공액_공급가 ?? 0
+    const 준공액천원 = 천원(준공액원)
+    rows.push({
+      수주_id: r.수주_id,
+      지중no: 수주.지중no,
+      공사명: 수주.공사명,
+      준공일: r.준공일,
+      준공액천원,
+      시공누계천원: 준공액천원 - 반영천원,
+      반영천원,
+      // 금액 = 준공액 − 누계 이므로 누계(원) = 준공액 − 금액. 정확히 0일 때만 '시공 입력 없음'
+      시공없음: 준공액원 - r.금액 === 0,
+    })
+  }
+  return rows.sort((a, b) => b.반영천원 - a.반영천원 || a.지중no.localeCompare(b.지중no, 'ko'))
+}
+
+/** 이미 천원으로 반올림된 두 목록을 공사별로 더한다 — 다시 반올림하지 않아 합이 표 숫자와 같다 */
+function build성과내역(시공: 월시공내역Row[], 반영: 준공반영내역Row[]): 성과내역Row[] {
+  const map = new Map<number, 성과내역Row>()
+  for (const s of 시공) {
+    map.set(s.수주_id, {
+      수주_id: s.수주_id,
+      지중no: s.지중no,
+      공사명: s.공사명,
+      시공천원: s.금액천원,
+      반영천원: 0,
+      성과천원: 0,
+    })
+  }
+  for (const b of 반영) {
+    const e = map.get(b.수주_id) ?? {
+      수주_id: b.수주_id,
+      지중no: b.지중no,
+      공사명: b.공사명,
+      시공천원: 0,
+      반영천원: 0,
+      성과천원: 0,
+    }
+    e.반영천원 += b.반영천원
+    map.set(b.수주_id, e)
+  }
+  // 성과 0천원 줄(시공과 반영이 상쇄)도 남긴다 — 두 칸이 왜 0이 됐는지 보여준다
+  return [...map.values()]
+    .map((e) => ({ ...e, 성과천원: e.시공천원 + e.반영천원 }))
+    .sort((a, b) => b.성과천원 - a.성과천원 || a.지중no.localeCompare(b.지중no, 'ko'))
+}
 
 /**
  * @param 공사이력전체 준공정산 제외, **전 기간** — 준공 반영의 차감 누계가 전 기간이어야 한다(load성과재료 결과 그대로)
@@ -47,8 +144,9 @@ export function build금요일성과(
   year: number,
   금주월: 연월,
 ): 금요일월성과[] {
-  // 전 기간 누계는 한 번만 만든다 — 달마다 같은 값이다
+  // 전 기간 누계·수주맵은 한 번만 만든다 — 달마다 같은 값이다
   const 누계 = build이력누계(공사이력전체)
+  const 수주맵 = new Map(수주목록.map((o) => [o.id, o]))
 
   return Array.from({ length: 12 }, (_, i): 금요일월성과 => {
     const 월 = `${year}-${String(i + 1).padStart(2, '0')}`
@@ -56,12 +154,14 @@ export function build금요일성과(
     if (월 < 최소월 || 월 > 금주월) return { 월, 표시: false }
 
     const { from, to } = 주목록기간(달의주목록(월))
-    // 대시보드 split.construction.totalThousand 와 같은 함수 — 투입실적은 야간 표시용이라 합계에 영향 없음([] 로 충분)
-    const 시공기록천원 = sum월성과내역(build월시공내역(공사이력전체, 수주목록, [], from, to))
-    const 준공반영천원 = calc준공잔여성과(수주목록, 누계, from, to).reduce(
-      (s, r) => s + 천원(r.금액),
-      0,
-    )
+    // 대시보드 split.construction 과 같은 함수 — 투입실적은 야간 표시용이라 합계에 영향 없음([] 로 충분)
+    const 시공내역 = build월시공내역(공사이력전체, 수주목록, [], from, to)
+    const 준공반영내역 = build준공반영내역(calc준공잔여성과(수주목록, 누계, from, to), 수주맵)
+    const 성과내역 = build성과내역(시공내역, 준공반영내역)
+
+    // 표 숫자는 목록의 합에서 파생한다 — 팝업 합계와 어긋날 자리를 없앤다
+    const 시공기록천원 = sum월성과내역(시공내역)
+    const 준공반영천원 = 준공반영내역.reduce((s, r) => s + r.반영천원, 0)
     return {
       월,
       표시: true,
@@ -70,6 +170,9 @@ export function build금요일성과(
       시공기록천원,
       준공반영천원,
       성과천원: 시공기록천원 + 준공반영천원,
+      시공내역,
+      준공반영내역,
+      성과내역,
     }
   })
 }
