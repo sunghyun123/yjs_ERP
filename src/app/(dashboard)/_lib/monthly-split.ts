@@ -142,19 +142,26 @@ export type MonthlySplit = {
   settlement: { rows: 월정산내역Row[]; totalThousand: number }
 }
 
+/** split 계산에 드는 원본 전부 — 한 번 읽어 여러 기간에 나눠 쓴다(연간 응답은 12번) */
+export type Split재료 = {
+  성과재료: Awaited<ReturnType<typeof load성과재료>>
+  투입재료: 투입원가재료
+  /** 기성 전 행 — 준공 차감 누계가 전 기간이어야 해서 기간으로 자르지 않는다 */
+  기성전체: 정산기성Row[]
+  담당이름: Map<number, string>
+}
+
 /**
- * 대시보드 API 응답의 split 칸.
- * 기간은 달력 월이 아니라 금요일 기준 주차의 달이다(gongmu/_lib/주차.ts 금주소속월기간, 2026-10-23) —
- * 사장님이 대시보드·ERP 공무 화면·주간업무 보고서의 금액을 나란히 맞춰 보시므로, 보고서를 쓰는 담당자들의
- * 기준(달에 걸친 주는 금요일의 달)을 따른다. 시공·정산 둘 다 같은 기간이라 카드 하나에 기준이 하나다.
- * 성과재료는 route 가 한 번 읽어 getMonthlyKpiData 와 나눠 쓴다 — 같은 순간의 DB를 설명하게.
+ * split 원본을 읽는다. 성과재료·투입재료는 route 가 이미 시작한 Promise 를 받아 다른 계산과 나눠 쓴다.
+ * 하나라도 실패하면 전체가 실패한다 — 이름표 없이 보내면 전원이 '삭제된 담당자'로 그려진다.
+ * 표마다(1000행 넘으면 페이지마다) 따로 요청하므로 DB 스냅샷은 아니다 — 보장하는 건 이 재료를 쓰는 기간들이
+ * 같은 사본을 본다는 것까지다(읽는 도중의 저장은 표 사이에 갈릴 수 있다).
  */
-export async function getMonthlySplit(
+export async function loadSplit재료(
   supabase: SupabaseClient<Database>,
-  기간: { 월: string; from: string; to: string },
   성과재료Promise: ReturnType<typeof load성과재료>,
   투입재료Promise: Promise<투입원가재료>,
-): Promise<MonthlySplit> {
+): Promise<Split재료> {
   const [성과재료, 투입재료, 기성전체, 담당자] = await Promise.all([
     성과재료Promise,
     투입재료Promise,
@@ -166,7 +173,6 @@ export async function getMonthlySplit(
         .order('id')
         .range(from, to),
     ),
-    // 담당 이름표. 실패하면 split 전체를 실패시킨다 — 이름 없이 보내면 전원이 '삭제된 담당자'로 그려진다
     // select('id, 이름') 은 supabase-js 가 한글 칸 이름을 못 풀어 타입이 깨진다 — 작은 표라 '*' 로 받아 캐스트 없이 쓴다
     supabase
       .from('공무담당자')
@@ -176,27 +182,43 @@ export async function getMonthlySplit(
         return data ?? []
       }),
   ])
+  return {
+    성과재료,
+    투입재료,
+    // supabase-js 가 이 select 문자열의 타입을 못 풀어 ParserError 를 낸다 —
+    // 필드가 바뀌면 위 .select() 문자열과 정산기성Row 를 손으로 맞춰야 한다
+    기성전체: 기성전체 as unknown as 정산기성Row[],
+    담당이름: new Map(담당자.map((d) => [d.id, d.이름])),
+  }
+}
 
-  const 투입실적 = 투입재료.투입실적.filter(
+/**
+ * 재료 + 기간 → split. DB를 읽지 않는 순수 함수라 같은 재료로 몇 번을 불러도 같은 원본을 설명한다.
+ * 기간은 달력 월이 아니라 금요일 기준 주차의 달이다(gongmu/_lib/주차.ts) — 사장님이 대시보드·공무 화면·
+ * 주간업무 보고서를 나란히 맞춰 보시므로. 시공·정산 둘 다 같은 기간이라 카드 하나에 기준이 하나다.
+ */
+export function buildMonthlySplit(
+  재료: Split재료,
+  기간: { 월: string; from: string; to: string },
+): MonthlySplit {
+  // 원본 배열을 자르지 않고 새 배열로 거른다 — 재료는 12달이 같이 쓴다
+  const 투입실적 = 재료.투입재료.투입실적.filter(
     (row) => row.투입일 >= 기간.from && row.투입일 < 기간.to,
   )
-  const 담당이름 = new Map(담당자.map((d) => [d.id, d.이름]))
   const constructionRows = build월시공내역(
-    성과재료.공사이력,
-    성과재료.수주,
+    재료.성과재료.공사이력,
+    재료.성과재료.수주,
     투입실적,
     기간.from,
     기간.to,
-    담당이름,
+    재료.담당이름,
   )
   const settlementRows = build월정산내역(
-    // supabase-js 가 이 select 문자열의 타입을 못 풀어 ParserError 를 낸다(다른 로더들과 같은 사정) —
-    // 필드가 바뀌면 위 .select() 문자열과 정산기성Row 를 손으로 맞춰야 한다
-    기성전체 as unknown as 정산기성Row[],
-    성과재료.수주,
+    재료.기성전체,
+    재료.성과재료.수주,
     기간.from,
     기간.to,
-    담당이름,
+    재료.담당이름,
   )
   return {
     month: 기간.월,
@@ -205,4 +227,17 @@ export async function getMonthlySplit(
     construction: { rows: constructionRows, totalThousand: sum월성과내역(constructionRows) },
     settlement: { rows: settlementRows, totalThousand: sum월정산내역(settlementRows) },
   }
+}
+
+/**
+ * 대시보드 API 응답의 split 칸 — 한 달짜리(month 없음 / ?month=) 경로용. 읽기 + 계산을 한 번에.
+ * 연간(?year=)은 loadSplit재료 를 한 번 부르고 buildMonthlySplit 을 달마다 부른다.
+ */
+export async function getMonthlySplit(
+  supabase: SupabaseClient<Database>,
+  기간: { 월: string; from: string; to: string },
+  성과재료Promise: ReturnType<typeof load성과재료>,
+  투입재료Promise: Promise<투입원가재료>,
+): Promise<MonthlySplit> {
+  return buildMonthlySplit(await loadSplit재료(supabase, 성과재료Promise, 투입재료Promise), 기간)
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { build월정산내역, sum월정산내역, type 정산기성Row } from './monthly-split'
+import { build월정산내역, sum월정산내역, buildMonthlySplit, type 정산기성Row, type Split재료 } from './monthly-split'
 import type { 준공수주Row } from './junggong-seonggwa'
 
 const 수주 = (over: Partial<준공수주Row> & { id: number }): 준공수주Row => ({
@@ -160,5 +160,48 @@ describe('build월정산내역 — 정산 담당 (수주.정산담당자_id 한 
   it('목록에서 지워진 담당은 공무 화면과 같은 이름으로 남긴다', () => {
     const rows = build월정산내역([기성(1, '2026-09-10', 1_000_000)], [수주({ id: 1, 정산담당자_id: 99 })], ...이번달, 이름)
     expect(rows[0].담당).toBe('삭제된 담당자 #99')
+  })
+})
+
+describe('buildMonthlySplit — 재료 한 벌을 달마다 나눈다 (연간 응답, 2026-11-12)', () => {
+  // 해 경계 양쪽에 한 행씩: 12/31은 12월, 1/1은 다음 해 1월
+  const 수주 = [
+    { id: 1, 지중no: 'A-1', 공사명: '갑', 공사구분: null, 준공여부: false, 준공일: null, 준공액_공급가: null,
+      수주금액_공급가: 0, 보험료율: null, 하도전용율: null, 정산담당자_id: 7 },
+  ] as unknown as 준공수주Row[]
+  const 재료: Split재료 = {
+    성과재료: {
+      공사이력: [
+        { 작업일자: '2026-12-31', 수주_id: 1, 성과금액: 1_000_000, 담당공무_id: 7 },
+        { 작업일자: '2027-01-01', 수주_id: 1, 성과금액: 2_000_000, 담당공무_id: 7 },
+      ],
+      수주,
+    },
+    투입재료: { year: 2026, 투입실적: [], 단가: [] },
+    기성전체: [{ id: 1, 수주_id: 1, 차수: 1, 기성일: '2026-12-31', 기성액_공급가: 500_000 }],
+    담당이름: new Map([[7, '김무선']]),
+  }
+
+  it('같은 재료로 두 달을 계산하면 경계 행이 정확히 한 달에만 들어간다', () => {
+    const 십이월 = buildMonthlySplit(재료, { 월: '2026-12', from: '2026-11-30', to: '2027-01-01' })
+    const 일월 = buildMonthlySplit(재료, { 월: '2027-01', from: '2027-01-01', to: '2027-02-01' })
+    expect(십이월.construction.totalThousand).toBe(1000)
+    expect(일월.construction.totalThousand).toBe(2000)
+    expect(십이월.settlement.totalThousand).toBe(500)
+    expect(일월.settlement.totalThousand).toBe(0)
+  })
+
+  it('기간 칸과 담당 이름을 그대로 싣는다', () => {
+    const s = buildMonthlySplit(재료, { 월: '2026-12', from: '2026-11-30', to: '2027-01-01' })
+    expect(s).toMatchObject({ month: '2026-12', from: '2026-11-30', to: '2027-01-01' })
+    expect(s.construction.rows[0].담당별[0].담당).toBe('김무선') // 시공 담당은 이력 행마다 → 담당별 배열
+    expect(s.settlement.rows[0].담당).toBe('김무선')
+  })
+
+  it('재료를 바꾸지 않는다 — 12번 불러도 같은 원본을 본다', () => {
+    const 전 = JSON.stringify({ ...재료, 담당이름: [...재료.담당이름] })
+    buildMonthlySplit(재료, { 월: '2026-12', from: '2026-11-30', to: '2027-01-01' })
+    buildMonthlySplit(재료, { 월: '2027-01', from: '2027-01-01', to: '2027-02-01' })
+    expect(JSON.stringify({ ...재료, 담당이름: [...재료.담당이름] })).toBe(전)
   })
 })

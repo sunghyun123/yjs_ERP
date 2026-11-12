@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, 공사단가Row } from '@/types/database'
 import { formatEok } from '@/lib/format'
 import { partsKST } from '@/lib/kst'
+import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { calc합계, type 투입실적With상세 } from './calc'
 import { sumMonthlyRevenue, type RevenueHistoryRow } from './revenue'
 import {
@@ -85,26 +86,32 @@ export function getMonthlyPeriod(now: Date) {
 export type MonthlyPeriod = ReturnType<typeof getMonthlyPeriod>
 
 /**
- * 그 달 투입실적(+상세)과 공사단가. getMonthlyKpiData 와 대시보드 split(야간 표기)이 같은 행을 쓰도록
+ * 투입실적(+상세)과 공사단가. getMonthlyKpiData 와 대시보드 split(야간 표기)이 같은 행을 쓰도록
  * route 가 한 번 불러 두 계산에 나눠 준다.
+ * 투입실적은 fetchAllRows 로 끝까지 받는다(2026-11-12) — 연간 응답은 1년치(2026년 약 690행 예상)를
+ * 한 번에 읽어 PostgREST 1000행 캡이 가깝다. 캡에 걸리면 에러 없이 1000행만 와서 야간 표기가 조용히 빠진다.
+ * 정렬은 페이지 경계에서 행이 중복·누락되지 않게 거는 것 — 소비자(합계·야간 날짜 집합)는 순서를 안 본다.
  */
 export function load투입원가재료(
   supabase: SupabaseClient<Database>,
   period: Pick<MonthlyPeriod, 'year' | 'monthStart' | 'monthEnd'>,
 ): Promise<투입원가재료> {
   return Promise.all([
-    supabase
-      .from('투입실적')
-      .select('*, 투입실적상세(투입구분, 주간수량, 야간수량)')
-      .gte('투입일', period.monthStart)
-      .lt('투입일', period.monthEnd),
+    fetchAllRows('투입실적', (from, to) =>
+      supabase
+        .from('투입실적')
+        .select('*, 투입실적상세(투입구분, 주간수량, 야간수량)')
+        .gte('투입일', period.monthStart)
+        .lt('투입일', period.monthEnd)
+        .order('id')
+        .range(from, to),
+    ),
     supabase.from('공사단가').select('*').order('적용시작일'),
-  ]).then(([투입실적결과, 단가결과]) => {
-    const firstError = 투입실적결과.error ?? 단가결과.error
-    if (firstError) throw firstError
+  ]).then(([투입실적, 단가결과]) => {
+    if (단가결과.error) throw 단가결과.error
     return {
       year: period.year,
-      투입실적: (투입실적결과.data ?? []) as unknown as 투입실적With상세[],
+      투입실적: 투입실적 as unknown as 투입실적With상세[],
       단가: (단가결과.data ?? []) as 공사단가Row[],
     }
   })
