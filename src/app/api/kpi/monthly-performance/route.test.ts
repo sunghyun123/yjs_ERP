@@ -136,7 +136,20 @@ describe('month 있음 — { month, split } 만', () => {
     지금은('2026-11-29T15:30:00Z')
     const res = await GET(요청('?month=2026-12'))
     expect(res.status).toBe(200)
-    expect((await res.json()).split).toEqual(가짜split('2026-12', '2026-11-30', '2026-12-28'))
+    expect((await res.json()).split).toEqual(가짜split('2026-12', '2026-11-30', '2027-01-01'))
+  })
+
+  it('최소월 2026-01 → 200, 기간은 1/1 ~ 2/2 미포함 (2025-12-29~31 이관행이 빠진다)', async () => {
+    const res = await GET(요청('?month=2026-01'))
+    expect(res.status).toBe(200)
+    expect(m.getMonthlySplit.mock.calls[0][1]).toEqual({ 월: '2026-01', from: '2026-01-01', to: '2026-02-02' })
+  })
+
+  it('연 경계: 2027-01-01 03:00 KST(= UTC 12/31 18:00)에 ?month=2027-01 은 200, 기간은 1/1부터', async () => {
+    지금은('2026-12-31T18:00:00Z')
+    const res = await GET(요청('?month=2027-01'))
+    expect(res.status).toBe(200)
+    expect(m.getMonthlySplit.mock.calls[0][1]).toEqual({ 월: '2027-01', from: '2027-01-01', to: '2027-02-01' })
   })
 
   it('split 실패는 null 로 감싸지 않고 500', async () => {
@@ -153,7 +166,7 @@ describe('400 — 요청한 쪽이 고칠 것, DB 는 읽지 않는다', () => {
     ['없는 달', '?month=2026-13'],
     ['날짜까지', '?month=2026-10-01'],
     ['빈 값', '?month='],
-    ['최소월 앞', '?month=2026-08'],
+    ['최소월 앞', '?month=2025-12'],
     ['금주 달 뒤', '?month=2026-12'],
   ])('%s (%s) → 400', async (_이름, query) => {
     const res = await GET(요청(query))
