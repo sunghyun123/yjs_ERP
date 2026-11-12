@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { formatKST } from '@/lib/kst'
 import {
   addDays, 월요일Of, 소속월Of, 달의주목록, 주목록기간, 다음달, resolve선택, 금주소속월기간, 조회가능월, 조회월기간,
+  연간조회월목록, 최소월,
 } from './주차'
 
 describe('날짜 산술', () => {
@@ -217,4 +218,64 @@ describe('해를 넘기지 않는 주 (2026-11-12)', () => {
   })
   it('최소월 2026-01: 1월 공무 화면은 ◀ 이 꺼진다', () =>
     expect(resolve선택('2026-11-12', '2026-01')).toMatchObject({ 월: '2026-01', 이전가능: false }))
+})
+
+describe('연간조회월목록 (연간 응답 ?year=, 2026-11-12)', () => {
+  it('12달을 1~12월 순서로, 금주월 기준 완료/진행중/미래로 나눈다', () => {
+    const r = 연간조회월목록('2026', '2026-11-12')
+    if (!r.ok) throw new Error(r.error)
+    expect(r.연도).toBe(2026)
+    expect(r.월목록.map((x) => x.월)).toEqual([
+      '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06',
+      '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12',
+    ])
+    expect(r.월목록.slice(0, 10).every((x) => x.상태 === '완료')).toBe(true)
+    expect(r.월목록[10].상태).toBe('진행중')
+    expect(r.월목록[11]).toEqual({ 월: '2026-12', 상태: '미래', 기간: null })
+  })
+
+  it('달 기간은 조회월기간(?month=)과 똑같다 — 규칙을 새로 만들지 않는다', () => {
+    const r = 연간조회월목록('2026', '2026-11-12')
+    if (!r.ok) throw new Error(r.error)
+    for (const x of r.월목록) {
+      if (x.기간 === null) continue
+      const 한달 = 조회월기간(x.월, '2026-11-12')
+      if (!한달.ok) throw new Error(한달.error)
+      expect(x.기간).toEqual(한달.기간)
+    }
+  })
+
+  it('미래가 아닌 달들의 기간은 빈틈·겹침 없이 이어진다 (12달 합 = 한 해)', () => {
+    const r = 연간조회월목록('2026', '2026-12-30') // 12월도 진행중이 되는 날
+    if (!r.ok) throw new Error(r.error)
+    const 기간들 = r.월목록.map((x) => x.기간!)
+    expect(기간들[0].from).toBe('2026-01-01')
+    for (let i = 1; i < 기간들.length; i++) expect(기간들[i].from).toBe(기간들[i - 1].to)
+    expect(기간들[11].to).toBe('2027-01-01') // 해 경계 자르기(PR-1) 덕에 12/28~31이 12월에 남는다
+  })
+
+  it('전체기간 = 첫 달 from ~ 마지막 비-미래 달 to — 투입실적을 이 범위로 한 번 읽는다', () => {
+    const r = 연간조회월목록('2026', '2026-11-12')
+    if (!r.ok) throw new Error(r.error)
+    expect(r.전체기간).toEqual({ from: '2026-01-01', to: r.월목록[10].기간!.to })
+  })
+
+  it('형식 오류·최소월 이전 해·아직 안 온 해는 오류(→ 400)', () => {
+    expect(연간조회월목록('26', '2026-11-12').ok).toBe(false)
+    expect(연간조회월목록('2026-01', '2026-11-12').ok).toBe(false)
+    expect(연간조회월목록('', '2026-11-12').ok).toBe(false)
+    expect(연간조회월목록('2025', '2026-11-12').ok).toBe(false)
+    expect(연간조회월목록('2027', '2026-11-12').ok).toBe(false)
+  })
+
+  it('해 경계: 2027-01-01이면 2027년이 열리고 1월이 진행중', () => {
+    const r = 연간조회월목록('2027', '2027-01-01')
+    if (!r.ok) throw new Error(r.error)
+    expect(r.월목록[0]).toMatchObject({ 월: '2027-01', 상태: '진행중' })
+    expect(r.월목록[0].기간!.from).toBe('2027-01-01')
+  })
+
+  it('최소월은 1월이어야 한다 — 아니면 연간조회월목록의 해 단위 범위 검사를 다시 설계할 것', () => {
+    expect(최소월.endsWith('-01')).toBe(true)
+  })
 })

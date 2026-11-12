@@ -5,6 +5,10 @@ import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import type { 투입실적With상세 } from './calc'
 
 export type 투입원가재료 = {
+  /**
+   * getMonthlyKpiData 는 year·투입실적을 '그 달 한 달치'로 가정한다.
+   * 연간 split 경로(?year=)는 1년치를 담아 split 에만 쓴다 — 그 재료를 KPI 계산에 넘기면 에러 없이 틀린 값이 나온다
+   */
   year: number
   투입실적: 투입실적With상세[]
   단가: 공사단가Row[]

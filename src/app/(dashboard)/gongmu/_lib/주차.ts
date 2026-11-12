@@ -154,6 +154,52 @@ export function 조회월기간(monthParam: string, 오늘: string): 조회월�
   return { ok: true, 기간: { 월: monthParam, ...주목록기간(달의주목록(monthParam)) } }
 }
 
+export type 연간월상태 = '완료' | '진행중' | '미래'
+
+export type 연간조회결과 =
+  | {
+      ok: true
+      연도: number
+      /** 항상 12개, 1~12월 순서. 미래 달은 기간 null(실적이 없다 — 0이 아니다) */
+      월목록: { 월: 연월; 상태: 연간월상태; 기간: { 월: 연월; from: string; to: string } | null }[]
+      /** 첫 달 from ~ 마지막 비-미래 달 to — 기간 재료(투입실적)를 이 범위로 한 번 읽는다 */
+      전체기간: { from: string; to: string }
+    }
+  | { ok: false; error: string }
+
+/**
+ * 대시보드 API ?year= → 그 해 12달의 상태와 금요일 기준 기간.
+ * 새 날짜 규칙이 아니다 — 달 기간은 조회월기간(?month=)과 같은 달의주목록·주목록기간에서, 금주월은 소속월Of에서 온다.
+ * PR-1(해 경계 자르기) 덕에 1월은 1/1부터, 12월은 12/31까지라 12달 합 = 한 해다.
+ * 범위: 그 해 1월이 [최소월, 금주월] 안이어야 한다. 최소월이 1월이라 해 단위로만 검사한다(테스트로 못 박음).
+ */
+export function 연간조회월목록(yearParam: string, 오늘: string): 연간조회결과 {
+  if (!/^\d{4}$/.test(yearParam)) {
+    return { ok: false, error: `year는 YYYY 형식이어야 합니다: '${yearParam}'` }
+  }
+  const 금주월 = 소속월Of(오늘)
+  const 첫달 = `${yearParam}-01`
+  if (!조회가능월(첫달, 금주월)) {
+    return {
+      ok: false,
+      error: `year는 ${최소월.slice(0, 4)}~${금주월.slice(0, 4)} 사이여야 합니다: '${yearParam}'`,
+    }
+  }
+  const 월목록: Extract<연간조회결과, { ok: true }>['월목록'] = []
+  for (let 월 = 첫달; 월.startsWith(yearParam); 월 = 다음달(월)) {
+    const 상태: 연간월상태 = 월 > 금주월 ? '미래' : 월 === 금주월 ? '진행중' : '완료'
+    월목록.push({ 월, 상태, 기간: 상태 === '미래' ? null : { 월, ...주목록기간(달의주목록(월)) } })
+  }
+  const 열린 = 월목록.filter((x) => x.기간 !== null)
+  return {
+    ok: true,
+    연도: Number(yearParam),
+    월목록,
+    // 첫달이 조회가능월이라 열린 달은 최소 1개
+    전체기간: { from: 열린[0].기간!.from, to: 열린[열린.length - 1].기간!.to },
+  }
+}
+
 export type 선택상태 = {
   월: 연월
   주목록: 주정보[]

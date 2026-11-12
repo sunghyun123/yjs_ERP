@@ -1,9 +1,12 @@
 /**
  * 대시보드(yjs_Dashboard)가 읽는 실적 API. service_role 로 RLS 를 우회하므로 아래 Bearer 비교가 유일한 문지기다.
  *
- * 응답 모양은 두 가지다 (2026-11-10, 설계 §6 PR-2 · 게이트 1 B안)
+ * 응답 모양은 세 가지다 (2026-11-10, 설계 §6 PR-2 · 게이트 1 B안)
  *   ?month 없음      → { ...MonthlyKpiData(달력 월), split(금요일 기준 금주 달) | null }  — 지금까지와 같다
  *   ?month=YYYY-MM   → { month, split }  — 그 달의 split 만. 범위 [최소월, 금주 소속월] 밖·형식 오류는 400
+ *   ?year=YYYY       → { year, months: [{ month, 상태, split | null } × 12] } — 원소는 ?month= 응답 + 상태.
+ *                      상태 '미래'만 split: null(실적이 없다 — 0이 아니다). 원본은 한 번 읽어 12달에 나눈다.
+ *                      재료 읽기 실패는 500(달별로 감싸지 않음). 형식 오류·범위 밖·month 와 함께 오면 400
  * month 가 있을 때 달력 월 칸(amounts·breakdown)을 같이 보내지 않는 이유: 그 칸은 '이번 달'이라
  * 한 응답에 두 달이 섞이고, 소비자가 잘못 읽으면 에러 없이 다른 달 숫자가 그려진다.
  */
@@ -15,8 +18,8 @@ import {
   load투입원가재료,
 } from '@/app/(dashboard)/_lib/monthly-kpi'
 import { load성과재료 } from '@/app/(dashboard)/_lib/junggong-seonggwa'
-import { getMonthlySplit } from '@/app/(dashboard)/_lib/monthly-split'
-import { 금주소속월기간, 조회월기간 } from '@/app/(dashboard)/gongmu/_lib/주차'
+import { getMonthlySplit, loadSplit재료, buildMonthlySplit } from '@/app/(dashboard)/_lib/monthly-split'
+import { 금주소속월기간, 조회월기간, 연간조회월목록 } from '@/app/(dashboard)/gongmu/_lib/주차'
 import { formatKST } from '@/lib/kst'
 
 function 실패응답(error: unknown) {
@@ -39,6 +42,45 @@ export async function GET(req: NextRequest) {
   const now = new Date()
 
   const monthParam = req.nextUrl.searchParams.get('month')
+  const yearParam = req.nextUrl.searchParams.get('year')
+
+  if (yearParam !== null) {
+    // 두 단위를 같이 받으면 어느 쪽 응답 모양인지 모호하다 — 고르지 않고 거절한다
+    if (monthParam !== null) {
+      return NextResponse.json({ error: 'month와 year는 함께 쓸 수 없습니다' }, { status: 400 })
+    }
+    // 오늘은 KST 로 못 박는다 — 서버 시계(UTC)면 1/1 00~09시에 새해가 400 이 된다
+    const 연간 = 연간조회월목록(yearParam, formatKST(now))
+    if (!연간.ok) {
+      return NextResponse.json({ error: 연간.error }, { status: 400 })
+    }
+    try {
+      const supabase = createAdminClient()
+      // 원본을 한 번만 읽어 12달이 같은 사본 한 벌을 나눠 쓴다(달마다 읽으면 사이에 저장이 끼면 1월과 2월이 다른 DB를 본다).
+      // ⚠️ DB 스냅샷은 아니다 — 표마다(페이지마다) 따로 요청하므로 읽는 도중의 저장은 표 사이에 갈릴 수 있다.
+      //    보장하는 건 '달끼리 같은 재료'까지다
+      const 재료 = await loadSplit재료(
+        supabase,
+        load성과재료(supabase),
+        // 야간 표기용 투입실적 — 1월 1일 ~ 진행중 달 끝을 한 번에. year 는 split 이 읽지 않는다.
+        // ⚠️ 이 재료를 getMonthlyKpiData 에 넘기지 말 것 — 그쪽은 year·기간을 '한 달'로 가정해 에러 없이 틀린 값이 나온다
+        load투입원가재료(supabase, {
+          year: 연간.연도,
+          monthStart: 연간.전체기간.from,
+          monthEnd: 연간.전체기간.to,
+        }),
+      )
+      const months = 연간.월목록.map(({ 월, 상태, 기간 }) => ({
+        month: 월,
+        상태,
+        split: 기간 === null ? null : buildMonthlySplit(재료, 기간),
+      }))
+      return NextResponse.json({ year: 연간.연도, months })
+    } catch (error) {
+      // 읽기는 한 번이라 12달이 같이 성패한다 — 달별 null + 200 은 성공처럼 생긴 빈 표가 된다
+      return 실패응답(error)
+    }
+  }
   if (monthParam !== null) {
     // 오늘은 KST 로 못 박는다 — 서버 시계(UTC) 날짜로 정하면 새 달 첫 주 월요일 00~09시에
     // 금주 달이 지난달로 잡혀 이번 달 조회가 400 이 된다. 검사는 DB 를 읽기 전에 끝낸다

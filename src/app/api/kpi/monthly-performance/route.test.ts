@@ -9,6 +9,7 @@ const m = vi.hoisted(() => ({
   load투입원가재료: vi.fn(),
   load성과재료: vi.fn(),
   getMonthlySplit: vi.fn(),
+  loadSplit재료: vi.fn(),
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: m.createAdminClient }))
@@ -25,6 +26,7 @@ vi.mock('@/app/(dashboard)/_lib/junggong-seonggwa', async (importOriginal) => ({
 vi.mock('@/app/(dashboard)/_lib/monthly-split', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/app/(dashboard)/_lib/monthly-split')>()),
   getMonthlySplit: m.getMonthlySplit,
+  loadSplit재료: m.loadSplit재료,
 }))
 
 import { GET } from './route'
@@ -71,6 +73,12 @@ beforeEach(() => {
     .mockImplementation(async (_s: unknown, 기간: { 월: string; from: string; to: string }) =>
       가짜split(기간.월, 기간.from, 기간.to),
     )
+  m.loadSplit재료.mockReset().mockResolvedValue({
+    성과재료: { 공사이력: [], 수주: [] },
+    투입재료: { year: 2026, 투입실적: [], 단가: [] },
+    기성전체: [],
+    담당이름: new Map(),
+  })
   지금은('2026-11-10T03:00:00Z') // KST 11/10(화) 12:00 — 금주 달 11월
 })
 
@@ -186,5 +194,63 @@ describe('인증이 month 검사보다 먼저', () => {
     vi.stubEnv('DASHBOARD_API_KEY', '')
     const res = await GET(요청('?month=2026-10'))
     expect(res.status).toBe(500)
+  })
+})
+
+describe('?year= — 12개월 split 한 번에 (연간 표 PR-2, 2026-11-12)', () => {
+  it('12개 원소, 원소 = ?month= 응답 모양 + 상태, 미래 달은 split null', async () => {
+    const res = await GET(요청('?year=2026'))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(Object.keys(body).sort()).toEqual(['months', 'year'])
+    expect(body.year).toBe(2026)
+    expect(body.months).toHaveLength(12)
+    expect(body.months[0]).toMatchObject({ month: '2026-01', 상태: '완료', split: { month: '2026-01', from: '2026-01-01' } })
+    expect(body.months[10]).toMatchObject({ month: '2026-11', 상태: '진행중' })
+    expect(body.months[11]).toEqual({ month: '2026-12', 상태: '미래', split: null })
+  })
+
+  it('원본은 한 번만 읽는다 — 12달이 같은 순간의 DB를 설명', async () => {
+    await GET(요청('?year=2026'))
+    expect(m.loadSplit재료).toHaveBeenCalledTimes(1)
+    expect(m.load성과재료).toHaveBeenCalledTimes(1)
+    expect(m.load투입원가재료).toHaveBeenCalledTimes(1)
+    expect(m.getMonthlySplit).not.toHaveBeenCalled()
+    expect(m.getMonthlyKpiData).not.toHaveBeenCalled()
+  })
+
+  it('투입실적은 1월 1일 ~ 진행중 달 끝까지 한 번에 읽는다', async () => {
+    await GET(요청('?year=2026'))
+    const [, period] = m.load투입원가재료.mock.calls[0]
+    expect(period).toEqual({ year: 2026, monthStart: '2026-01-01', monthEnd: '2026-11-30' })
+  })
+
+  it('재료 읽기가 실패하면 500 — 달별 null + 200 으로 감싸지 않는다', async () => {
+    m.loadSplit재료.mockRejectedValue(new Error('기성 조회 실패: boom'))
+    const res = await GET(요청('?year=2026'))
+    expect(res.status).toBe(500)
+    expect(await res.json()).toEqual({ error: '기성 조회 실패: boom' })
+  })
+
+  it.each([['?year=26'], ['?year='], ['?year=2025'], ['?year=2027'], ['?year=2026&month=2026-10']])(
+    '%s → 400, DB를 안 읽는다',
+    async (q) => {
+      const res = await GET(요청(q))
+      expect(res.status).toBe(400)
+      expect(m.createAdminClient).not.toHaveBeenCalled()
+    },
+  )
+
+  it('인증이 먼저 — 키 없이 잘못된 year 는 401', async () => {
+    const res = await GET(요청('?year=abc', null))
+    expect(res.status).toBe(401)
+  })
+
+  it('KST 2027-01-01 03:00(UTC 12/31 18:00)이면 2027이 열린다 — 서버 시계로 정하면 400', async () => {
+    지금은('2026-12-31T18:00:00Z')
+    const res = await GET(요청('?year=2027'))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.months[0]).toMatchObject({ month: '2027-01', 상태: '진행중' })
   })
 })
