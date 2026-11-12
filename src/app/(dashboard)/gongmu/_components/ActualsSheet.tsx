@@ -1,68 +1,20 @@
 // src/app/(dashboard)/gongmu/_components/ActualsSheet.tsx
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { update공사이력, 저장실패메시지 } from '@/app/(dashboard)/progress/_lib/update-공사이력'
-import { 공사별로묶기, type 담당묶음, type 담당자, type 실적행 } from '../_lib/erp-실적'
+import { 공사별로묶기, type 담당묶음, type 담당자 } from '../_lib/erp-실적'
+import {
+  시공담당지정, 시공담당되돌리기, 정산담당지정, 정산담당되돌리기, 시공미지정공사목록, 정산미지정공사목록,
+} from '../_lib/일괄지정'
 import type { 연월, 주정보 } from '../_lib/주차'
+import { BulkAssignPanel } from './BulkAssignPanel'
 
 const 천원표기 = (n: number) => `${n.toLocaleString('ko-KR')}천원`
 const md = (ymd: string) => `${Number(ymd.slice(5, 7))}/${Number(ymd.slice(8, 10))}`
-
-function AssignRow({ 행, 담당자목록 }: { 행: 실적행; 담당자목록: 담당자[] }) {
-  const router = useRouter()
-  const [선택, set선택] = useState<number | null>(null)
-  const [저장중, set저장중] = useState(false)
-  // 저장 성공 후 refresh로 이 행이 사라질 때까지 버튼을 잠가둔다 — 그 사이 다시 눌리면 같은 요청이 또 나간다
-  const [완료, set완료] = useState(false)
-  const [에러, set에러] = useState<string | null>(null)
-
-  const save = async () => {
-    if (선택 == null) return
-    set저장중(true)
-    set에러(null)
-    try {
-      const 결과 = await update공사이력(createClient(), 행.id, { 담당공무_id: 선택 })
-      if (!결과.ok) { set에러(저장실패메시지(결과.reason)); return }
-      set완료(true)
-      // 서버 컴포넌트를 다시 그려 집계를 새로 받는다 — 이 행은 담당자 카드로 옮겨간다
-      router.refresh()
-    } catch (e) {
-      console.error('[gongmu] 담당 지정 실패', e)
-      set에러(저장실패메시지('error'))
-    } finally {
-      set저장중(false)
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-1 mt-1.5">
-      <div className="flex gap-2">
-        <select
-          className="h-8 flex-1 rounded-lg border border-input bg-background text-xs px-2 outline-none focus:border-ring"
-          value={선택 ?? ''}
-          onChange={(e) => set선택(e.target.value ? Number(e.target.value) : null)}
-        >
-          <option value="">담당 선택</option>
-          {담당자목록.map((g) => <option key={g.id} value={g.id}>{g.이름}</option>)}
-        </select>
-        <Button size="sm" className="h-8 bg-[#1e2d5a] hover:bg-[#2d45a8]" onClick={save} disabled={선택 == null || 저장중 || 완료}>
-          {저장중 ? <Loader2 className="size-3.5 animate-spin" /> : 완료 ? '저장됨' : '저장'}
-        </Button>
-      </div>
-      {에러 && <p className="text-xs text-red-600">{에러}</p>}
-    </div>
-  )
-}
 
 export function ActualsSheet({
   묶음, 주목록, 선택월요일, 월, 담당자목록, onClose,
@@ -75,7 +27,9 @@ export function ActualsSheet({
   onClose: () => void
 }) {
   // 1주차부터 고정 순서 — 선택한 주를 맨 위로 올리면 주를 바꿀 때마다 순서가 달라져 더 헷갈린다(선택 표시만 남김)
-  const 주순서 = 묶음 ? [...주목록].sort((a, b) => a.월요일.localeCompare(b.월요일)) : []
+  // 미지정은 주별 목록 대신 그 달의 공사별 체크박스 목록(BulkAssignPanel)으로 그린다 — 지정하는 길을 하나로
+  const 미지정 = 묶음?.종류 === '미지정'
+  const 주순서 = 묶음 && !미지정 ? [...주목록].sort((a, b) => a.월요일.localeCompare(b.월요일)) : []
 
   return (
     <Sheet open={묶음 != null} onOpenChange={(o) => { if (!o) onClose() }}>
@@ -93,6 +47,27 @@ export function ActualsSheet({
               {묶음.종류 === '미지정' ? '미지정 이력이 없습니다 ✓' : '이 달에 등록된 실적이 없습니다.'}
             </p>
           )}
+          {묶음 && 미지정 && (
+            <>
+              <BulkAssignPanel
+                제목="시공 — 담당 미지정 공사"
+                항목들={시공미지정공사목록(묶음.행)}
+                담당자목록={담당자목록}
+                지정={시공담당지정}
+                되돌리기={시공담당되돌리기}
+                단위="행"
+              />
+              <BulkAssignPanel
+                제목="정산 (계산서) — 정산 담당 미지정 공사"
+                안내="정산 담당은 공사마다 하나라, 지정하면 이 공사의 모든 달 정산(앞으로의 기성 포함)에 적용됩니다."
+                항목들={정산미지정공사목록(묶음.정산.행)}
+                담당자목록={담당자목록}
+                지정={정산담당지정}
+                되돌리기={정산담당되돌리기}
+                단위={null}
+              />
+            </>
+          )}
           {주순서.map((w) => {
             const 행들 = 묶음!.행.filter((r) => r.월요일 === w.월요일)
             if (행들.length === 0) return null
@@ -106,50 +81,30 @@ export function ActualsSheet({
                   <span className="text-sm font-bold text-[#1e2d5a] tabular-nums">{천원표기(소계)}</span>
                 </div>
                 <ul className="space-y-2">
-                  {묶음!.종류 === '미지정'
-                    // 미지정은 이력 한 행마다 담당을 지정하므로 합치지 않는다
-                    ? 행들.map((r) => (
-                        <li key={r.id} className="text-sm">
-                          <div className="flex justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="font-medium text-gray-800 truncate">{r.공사명}</p>
-                              <p className="text-xs text-gray-400">
-                                <span className="font-mono">{r.지중no}</span> · {md(r.작업일자)}
-                              </p>
-                            </div>
-                            <span className="shrink-0 font-semibold tabular-nums text-gray-800">{천원표기(r.천원)}</span>
-                          </div>
-                          <AssignRow 행={r} 담당자목록={담당자목록} />
-                        </li>
-                      ))
-                    // 주간공정회의록처럼 한 주의 같은 공사는 한 줄 — 진행한 날짜는 아래에 모아 적는다
-                    : 공사별로묶기(행들).map((g) => (
-                        <li key={g.수주_id} className="text-sm">
-                          <div className="flex justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="font-medium text-gray-800 truncate">{g.공사명}</p>
-                              <p className="text-xs text-gray-400">
-                                <span className="font-mono">{g.지중no}</span> · {g.날짜들.map(md).join(', ')}
-                              </p>
-                            </div>
-                            <span className="shrink-0 font-semibold tabular-nums text-gray-800">{천원표기(g.천원)}</span>
-                          </div>
-                        </li>
-                      ))}
+                  {/* 주간공정회의록처럼 한 주의 같은 공사는 한 줄 — 진행한 날짜는 아래에 모아 적는다 */}
+                  {공사별로묶기(행들).map((g) => (
+                    <li key={g.수주_id} className="text-sm">
+                      <div className="flex justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-800 truncate">{g.공사명}</p>
+                          <p className="text-xs text-gray-400">
+                            <span className="font-mono">{g.지중no}</span> · {g.날짜들.map(md).join(', ')}
+                          </p>
+                        </div>
+                        <span className="shrink-0 font-semibold tabular-nums text-gray-800">{천원표기(g.천원)}</span>
+                      </div>
+                    </li>
+                  ))}
                 </ul>
               </section>
             )
           })}
-          {묶음 && 묶음.정산.건수 > 0 && (
+          {묶음 && !미지정 && 묶음.정산.건수 > 0 && (
             <section>
               <div className="flex justify-between items-baseline border-b border-emerald-200 pb-1 mb-2">
                 <h3 className="text-sm font-semibold text-emerald-700">정산 (계산서)</h3>
                 <span className="text-sm font-bold text-emerald-700 tabular-nums">{천원표기(묶음.정산.월누적천원)}</span>
               </div>
-              {묶음.종류 === '미지정' && (
-                // 정산 담당은 공사 단위라 여기서 행마다 지정하지 않는다 — 수주대장의 '정산 담당'에서 고친다
-                <p className="text-xs text-amber-700 mb-2">정산 담당이 비어 있는 공사입니다. 수주대장에서 공사의 &apos;정산 담당&apos;을 지정하세요.</p>
-              )}
               <ul className="space-y-2">
                 {묶음.정산.행.map((r, i) => (
                   <li key={`${r.수주_id}-${r.구분}-${r.날짜}-${i}`} className="text-sm">
