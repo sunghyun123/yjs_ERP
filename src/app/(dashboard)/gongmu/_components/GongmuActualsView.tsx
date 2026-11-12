@@ -60,7 +60,8 @@ export function GongmuActualsView({
                 : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50',
             )}
           >
-            {w.label}{w.월요일 === 선택.금주월요일 && ' · 금주'}
+            {/* 잘린 주는 12월·1월 목록에 같은 열쇠로 하나씩 있다 — 오늘이 속한 달의 것에만 붙인다 */}
+            {w.label}{w.월요일 === 선택.금주월요일 && 선택.월 === 선택.금주월 && ' · 금주'}
           </Link>
         ))}
       </div>
