@@ -114,7 +114,7 @@ export function 주목록기간(주목록: 주정보[]): { from: string; to: str
  * 오늘의 달력 월과 그 기간. 대시보드 실적(도넛·담당자별 진척)이 공무 화면과 같은 기간을 보게 한다.
  * 예) 오늘 9/28 → 9월, 9/1~9/30.
  */
-export function 금주소속월기간(오늘: string): { 월: 연월; from: string; to: string } {
+export function 이번달기간(오늘: string): { 월: 연월; from: string; to: string } {
   const 월 = 소속월Of(오늘) // 월요일이 아니라 오늘 — 잘린 주에선 둘의 달이 다르다
   return { 월, ...주목록기간(달의주목록(월)) }
 }

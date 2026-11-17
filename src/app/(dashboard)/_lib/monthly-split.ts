@@ -132,7 +132,7 @@ export function sum월정산내역(rows: 월정산내역Row[]): number {
 }
 
 export type MonthlySplit = {
-  /** 이 실적이 속한 달 'YYYY-MM' — 금요일 기준 주차의 소속월(공무 화면과 같은 규칙) */
+  /** 이 실적이 속한 달 'YYYY-MM' — 달력 월(공무 화면과 같은 규칙) */
   month: string
   /** 집계 기간 [from, to). to 는 미포함 */
   from: string
@@ -194,8 +194,8 @@ export async function loadSplit재료(
 
 /**
  * 재료 + 기간 → split. DB를 읽지 않는 순수 함수라 같은 재료로 몇 번을 불러도 같은 원본을 설명한다.
- * 기간은 달력 월이 아니라 금요일 기준 주차의 달이다(gongmu/_lib/주차.ts) — 사장님이 대시보드·공무 화면·
- * 주간업무 보고서를 나란히 맞춰 보시므로. 시공·정산 둘 다 같은 기간이라 카드 하나에 기준이 하나다.
+ * 기간은 달력 월이다(gongmu/_lib/주차.ts, 2026-11-17 금요일 기준 폐지) — 대시보드·공무 화면·매출손익이 같은 달을 본다.
+ * 시공·정산 둘 다 같은 기간이라 카드 하나에 기준이 하나다.
  */
 export function buildMonthlySplit(
   재료: Split재료,

@@ -19,7 +19,7 @@ import {
 } from '@/app/(dashboard)/_lib/monthly-kpi'
 import { load성과재료 } from '@/app/(dashboard)/_lib/junggong-seonggwa'
 import { getMonthlySplit, loadSplit재료, buildMonthlySplit } from '@/app/(dashboard)/_lib/monthly-split'
-import { 금주소속월기간, 조회월기간, 연간조회월목록 } from '@/app/(dashboard)/gongmu/_lib/주차'
+import { 이번달기간, 조회월기간, 연간조회월목록 } from '@/app/(dashboard)/gongmu/_lib/주차'
 import { formatKST } from '@/lib/kst'
 
 function 실패응답(error: unknown) {
@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
     // 공사이력·투입실적을 한 번씩만 읽어 두 계산이 나눠 쓴다.
     // 두 기간 모두 KST 로 정한다 — getMonthlyPeriod 는 partsKST, 이번달 기간은 formatKST(now)
     const period = getMonthlyPeriod(now)
-    const 기간 = 금주소속월기간(formatKST(now))
+    const 기간 = 이번달기간(formatKST(now))
     const 성과재료Promise = load성과재료(supabase)
     const 투입재료Promise = load투입원가재료(supabase, period)
 

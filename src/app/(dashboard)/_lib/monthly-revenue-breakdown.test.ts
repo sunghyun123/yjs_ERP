@@ -3,7 +3,7 @@ import { build월성과내역, build월시공내역, sum월성과내역 } from '
 import { build이력누계, type 공사이력Row, type 준공수주Row } from './junggong-seonggwa'
 import type { 투입실적With상세 } from './calc'
 import { build담당자별실적 } from '../gongmu/_lib/erp-실적'
-import { 금주소속월기간, 달의주목록 } from '../gongmu/_lib/주차'
+import { 이번달기간, 달의주목록 } from '../gongmu/_lib/주차'
 
 const 수주 = (over: Partial<준공수주Row> & { id: number }): 준공수주Row => ({
   지중no: `JG26-${String(over.id).padStart(3, '0')}`,
@@ -250,7 +250,7 @@ describe('build월시공내역', () => {
       { id: 5, 수주_id: 2, 작업일자: '2026-10-31', 성과금액: -500_600 },
       { id: 6, 수주_id: 3, 작업일자: '2026-11-01', 성과금액: 9_000_000 },
     ]
-    const 기간 = 금주소속월기간('2026-10-15')
+    const 기간 = 이번달기간('2026-10-15')
     const 대시보드 = sum월성과내역(build월시공내역(원본, [수주({ id: 1 }), 수주({ id: 2 }), 수주({ id: 3 })], [], 기간.from, 기간.to))
     const 공무 = build담당자별실적(
       원본.map((r) => ({ ...r, 담당공무_id: null, 지중no: '', 공사명: '' })),
@@ -334,7 +334,7 @@ describe('build월시공내역 — 담당별 (시공 담당은 ERP 공사이력.
       { id: 5, 수주_id: 2, 작업일자: '2026-10-20', 성과금액: -500_600, 담당공무_id: null },
       { id: 6, 수주_id: 3, 작업일자: '2026-11-02', 성과금액: 9_000_000, 담당공무_id: 7 },
     ]
-    const 기간 = 금주소속월기간('2026-09-28')
+    const 기간 = 이번달기간('2026-09-28')
     const rows = build월시공내역(원본, [수주({ id: 1 }), 수주({ id: 2 }), 수주({ id: 3 })], [], 기간.from, 기간.to, 이름)
     const 대시보드 = new Map<string, number>()
     for (const r of rows) for (const d of r.담당별) 대시보드.set(d.담당, (대시보드.get(d.담당) ?? 0) + d.금액천원)

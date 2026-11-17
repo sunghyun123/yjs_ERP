@@ -1,15 +1,15 @@
-// src/app/(dashboard)/sales/_components/FridayPerformanceTable.tsx
+// src/app/(dashboard)/sales/_components/BreakdownPerformanceTable.tsx
 'use client'
 
 import { useState } from 'react'
 // ⚠️ type 으로만 — 값 import 하면 supabase 조회 코드가 브라우저 번들로 끌려온다
-import type { 금요일월성과 } from '../../_lib/금요일성과'
+import type { 시공준공월성과 } from '../../_lib/시공준공성과'
 // 주차.ts 는 import 가 없는 순수 날짜 규칙이라 값으로 가져와도 번들에 조회 코드가 따라오지 않는다
 import { 최소월 } from '../../gongmu/_lib/주차'
-import { FridayDetailDialog, type 줄키, type 표시월 } from './FridayDetailDialog'
+import { BreakdownDetailDialog, type 줄키, type 표시월 } from './BreakdownDetailDialog'
 
 /**
- * 금요일 기준 월별 성과 — 시공 기록 / 준공 반영 / 성과 세 줄.
+ * 월별 성과(달력 월) — 시공 기록 / 준공 반영 / 성과 세 줄.
  * 숫자를 누르면 그 달 그 줄의 공사별 목록 팝업(PR-4, 설계 §7-8). 열린 팝업을 state 로 들어야 해서 클라이언트 컴포넌트다.
  * 숫자는 받은 그대로 그리고 여기서 다시 계산하지 않는다 — 표 숫자 = 목록의 합은 _lib 이 보장한다.
  */
@@ -25,7 +25,7 @@ function 칸(v: number): string {
   return v.toLocaleString('ko-KR')
 }
 
-export function FridayPerformanceTable({ rows }: { rows: 금요일월성과[] }) {
+export function BreakdownPerformanceTable({ rows }: { rows: 시공준공월성과[] }) {
   const [열림, set열림] = useState<{ 월: string; 줄: 줄키 } | null>(null)
   // rows 가 바뀌어(연도 이동) 그 달이 사라지면 자연히 null — 팝업이 닫힌다
   const 열린월 =
@@ -80,11 +80,11 @@ export function FridayPerformanceTable({ rows }: { rows: 금요일월성과[] })
         </tbody>
       </table>
       <p className="mt-2 text-[11px] text-gray-400">
-        단위 천원 · 한 주(월~일)는 금요일이 속한 달로 센다(해가 바뀌는 주는 1/1에서 나눈다)
+        단위 천원 · 달력 월(1일~말일) 기준
         · {최소월.slice(0, 4)}년 {Number(최소월.slice(5))}월 앞 달과 아직 오지 않은 달은 &apos;—&apos;
         · 숫자를 누르면 공사별 상세 · 정산(청구 금액)은 성과가 아니라 공무 화면·대시보드에서 본다
       </p>
-      <FridayDetailDialog
+      <BreakdownDetailDialog
         월={열린월}
         줄={열린월 ? 열림!.줄 : null}
         onClose={() => set열림(null)}
