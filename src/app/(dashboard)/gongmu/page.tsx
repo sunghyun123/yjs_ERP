@@ -5,7 +5,7 @@ import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { todayKST } from '@/lib/kst'
 import { resolve선택, 주목록기간 } from './_lib/주차'
 import {
-  build담당자별실적, build달력비교, 설명줄, 조회기간, type 담당자, type 원이력행,
+  build담당자별실적, type 담당자, type 원이력행,
 } from './_lib/erp-실적'
 import { build월정산내역, type 월정산내역Row, type 정산기성Row } from '../_lib/monthly-split'
 import type { 준공수주Row } from '../_lib/junggong-seonggwa'
@@ -30,7 +30,6 @@ type 페이지결과<T> = PromiseLike<{ data: T[] | null; error: { message: stri
  */
 async function load(
   기간: { from: string; to: string },
-  주기간: { from: string; to: string },
 ): Promise<{ 담당자목록: 담당자[]; 행들: 원이력행[]; 정산행들: 월정산내역Row[] } | null> {
   try {
     const supabase = await createClient()
@@ -71,7 +70,7 @@ async function load(
     const 담당자목록 = 담당결과.data as unknown as 담당자[]
     return {
       담당자목록,
-      정산행들: build월정산내역(기성전체, 수주목록, 주기간.from, 주기간.to, new Map(담당자목록.map((d) => [d.id, d.이름]))),
+      정산행들: build월정산내역(기성전체, 수주목록, 기간.from, 기간.to, new Map(담당자목록.map((d) => [d.id, d.이름]))),
       행들: 이력.map((r) => ({
         id: r.id,
         수주_id: r.수주_id,
@@ -98,7 +97,8 @@ export default async function GongmuPage({
   // '오늘'은 KST로 못 박는다. 서버 시계는 UTC라 new Date().getDate()로 읽으면
   // 월요일 KST 00:00~09:00 동안 '금주'가 지난주로 잡힌다.
   const 선택 = resolve선택(todayKST(), sp.month, sp.week)
-  const 데이터 = await load(조회기간(선택.월, 선택.주목록), 주목록기간(선택.주목록))
+  // 공사이력·정산 모두 그 달 1일~말일 — 주 목록이 정확히 그 기간을 덮는다(주차.ts 테스트로 고정)
+  const 데이터 = await load(주목록기간(선택.주목록))
 
   if (!데이터) {
     // 0으로 그리면 "이번 주 실적 없음"과 화면상 구별이 안 된다 — 못 불러왔다고 말한다
@@ -114,7 +114,6 @@ export default async function GongmuPage({
 
   const { 담당자목록, 행들, 정산행들 } = 데이터
   const 실적 = build담당자별실적(행들, 담당자목록, 선택.주목록, 선택.선택주.월요일, 정산행들)
-  const 설명 = 설명줄(build달력비교(행들, 선택.월, 선택.주목록), 선택.월)
 
-  return <GongmuActualsView 선택={선택} 실적={실적} 설명={설명} 담당자목록={담당자목록} />
+  return <GongmuActualsView 선택={선택} 실적={실적} 담당자목록={담당자목록} />
 }

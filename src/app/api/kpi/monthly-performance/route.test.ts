@@ -92,19 +92,23 @@ describe('month 없음 — 대시보드 하위호환 (지금과 같은 모양)',
     const res = await GET(요청())
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body).toEqual({ ...가짜KPI, split: 가짜split('2026-11', '2026-11-02', '2026-11-30') })
+    expect(body).toEqual({ ...가짜KPI, split: 가짜split('2026-11', '2026-11-01', '2026-12-01') })
     expect(Object.keys(body).sort()).toEqual([...Object.keys(가짜KPI), 'split'].sort())
   })
 
-  it('split 은 금주 소속월 기간, 투입재료도 그 기간으로 따로 읽는다', async () => {
+  it('split 기간 = 기존 칸과 같은 달력 월, 투입실적은 한 번만 읽어 둘이 나눠 쓴다', async () => {
     await GET(요청())
     expect(m.getMonthlySplit).toHaveBeenCalledTimes(1)
-    expect(m.getMonthlySplit.mock.calls[0][1]).toEqual({ 월: '2026-11', from: '2026-11-02', to: '2026-11-30' })
-    expect(m.load투입원가재료).toHaveBeenCalledWith(expect.anything(), {
-      year: 2026,
-      monthStart: '2026-11-02',
-      monthEnd: '2026-11-30',
-    })
+    expect(m.getMonthlySplit.mock.calls[0][1]).toEqual({ 월: '2026-11', from: '2026-11-01', to: '2026-12-01' })
+    expect(m.load투입원가재료).toHaveBeenCalledTimes(1)
+    expect(m.getMonthlySplit.mock.calls[0][3]).toBe(m.getMonthlyKpiData.mock.calls[0][3])
+  })
+
+  it('KST 매달 1일 00:30(= UTC 전날 15:30)에도 split 달 = 기존 칸 달 (둘 다 KST)', async () => {
+    지금은('2026-11-30T15:30:00Z') // KST 12/1 00:30
+    await GET(요청())
+    expect(m.getMonthlySplit.mock.calls[0][1]).toEqual({ 월: '2026-12', from: '2026-12-01', to: '2027-01-01' })
+    expect(m.load투입원가재료.mock.calls[0][1]).toMatchObject({ monthStart: '2026-12-01', monthEnd: '2027-01-01' })
   })
 
   it('split 만 실패하면 지금처럼 split: null + 200 (기존 칸은 살린다)', async () => {
@@ -117,20 +121,20 @@ describe('month 없음 — 대시보드 하위호환 (지금과 같은 모양)',
 })
 
 describe('month 있음 — { month, split } 만', () => {
-  it('?month=2026-10 → 10월 금요일 기준 기간(9/28~11/1), 달력 월 KPI 는 계산하지 않는다', async () => {
+  it('?month=2026-10 → 10월 기간(10/1~10/31), 달력 월 KPI 는 계산하지 않는다', async () => {
     const res = await GET(요청('?month=2026-10'))
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({
       month: '2026-10',
-      split: 가짜split('2026-10', '2026-09-28', '2026-11-02'),
+      split: 가짜split('2026-10', '2026-10-01', '2026-11-01'),
     })
     expect(m.getMonthlyKpiData).not.toHaveBeenCalled()
-    expect(m.getMonthlySplit.mock.calls[0][1]).toEqual({ 월: '2026-10', from: '2026-09-28', to: '2026-11-02' })
+    expect(m.getMonthlySplit.mock.calls[0][1]).toEqual({ 월: '2026-10', from: '2026-10-01', to: '2026-11-01' })
     expect(m.load투입원가재료).toHaveBeenCalledTimes(1)
     expect(m.load투입원가재료).toHaveBeenCalledWith(expect.anything(), {
       year: 2026,
-      monthStart: '2026-09-28',
-      monthEnd: '2026-11-02',
+      monthStart: '2026-10-01',
+      monthEnd: '2026-11-01',
     })
   })
 
@@ -140,17 +144,17 @@ describe('month 있음 — { month, split } 만', () => {
     expect(있음.split).toEqual(없음.split)
   })
 
-  it('KST 경계: 2026-11-30(월) 00:30 KST(= UTC 11/29 15:30)에 ?month=2026-12 는 200', async () => {
-    지금은('2026-11-29T15:30:00Z')
+  it('KST 경계: 2026-12-01 00:30 KST(= UTC 11/30 15:30)에 ?month=2026-12 는 200', async () => {
+    지금은('2026-11-30T15:30:00Z')
     const res = await GET(요청('?month=2026-12'))
     expect(res.status).toBe(200)
-    expect((await res.json()).split).toEqual(가짜split('2026-12', '2026-11-30', '2027-01-01'))
+    expect((await res.json()).split).toEqual(가짜split('2026-12', '2026-12-01', '2027-01-01'))
   })
 
-  it('최소월 2026-01 → 200, 기간은 1/1 ~ 2/2 미포함 (2025-12-29~31 이관행이 빠진다)', async () => {
+  it('최소월 2026-01 → 200, 기간은 1/1 ~ 2/1 미포함 (2025-12-29~31 이관행이 빠진다)', async () => {
     const res = await GET(요청('?month=2026-01'))
     expect(res.status).toBe(200)
-    expect(m.getMonthlySplit.mock.calls[0][1]).toEqual({ 월: '2026-01', from: '2026-01-01', to: '2026-02-02' })
+    expect(m.getMonthlySplit.mock.calls[0][1]).toEqual({ 월: '2026-01', from: '2026-01-01', to: '2026-02-01' })
   })
 
   it('연 경계: 2027-01-01 03:00 KST(= UTC 12/31 18:00)에 ?month=2027-01 은 200, 기간은 1/1부터', async () => {
@@ -222,7 +226,7 @@ describe('?year= — 12개월 split 한 번에 (연간 표 PR-2, 2026-11-12)', (
   it('투입실적은 1월 1일 ~ 진행중 달 끝까지 한 번에 읽는다', async () => {
     await GET(요청('?year=2026'))
     const [, period] = m.load투입원가재료.mock.calls[0]
-    expect(period).toEqual({ year: 2026, monthStart: '2026-01-01', monthEnd: '2026-11-30' })
+    expect(period).toEqual({ year: 2026, monthStart: '2026-01-01', monthEnd: '2026-12-01' })
   })
 
   it('재료 읽기가 실패하면 500 — 달별 null + 200 으로 감싸지 않는다', async () => {

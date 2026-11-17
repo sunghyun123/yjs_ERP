@@ -9,7 +9,7 @@
  * 정산(계산서) 줄은 2026-10-29 추가 — 묶음마다 `정산` 칸에 따로 모은다. 시공 숫자·합계·검산식에는 섞지 않는다:
  * 정산 대부분은 이미 시공으로 잡힌 일의 청구라 더하면 같은 일을 두 번 센다(monthly-split.ts 머리말).
  */
-import { 월요일Of, 다음달, 주목록기간, type 연월, type 주정보 } from './주차'
+import { 월요일Of, 주목록기간, type 주정보 } from './주차'
 // type 만 가져온다 — monthly-split.ts 가 이 파일의 천원()을 쓰므로 값으로 가져오면 순환 import 가 된다
 import type { 월정산내역Row } from '../../_lib/monthly-split'
 
@@ -62,17 +62,6 @@ export function 천원(원: number | null): number {
 
 // 대시보드도 같은 함수로 기간을 정한다 — 규칙을 복사하면 한쪽만 바뀌는 날 두 화면 숫자가 갈라진다
 const 주기준기간 = 주목록기간
-
-function 달력기간(월: 연월): { from: string; to: string } {
-  return { from: `${월}-01`, to: `${다음달(월)}-01` }
-}
-
-/** 주 기준 집계와 달력 기준 비교를 한 번의 조회로 하려고 두 기간의 합집합을 준다. to는 미포함. */
-export function 조회기간(월: 연월, 주목록: 주정보[]): { from: string; to: string } {
-  const w = 주기준기간(주목록)
-  const c = 달력기간(월)
-  return { from: w.from < c.from ? w.from : c.from, to: w.to > c.to ? w.to : c.to }
-}
 
 /** 목록에서 지워진 담당자의 표시 이름 — 대시보드 시공 담당별(monthly-revenue-breakdown.ts)도 이 함수를 쓴다 */
 export function 삭제된담당자이름(담당공무_id: number): string {
@@ -145,62 +134,6 @@ export function build담당자별실적(
     정산선택주합천원: 묶음.reduce((s, g) => s + g.정산.선택주천원, 0),
     정산월누적합천원: 묶음.reduce((s, g) => s + g.정산.월누적천원, 0),
   }
-}
-
-export type 날짜금액 = { 날짜: string; 천원: number }
-
-export type 달력비교 = {
-  달력천원: number
-  주기준천원: number
-  /** 주기준 − 달력 */
-  차이천원: number
-  /** 주 기준엔 있고 달력엔 없는 날 (예: 9월의 8/31) */
-  포함된날: 날짜금액[]
-  /** 달력엔 있고 주 기준엔 없는 날 (예: 9월의 9/28~9/30) */
-  빠진날: 날짜금액[]
-}
-
-export function build달력비교(행들: 원이력행[], 월: 연월, 주목록: 주정보[]): 달력비교 {
-  const w = 주기준기간(주목록)
-  const c = 달력기간(월)
-  let 달력천원 = 0
-  let 주기준천원 = 0
-  const 포함 = new Map<string, number>()
-  const 빠짐 = new Map<string, number>()
-  for (const r of 행들) {
-    const k = 천원(r.성과금액)
-    const in주 = r.작업일자 >= w.from && r.작업일자 < w.to
-    const in달 = r.작업일자 >= c.from && r.작업일자 < c.to
-    if (in주) 주기준천원 += k
-    if (in달) 달력천원 += k
-    if (in주 && !in달) 포함.set(r.작업일자, (포함.get(r.작업일자) ?? 0) + k)
-    if (in달 && !in주) 빠짐.set(r.작업일자, (빠짐.get(r.작업일자) ?? 0) + k)
-  }
-  const 목록 = (m: Map<string, number>) =>
-    // 합이 0인 날은 숫자를 바꾸지 않으므로 '포함/제외' 사유로 적지 않는다
-    [...m].filter(([, v]) => v !== 0).sort(([a], [b]) => a.localeCompare(b)).map(([날짜, 천원]) => ({ 날짜, 천원 }))
-  return { 달력천원, 주기준천원, 차이천원: 주기준천원 - 달력천원, 포함된날: 목록(포함), 빠진날: 목록(빠짐) }
-}
-
-function md(ymd: string): string {
-  return `${Number(ymd.slice(5, 7))}/${Number(ymd.slice(8, 10))}`
-}
-
-/**
- * 요약 카드의 설명 줄. 두 숫자가 다른 게 오류가 아니라 주차 규칙 때문임을 그 자리에서 말한다.
- * '대시보드'라고 쓰지 않는다 — 대시보드 실적은 지금 준공분까지 합친 값이라 이 숫자와 다르다.
- */
-export function 설명줄(b: 달력비교, 월: 연월): string {
-  const m = Number(월.slice(5, 7))
-  if (b.포함된날.length === 0 && b.빠진날.length === 0) return `달력 기준 ${m}월과 같음`
-  const sign = b.차이천원 > 0 ? '+' : b.차이천원 < 0 ? '-' : ''
-  const 사유: string[] = []
-  if (b.포함된날.length > 0) 사유.push(`${b.포함된날.map((d) => md(d.날짜)).join(', ')} 실적 포함(${m}월 주차 소속)`)
-  if (b.빠진날.length > 0) 사유.push(`${b.빠진날.map((d) => md(d.날짜)).join(', ')} 실적 제외(다른 달 주차 소속)`)
-  return (
-    `달력 기준 ${m}월: ${b.달력천원.toLocaleString('ko-KR')}천원 · ` +
-    `차이 ${sign}${Math.abs(b.차이천원).toLocaleString('ko-KR')}천원 = ${사유.join(' / ')}`
-  )
 }
 
 export type 공사묶음 = {

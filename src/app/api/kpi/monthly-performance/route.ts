@@ -2,7 +2,7 @@
  * 대시보드(yjs_Dashboard)가 읽는 실적 API. service_role 로 RLS 를 우회하므로 아래 Bearer 비교가 유일한 문지기다.
  *
  * 응답 모양은 세 가지다 (2026-11-10, 설계 §6 PR-2 · 게이트 1 B안)
- *   ?month 없음      → { ...MonthlyKpiData(달력 월), split(금요일 기준 금주 달) | null }  — 지금까지와 같다
+ *   ?month 없음      → { ...MonthlyKpiData(달력 월), split(같은 달력 월) | null }  — 지금까지와 같은 모양
  *   ?month=YYYY-MM   → { month, split }  — 그 달의 split 만. 범위 [최소월, 금주 소속월] 밖·형식 오류는 400
  *   ?year=YYYY       → { year, months: [{ month, 상태, split | null } × 12] } — 원소는 ?month= 응답 + 상태.
  *                      상태 '미래'만 split: null(실적이 없다 — 0이 아니다). 원본은 한 번 읽어 12달에 나눈다.
@@ -19,7 +19,7 @@ import {
 } from '@/app/(dashboard)/_lib/monthly-kpi'
 import { load성과재료 } from '@/app/(dashboard)/_lib/junggong-seonggwa'
 import { getMonthlySplit, loadSplit재료, buildMonthlySplit } from '@/app/(dashboard)/_lib/monthly-split'
-import { 금주소속월기간, 조회월기간, 연간조회월목록 } from '@/app/(dashboard)/gongmu/_lib/주차'
+import { 이번달기간, 조회월기간, 연간조회월목록 } from '@/app/(dashboard)/gongmu/_lib/주차'
 import { formatKST } from '@/lib/kst'
 
 function 실패응답(error: unknown) {
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
     }
   }
   if (monthParam !== null) {
-    // 오늘은 KST 로 못 박는다 — 서버 시계(UTC) 날짜로 정하면 새 달 첫 주 월요일 00~09시에
+    // 오늘은 KST 로 못 박는다 — 서버 시계(UTC) 날짜로 정하면 매달 1일 00~09시에
     // 금주 달이 지난달로 잡혀 이번 달 조회가 400 이 된다. 검사는 DB 를 읽기 전에 끝낸다
     const 조회 = 조회월기간(monthParam, formatKST(now))
     if (!조회.ok) {
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
         supabase,
         조회.기간,
         load성과재료(supabase),
-        // 야간 표기용 투입실적 — 그 달 금요일 기준 기간으로 읽는다. year 는 split 이 읽지 않는다
+        // 야간 표기용 투입실적 — 그 달 기간으로 읽는다. year 는 split 이 읽지 않는다
         load투입원가재료(supabase, { year: Number(월.slice(0, 4)), monthStart: from, monthEnd: to }),
       )
       // split 실패를 null 로 감싸지 않는다 — 내용이 split 하나뿐이라 null + 200 이면 성공처럼 생긴 빈 응답이 된다
@@ -107,27 +107,20 @@ export async function GET(req: NextRequest) {
 
   try {
     const supabase = createAdminClient()
-    // 공사이력은 한 번만 읽어 기존 칸과 split 에 나눠 준다
-    // 기존 칸(amounts·breakdown)은 ERP 홈 KPI와 같은 달력 월 그대로
+    // 기존 칸(amounts·breakdown)과 split 은 같은 달력 월이다(2026-11-17 금요일 기준 폐지).
+    // 공사이력·투입실적을 한 번씩만 읽어 두 계산이 나눠 쓴다.
+    // 두 기간 모두 KST 로 정한다 — getMonthlyPeriod 는 partsKST, 이번달 기간은 formatKST(now)
     const period = getMonthlyPeriod(now)
-    // split(대시보드 도넛·담당자별 진척)은 금요일 기준 주차의 달 — 공무 화면·주간업무 보고서와 같은 숫자가 나오게.
-    // 오늘은 KST로 못 박는다(서버 시계는 UTC라 월요일 00~09시에 금주가 지난주로 잡힌다)
-    const 주기간 = 금주소속월기간(formatKST(now))
+    const 기간 = 이번달기간(formatKST(now))
     const 성과재료Promise = load성과재료(supabase)
     const 투입재료Promise = load투입원가재료(supabase, period)
-    // split 의 야간 표기용 — 달력 월로 읽은 위 재료를 쓰면 9월 주차의 8/31 야간이 빠진다
-    const 주투입재료Promise = load투입원가재료(supabase, {
-      year: period.year,
-      monthStart: 주기간.from,
-      monthEnd: 주기간.to,
-    })
 
     const [data, split] = await Promise.all([
       getMonthlyKpiData(supabase, now, 성과재료Promise, 투입재료Promise),
       // split 만의 실패(기성 전 테이블 조회 등)는 기존 칸까지 끌고 내려가지 않는다 — split: null 로 보내면
       // 새 대시보드는 대체값 경로로 가고, split 을 모르는 옛 대시보드는 아무 영향이 없다.
       // (공유 재료가 실패하면 getMonthlyKpiData 도 실패하므로 그때는 예전처럼 500)
-      getMonthlySplit(supabase, 주기간, 성과재료Promise, 주투입재료Promise).catch((error: unknown) => {
+      getMonthlySplit(supabase, 기간, 성과재료Promise, 투입재료Promise).catch((error: unknown) => {
         console.error('[kpi/monthly-performance] split 계산 실패 — split: null 로 응답', error)
         return null
       }),

@@ -11,11 +11,10 @@ import { ActualsSheet } from './ActualsSheet'
 const 천원표기 = (n: number) => `${n.toLocaleString('ko-KR')}천원`
 
 export function GongmuActualsView({
-  선택, 실적, 설명, 담당자목록,
+  선택, 실적, 담당자목록,
 }: {
   선택: 선택상태
   실적: 담당자별실적
-  설명: string
   담당자목록: 담당자[]
 }) {
   // 열린 패널은 key만 기억하고 묶음은 매 렌더 props에서 찾는다 —
@@ -78,7 +77,9 @@ export function GongmuActualsView({
             <p className="text-2xl font-bold text-[#1e2d5a] tabular-nums">{천원표기(실적.월누적합천원)}</p>
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-3 border-t border-gray-100 pt-3">{설명}</p>
+        <p className="text-xs text-gray-500 mt-3 border-t border-gray-100 pt-3">
+          달력 월(1일~말일) 기준 · 월말에 걸친 주는 1일에서 나눕니다
+        </p>
         {/* 정산은 위 시공 합계와 더하지 않는다 — 정산 대부분은 이미 시공으로 잡힌 일의 계산서라 더하면 두 번 센다 */}
         {(실적.정산월누적합천원 !== 0 || 실적.정산선택주합천원 !== 0) && (
           <p className="text-xs text-gray-500 mt-2 tabular-nums">
