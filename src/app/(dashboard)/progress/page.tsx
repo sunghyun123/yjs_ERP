@@ -4,6 +4,8 @@ import { ProgressInputForm } from './_components/ProgressInputForm'
 import { ProgressHistoryTable } from './_components/ProgressHistoryTable'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { 미입력목록 } from './_components/미입력목록'
+import { build미입력목록, load미입력재료 } from './_lib/미입력'
 
 export const metadata = { title: '공사이력 | 영전사 ERP' }
 
@@ -14,6 +16,8 @@ export default async function Page({
 }) {
   const params = await searchParams
   const tab = params.tab ?? 'input'
+  // 모르는 tab 값은 입력 탭으로 본다(기존 동작과 같음)
+  const 활성탭 = tab === 'history' || tab === 'missing' ? tab : 'input'
 
   const now = new Date()
   const y = now.getFullYear()
@@ -51,6 +55,13 @@ export default async function Page({
 
   const historyHref = `/progress?tab=history&date_from=${date_from}&date_to=${date_to}`
 
+  // 미입력 탭에서만 수주·공사이력·기성 전체를 읽는다(다른 탭 진입 비용을 늘리지 않으려고)
+  let 미입력: ReturnType<typeof build미입력목록> | null = null
+  if (활성탭 === 'missing') {
+    const 재료 = await load미입력재료(supabase)
+    미입력 = build미입력목록(재료.수주, 재료.이력, 재료.기성)
+  }
+
   return (
     <div className="p-4 md:p-6">
       <div className="mb-5">
@@ -58,24 +69,22 @@ export default async function Page({
       </div>
 
       <div className="flex gap-1 mb-5 bg-gray-100 p-1 rounded-lg w-fit">
-        <Link
-          href="/progress"
-          className={cn(
-            'px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
-            tab !== 'history' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
-          )}
-        >
-          입력
-        </Link>
-        <Link
-          href={historyHref}
-          className={cn(
-            'px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
-            tab === 'history' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
-          )}
-        >
-          현황
-        </Link>
+        {[
+          { key: 'input', href: '/progress', label: '입력' },
+          { key: 'history', href: historyHref, label: '현황' },
+          { key: 'missing', href: '/progress?tab=missing', label: '미입력' },
+        ].map(t => (
+          <Link
+            key={t.key}
+            href={t.href}
+            className={cn(
+              'px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
+              활성탭 === t.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+            )}
+          >
+            {t.label}
+          </Link>
+        ))}
       </div>
 
       {담당자조회실패 && (
@@ -84,7 +93,9 @@ export default async function Page({
         </div>
       )}
 
-      {tab === 'history' ? (
+      {활성탭 === 'missing' && 미입력 ? (
+        <미입력목록 data={미입력} />
+      ) : 활성탭 === 'history' ? (
         <ProgressHistoryTable date_from={date_from} date_to={date_to} 공무담당자목록={공무담당자목록} />
       ) : (
         <ProgressInputForm
