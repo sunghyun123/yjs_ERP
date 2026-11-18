@@ -73,8 +73,6 @@ export type 손익행 = {
   성과: number
   투입: number
   손익: number
-  /** 그 기간 성과 중 준공 잔여분으로 얹힌 금액(성과에 이미 포함). 없으면 칸 자체가 없다 */
-  준공반영액?: number
 }
 
 export type 손익응답 = {
@@ -94,12 +92,8 @@ export function build손익응답(결과: 공사별손익결과, 연도: number,
   for (const r of 결과.pivotData) {
     const 성과 = 월idx === null ? r.성과금액 : r.monthly[월idx].성과
     const 투입 = 월idx === null ? r.투입금액 : r.monthly[월idx].투입
-    // 준공.월은 0-based. 월을 골랐으면 그 달에 얹힌 준공만 보인다
-    const 준공반영액 =
-      r.준공 && (월idx === null || r.준공.월 === 월idx) ? r.준공.금액 : undefined
-
     // 그 기간 움직임이 없는 공사는 0원 행만 늘린다 — 빼되 몇 건 뺐는지는 남긴다
-    if (성과 === 0 && 투입 === 0 && 준공반영액 === undefined) {
+    if (성과 === 0 && 투입 === 0) {
       제외 += 1
       continue
     }
@@ -115,7 +109,6 @@ export function build손익응답(결과: 공사별손익결과, 연도: number,
       투입: 투입r,
       손익: 성과r - 투입r,
     }
-    if (준공반영액 !== undefined) 행.준공반영액 = Math.round(준공반영액)
     공사.push(행)
   }
 
