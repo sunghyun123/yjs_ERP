@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2, Save, Trash2 } from 'lucide-react'
 import type { 공사이력행 } from '../_types'
 import { PerformanceInput } from './성과Input'
-import { 직전누계 } from '../_lib/percent'
+import { 직전누계, calc입력기준금액 } from '../_lib/percent'
 import { delete공사이력, update공사이력, 저장실패메시지 } from '../_lib/update-공사이력'
 
 export type 이력레코드 = { id: number; 작업일자: string; 성과금액: number | null; 담당공무_id: number | null }
@@ -58,12 +58,9 @@ export function HistoryEditSheet({
     }
   }
 
-  // 수정 대상 수주의 하도적용금액(=환산 base). 조인된 원자료로 계산.
-  const editBase = useMemo(() => {
-    const s = row?.수주
-    if (!s || s.수주금액_공급가 == null || s.보험료율 == null || s.하도전용율 == null) return null
-    return s.수주금액_공급가 * (1 - s.보험료율) * s.하도전용율
-  }, [row])
+  // 수정 대상 수주의 % 기준(=환산 base). 준공 목표가 있으면 준공액, 없으면 수주금액(PR-D, 입력 폼과 같은 함수).
+  const editBase기준 = useMemo(() => (row?.수주 ? calc입력기준금액(row.수주) : null), [row])
+  const editBase = editBase기준?.금액 ?? null
 
   // 수정 중 레코드의 % 기준: 자기 자신을 뺀 "그 작업일자 직전" 누계.
   // strict <(직전누계) + id 필터 이중안전. editDate(작업일자 변경)를 바꿔도 자기 자신은 빠진다.
@@ -133,6 +130,9 @@ export function HistoryEditSheet({
                 하도적용금액={records.length > 0 ? editBase : null}
                 직전누계={edit직전누계}
               />
+            )}
+            {!loading && editBase기준 != null && (
+              <p className="text-xs text-gray-400 mt-1">% 기준: {editBase기준.기준} 기준</p>
             )}
           </div>
           <div>

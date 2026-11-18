@@ -15,6 +15,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { calc하도적용표시금액 } from '@/app/(dashboard)/orders/_lib/completion'
+import { has준공목표 } from './percent'
 
 export type 미입력수주Row = {
   id: number
@@ -87,7 +88,8 @@ export function build미입력목록(
       if (g > 0 && !이력수.has(o.id)) 기성만.push({ 수주_id: o.id, 지중no: o.지중no, 공사명: o.공사명, 기성누계: g })
       continue
     }
-    if (!o.준공일 || o.준공액_공급가 == null) {
+    // 준공 목표 판정은 입력 화면 % 기준과 같은 함수 — 두 화면의 100%가 갈라질 자리를 없앤다(PR-D)
+    if (!has준공목표(o)) {
       제외수++
       continue
     }

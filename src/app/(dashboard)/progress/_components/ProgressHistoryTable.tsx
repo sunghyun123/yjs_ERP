@@ -36,7 +36,8 @@ export function ProgressHistoryTable({ date_from: initFrom, date_to: initTo, 공
     const supabase = createClient()
     const query = supabase.from('공사이력')
       // ⚠️ 담당공무_id 필수: 아래 캐스트 때문에 tsc가 빠진 컬럼을 못 잡는다. 빼면 이력 수정 저장이 담당을 null로 지운다.
-      .select('id, 작업일자, 성과금액, 수주_id, 담당공무_id, 수주!수주_id(지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율, 준공여부)')
+      // ⚠️ 준공일·준공액_공급가 필수(같은 이유): 빼면 undefined → 수정 시트의 % 기준이 에러 없이 수주금액으로 돌아간다(PR-D).
+      .select('id, 작업일자, 성과금액, 수주_id, 담당공무_id, 수주!수주_id(지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율, 준공여부, 준공일, 준공액_공급가)')
       .gte('작업일자', dateFrom)
       .lte('작업일자', dateTo)
       .order('작업일자', { ascending: false })

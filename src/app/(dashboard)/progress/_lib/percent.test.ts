@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { percentToWon, wonToPercent, 누적목표를증분으로, 직전누계 } from './percent'
+import { percentToWon, wonToPercent, 누적목표를증분으로, 직전누계, calc입력기준금액 } from './percent'
+import { build미입력목록 } from './미입력'
 
 describe('percentToWon', () => {
   it('입력% × base ÷ 100 을 반올림해 원으로 환산한다', () => {
@@ -105,5 +106,62 @@ describe('직전누계 (기준일 직전까지의 누계 증분, strict <)', () 
 
   it('성과금액이 null인 레코드는 0으로 취급', () => {
     expect(직전누계([{ 작업일자: '2026-06-25', 성과금액: null }], '2026-06-27')).toBe(0)
+  })
+})
+
+describe('calc입력기준금액 — % 기준 금액 (2026-11-18 PR-D)', () => {
+  // 요율 0.1·0.85 → 하도 비율 0.765
+  const 기본 = {
+    준공여부: false,
+    준공일: null as string | null,
+    준공액_공급가: null as number | null,
+    수주금액_공급가: 10_000_000 as number | null,
+    보험료율: 0.1 as number | null,
+    하도전용율: 0.85 as number | null,
+  }
+
+  it('준공 전이면 수주금액 기준', () => {
+    expect(calc입력기준금액(기본)).toEqual({ 금액: 7_650_000, 기준: '수주금액' })
+  })
+
+  it('준공 + 준공일 + 준공액이 있으면 준공액 기준 (감액 공사)', () => {
+    const r = calc입력기준금액({ ...기본, 준공여부: true, 준공일: '2026-10-31', 준공액_공급가: 8_000_000 })
+    expect(r).toEqual({ 금액: 6_120_000, 기준: '준공액' })
+  })
+
+  it('준공인데 준공일이 비면 수주금액 기준 (미입력 탭도 목표 없음 = 제외)', () => {
+    const r = calc입력기준금액({ ...기본, 준공여부: true, 준공일: null, 준공액_공급가: 8_000_000 })
+    expect(r?.기준).toBe('수주금액')
+  })
+
+  it('준공 전인데 준공액이 있으면 수주금액 기준 (미입력 탭도 준공 전으로 본다)', () => {
+    const r = calc입력기준금액({ ...기본, 준공여부: false, 준공일: '2026-10-31', 준공액_공급가: 8_000_000 })
+    expect(r?.기준).toBe('수주금액')
+  })
+
+  it('준공액이 0이어도 준공 목표로 본다 (미입력 탭 조건이 != null)', () => {
+    const r = calc입력기준금액({ ...기본, 준공여부: true, 준공일: '2026-10-31', 준공액_공급가: 0 })
+    expect(r).toEqual({ 금액: 0, 기준: '준공액' })
+  })
+
+  it('요율이 하나라도 null이면 null (% 입력 불가, 원 모드)', () => {
+    expect(calc입력기준금액({ ...기본, 보험료율: null })).toBeNull()
+    expect(calc입력기준금액({ ...기본, 하도전용율: null })).toBeNull()
+  })
+
+  it('수주 기준인데 수주금액이 null이면 null', () => {
+    expect(calc입력기준금액({ ...기본, 수주금액_공급가: null })).toBeNull()
+  })
+
+  // 계약 테스트: 입력 화면 100% = 미입력 탭 목표. 두 파일이 앞으로 갈라지면 여기서 깨진다.
+  it('계약: 준공 공사의 기준 금액 = build미입력목록의 목표 (원 단위까지)', () => {
+    const 수주 = {
+      id: 1, 지중no: 'JY25-096', 공사명: '감액 공사',
+      준공여부: true, 준공일: '2025-12-20', 준공액_공급가: 6_233_919,
+      수주금액_공급가: 8_127_923, 보험료율: 0.0337, 하도전용율: 0.85,
+    }
+    const 목록 = build미입력목록([수주], [], [])
+    expect(목록.남은).toHaveLength(1)
+    expect(calc입력기준금액(수주)?.금액).toBe(목록.남은[0].목표)
   })
 })
