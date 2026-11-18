@@ -1,25 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatEok } from '@/lib/format'
-import { partsKST, todayKST } from '@/lib/kst'
+import { partsKST } from '@/lib/kst'
 import { YearSelector } from './_components/YearSelector'
 import { CollapsibleChart } from './_components/CollapsibleChart'
 import { ExcelExportButton } from './_components/ExcelExportButton'
 import { PivotProjectTable } from './_components/PivotProjectTable'
-import { BasisToggle, type SalesView } from './_components/BasisToggle'
-import { BreakdownPerformanceTable } from './_components/BreakdownPerformanceTable'
 import { aggregate공사별손익, load공사별손익재료 } from '../_lib/공사별손익'
-import { build시공준공성과 } from '../_lib/시공준공성과'
-import { 이번달기간 } from '../gongmu/_lib/주차'
 
 export default async function SalesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; view?: string }>
+  // 옛 ?view=breakdown·?basis=friday 는 읽지 않는다 — 표가 하나뿐이라 무엇이 와도 공사별 표(2026-11-18 PR-C)
+  searchParams: Promise<{ year?: string }>
 }) {
-  const { year: yearParam, view: viewParam } = await searchParams
-  // 모르는 값(옛 ?basis=friday 포함)은 조용히 공사별로
-  const view: SalesView = viewParam === 'breakdown' ? 'breakdown' : 'project'
+  const { year: yearParam } = await searchParams
   const parsedYear = parseInt(yearParam ?? '', 10)
   // ?year=abc 같은 잘못된 입력이면 NaN → 날짜 범위가 깨지므로 올해로 폴백.
   // 서버 시계는 UTC라 new Date().getFullYear()는 KST 1/1 00~09시에 전년을 준다 → partsKST 사용
@@ -31,15 +26,8 @@ export default async function SalesPage({
   const supabase = await createClient()
 
   // 공사별 손익 집계는 _lib/공사별손익 한 곳 — ERP MCP(get_profit)도 같은 함수를 거친다
-  // 나눠 보기 표도 같은 재료(공사이력 전 기간·수주)를 쓴다 — 두 표가 다른 순간의 DB를 보지 않게 한 번만 읽는다
   const 재료 = await load공사별손익재료(supabase, year)
-  const { pivotData, monthly, 준공잔여목록, 총준공반영액 } = aggregate공사별손익(재료, year)
-
-  // 표시 범위의 끝(이번 달)은 KST 로 정한다 — 서버 시계(UTC)로 정하면 매달 1일 00~09시에 한 달 밀린다
-  const 나눔rows =
-    view === 'breakdown'
-      ? build시공준공성과(재료.공사이력전체, 재료.수주, year, 이번달기간(todayKST()).월)
-      : null
+  const { pivotData, monthly } = aggregate공사별손익(재료, year)
 
   // 연간 합계
   const 총성과 = monthly.reduce((sum, m) => sum + m.성과, 0)
@@ -66,13 +54,12 @@ export default async function SalesPage({
             매출손익
           </h1>
           <p className="text-sm mt-0.5" style={{ color: '#64748b' }}>
-            성과(작업일자·준공월)·투입일 기준 월별 집계
+            성과(작업일자)·투입일 기준 월별 집계
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <BasisToggle year={year} view={view} />
           <ExcelExportButton pivotData={pivotData} chartData={chartData} year={year} />
-          <YearSelector currentYear={year} view={view} />
+          <YearSelector currentYear={year} />
         </div>
       </div>
 
@@ -81,11 +68,6 @@ export default async function SalesPage({
         <div className="px-5 py-4">
           <p className="text-xs text-gray-500">{year}년 누적 성과금액</p>
           <p className="text-2xl font-bold mt-1 text-blue-600">{formatEok(총성과)}</p>
-          {준공잔여목록.length > 0 && (
-            <p className="text-[11px] text-gray-400 mt-0.5">
-              그중 준공 반영 {formatEok(총준공반영액)} ({준공잔여목록.length}건)
-            </p>
-          )}
         </div>
         <div className="px-5 py-4">
           <p className="text-xs text-gray-500">{year}년 누적 투입금액</p>
@@ -108,21 +90,13 @@ export default async function SalesPage({
         총손익={총손익}
       />
 
-      {/* 표 — 스왑 버튼은 이 카드만 바꾼다. KPI·차트·표 모두 달력 월 */}
+      {/* 표 — KPI·차트·표 모두 달력 월 */}
       <Card className="bg-white shadow-sm border-0">
         <CardHeader className="px-5 pt-5 pb-0">
-          <CardTitle className="text-sm font-medium text-gray-600">
-            {나눔rows
-              ? `${year}년 월별 성과 — 시공·준공 나눠 보기 (천원)`
-              : `${year}년 공사별 성과`}
-          </CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-600">{`${year}년 공사별 성과`}</CardTitle>
         </CardHeader>
         <CardContent className="px-5 pt-4 pb-5">
-          {나눔rows ? (
-            <BreakdownPerformanceTable rows={나눔rows} />
-          ) : (
-            <PivotProjectTable data={pivotData} />
-          )}
+          <PivotProjectTable data={pivotData} />
         </CardContent>
       </Card>
     </div>

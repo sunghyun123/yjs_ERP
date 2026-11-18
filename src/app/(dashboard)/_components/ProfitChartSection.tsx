@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { calc합계, type 투입실적With상세 } from '../_lib/calc'
-import { build이력누계, calc준공잔여성과, load성과재료 } from '../_lib/junggong-seonggwa'
+import type { load성과재료 } from '../_lib/성과재료'
 import type { load연간투입원가재료 } from '../_lib/dashboard-data'
 import { ProfitChart } from './ProfitChart'
 
@@ -22,7 +22,7 @@ export async function ProfitChartSection({
 
   const 단가목록 = 투입재료.단가
   const 투입실적목록 = 투입재료.투입실적 as 투입실적With상세[]
-  const { 공사이력: 공사이력전체, 수주: 수주목록 } = 성과재료
+  const { 공사이력: 공사이력전체 } = 성과재료
 
   // 월별 집계 초기화 (1~12월)
   const monthly = Array.from({ length: 12 }, () => ({ 성과: 0, 투입: 0 }))
@@ -36,12 +36,8 @@ export async function ProfitChartSection({
     if (!row.작업일자) continue
     if (row.작업일자 < yearStart || row.작업일자 >= yearEnd) continue
     const m = parseInt(row.작업일자.slice(5, 7), 10) - 1
+    // 성과 = 공사이력뿐 — 준공은 매출에 아무것도 더하지 않는다(2026-11-18 PR-C)
     monthly[m].성과 += row.성과금액 ?? 0
-  }
-
-  // 준공 잔여성과를 준공월에 얹는다 (차감 기준은 전 기간 성과누계 — 연도로 자르면 이중 계상)
-  for (const { 월, 금액 } of calc준공잔여성과(수주목록, build이력누계(공사이력전체), yearStart, yearEnd)) {
-    monthly[월].성과 += 금액
   }
 
   // 연간 합계

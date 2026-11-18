@@ -58,7 +58,6 @@ function 행(
   id: number,
   지중no: string,
   달값: Record<number, [number, number]>,
-  준공?: { 월: number; 금액: number },
 ): PivotProjectRow {
   const monthly = Array.from({ length: 12 }, () => ({ 성과: 0, 투입: 0, 손익: 0 }))
   for (const [월, [성과, 투입]] of Object.entries(달값)) {
@@ -66,7 +65,7 @@ function 행(
   }
   const 성과금액 = monthly.reduce((s, m) => s + m.성과, 0)
   const 투입금액 = monthly.reduce((s, m) => s + m.투입, 0)
-  return { id, 지중no, 공사명: `공사${id}`, 성과금액, 투입금액, 손익금액: 성과금액 - 투입금액, monthly, 준공 }
+  return { id, 지중no, 공사명: `공사${id}`, 성과금액, 투입금액, 손익금액: 성과금액 - 투입금액, monthly }
 }
 
 function 결과(rows: PivotProjectRow[]): 공사별손익결과 {
@@ -74,11 +73,11 @@ function 결과(rows: PivotProjectRow[]): 공사별손익결과 {
     성과: rows.reduce((s, r) => s + r.monthly[i].성과, 0),
     투입: rows.reduce((s, r) => s + r.monthly[i].투입, 0),
   }))
-  return { pivotData: rows, monthly, 준공잔여목록: [], 총준공반영액: 0 }
+  return { pivotData: rows, monthly }
 }
 
 const A = 행(1, 'A', { 10: [100, 300] })
-const B = 행(2, 'B', { 10: [500, 100] }, { 월: 9, 금액: 200 }) // 준공 10월(인덱스 9)
+const B = 행(2, 'B', { 10: [500, 100] })
 const C = 행(3, 'C', { 3: [50, 0] })
 
 describe('build손익응답', () => {
@@ -87,7 +86,7 @@ describe('build손익응답', () => {
     expect(r.기준).toEqual({ 연도: 2026, 월: 10 })
     expect(r.단위).toBe('원')
     expect(r.공사).toEqual([
-      { 지중no: 'B', 공사명: '공사2', 성과: 500, 투입: 100, 손익: 400, 준공반영액: 200 },
+      { 지중no: 'B', 공사명: '공사2', 성과: 500, 투입: 100, 손익: 400 },
       { 지중no: 'A', 공사명: '공사1', 성과: 100, 투입: 300, 손익: -200 },
     ])
     expect(r.제외).toEqual({ '성과·투입 모두 0인 공사': 1 })
@@ -95,10 +94,10 @@ describe('build손익응답', () => {
     expect(r.건수).toEqual({ 플러스: 1, 마이너스: 1, 영: 0 })
   })
 
-  it('준공반영액은 준공이 얹힌 달에만 붙는다', () => {
+  it('그 달 움직임이 있는 공사만 행으로 남는다 — 준공 칸은 없다 (2026-11-18 PR-C)', () => {
     const r = build손익응답(결과([A, B, C]), 2026, 3)
     expect(r.공사.map((p) => p.지중no)).toEqual(['C'])
-    expect(r.공사[0]).not.toHaveProperty('준공반영액')
+    expect(Object.keys(r.공사[0]).sort()).toEqual(['공사명', '손익', '성과', '지중no', '투입'].sort())
     expect(r.제외['성과·투입 모두 0인 공사']).toBe(2)
     expect(r.건수).toEqual({ 플러스: 1, 마이너스: 0, 영: 0 })
   })
@@ -107,7 +106,6 @@ describe('build손익응답', () => {
     const r = build손익응답(결과([A, B, C]), 2026, null)
     expect(r.기준).toEqual({ 연도: 2026, 월: null })
     expect(r.공사.map((p) => [p.지중no, p.손익])).toEqual([['B', 400], ['C', 50], ['A', -200]])
-    expect(r.공사[0].준공반영액).toBe(200)
     expect(r.합계).toEqual({ 성과: 650, 투입: 400, 손익: 250 })
     expect(r.제외['성과·투입 모두 0인 공사']).toBe(0)
     expect(r.건수).toEqual({ 플러스: 2, 마이너스: 1, 영: 0 })

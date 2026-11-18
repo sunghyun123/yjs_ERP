@@ -8,7 +8,7 @@ import {
   build담당자별실적, type 담당자, type 원이력행,
 } from './_lib/erp-실적'
 import { build월정산내역, type 월정산내역Row, type 정산기성Row } from '../_lib/monthly-split'
-import type { 준공수주Row } from '../_lib/junggong-seonggwa'
+import type { 준공수주Row } from '../_lib/성과재료'
 import { GongmuActualsView } from './_components/GongmuActualsView'
 
 export const metadata = { title: '공무 | 영전사 ERP' }

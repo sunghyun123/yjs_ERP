@@ -5,12 +5,7 @@ import { partsKST } from '@/lib/kst'
 import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { calc합계, type 투입실적With상세 } from './calc'
 import { sumMonthlyRevenue, type RevenueHistoryRow } from './revenue'
-import {
-  build이력누계,
-  calc준공잔여성과,
-  load성과재료,
-  sum준공잔여성과,
-} from './junggong-seonggwa'
+import { load성과재료 } from './성과재료'
 import {
   build월성과내역,
   sum월성과내역,
@@ -129,7 +124,7 @@ export async function getMonthlyKpiData(
 
   const [투입재료, 성과재료] = await Promise.all([
     자체투입재료Promise,
-    // 공사이력 전 기간 + 수주(준공 컬럼). 매출손익·홈 차트와 같은 재료·같은 규칙을 쓴다.
+    // 공사이력 전 기간 + 수주. 매출손익·홈 차트와 같은 재료·같은 규칙을 쓴다.
     성과재료Promise,
   ])
 
@@ -138,34 +133,26 @@ export async function getMonthlyKpiData(
     (row) => row.투입일 >= period.monthStart && row.투입일 < period.monthEnd,
   )
   const { 공사이력: 공사이력전체, 수주: 수주목록 } = 성과재료
-  const 이력누계 = build이력누계(공사이력전체)
 
   // 성과금액은 일별 증분으로 적재됨 → 기간 내 모든 행을 합산한다.
   const 기간내이력 = (from: string, to: string) =>
     공사이력전체.filter(r => r.작업일자 >= from && r.작업일자 < to) as RevenueHistoryRow[]
-  // 준공월 잔여성과 — 차감 기준(성과누계)은 기간이 아니라 전 기간이어야 한다
-  const 준공반영 = (from: string, to: string) =>
-    sum준공잔여성과(calc준공잔여성과(수주목록, 이력누계, from, to))
 
   const monthlyInput = 투입실적목록.reduce((sum, row) => sum + calc합계(row, 단가목록), 0)
-  const monthlyRevenue =
-    sumMonthlyRevenue(기간내이력(period.monthStart, period.monthEnd)) +
-    준공반영(period.monthStart, period.monthEnd)
-  const prevMonthRevenue =
-    sumMonthlyRevenue(기간내이력(period.prevMonthStart, period.monthStart)) +
-    준공반영(period.prevMonthStart, period.monthStart)
+  // 성과 = 공사이력뿐 — 준공은 매출에 아무것도 더하지 않는다(2026-11-18 PR-C)
+  const monthlyRevenue = sumMonthlyRevenue(기간내이력(period.monthStart, period.monthEnd))
+  const prevMonthRevenue = sumMonthlyRevenue(기간내이력(period.prevMonthStart, period.monthStart))
   // 이번 달은 오늘까지(MTD), 전월은 한 달 전체이므로 경과일 비율로 환산해 동기간 비교
   const prevMonthComparableRevenue =
     prevMonthRevenue * (period.comparisonDay / period.prevMonthDays)
   const revenueDelta = monthlyRevenue - prevMonthComparableRevenue
   const monthlyProfit = monthlyRevenue - monthlyInput
 
-  // 위 monthlyRevenue 와 같은 재료·같은 규칙(공사이력 + 준공 잔여성과)을 공사별로 펼친 것.
+  // 위 monthlyRevenue 와 같은 재료·같은 규칙(공사이력)을 공사별로 펼친 것.
   // 계산기를 새로 만든 게 아니라 같은 합을 쪼개 놓은 것이라 두 값이 갈라질 구조가 없다.
   const breakdownRows = build월성과내역(
     공사이력전체,
     수주목록,
-    이력누계,
     투입실적목록,
     period.monthStart,
     period.monthEnd,

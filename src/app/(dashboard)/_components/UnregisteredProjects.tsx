@@ -1,7 +1,7 @@
 // src/app/(dashboard)/_components/UnregisteredProjects.tsx
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { load성과재료 } from '../_lib/junggong-seonggwa'
+import type { load성과재료 } from '../_lib/성과재료'
 import type {
   load미입력공사,
   load투입헤더,

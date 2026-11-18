@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CircleDollarSign, TrendingUp, Wallet, ArrowUpDown } from 'lucide-react'
 import { getMonthlyKpiData } from '../_lib/monthly-kpi'
-import type { load성과재료 } from '../_lib/junggong-seonggwa'
+import type { load성과재료 } from '../_lib/성과재료'
 import type { load연간투입원가재료 } from '../_lib/dashboard-data'
 
 export async function KpiCards({

@@ -5,10 +5,9 @@
  *   시공: 공무가 진행분을 금액으로 환산한 것 = 공사이력.성과금액            → build월시공내역 (monthly-revenue-breakdown.ts)
  *   정산: 실제로 끊은 계산서 = 그 달 기성 + 그 달 준공의 금회지불액         → build월정산내역 (여기)
  *
- * ⚠️ '준공 보정'(junggong-seonggwa.ts)과 '준공 정산'은 다른 숫자다.
- *    준공 보정 = 준공액 − 공사이력(시공) 누계 — 매출 인식 축의 중복 제거용
- *    준공 정산 = 준공액 − 기성 누계           — 새로 끊은 계산서 금액 (OrderForm 의 금회지불액)
- *    둘을 섞으면 기성을 두 번 세거나 시공을 빼게 된다.
+ * 준공 정산 = 준공액 − 기성 누계 — 새로 끊은 계산서 금액 (OrderForm 의 금회지불액).
+ *    매출(시공)에 얹던 '준공 보정'(준공액 − 공사이력 누계)은 2026-11-18 PR-C로 폐지됐다 — 이름이 비슷하지만
+ *    다른 숫자였고, 이제 매출 쪽에는 준공이 아무것도 더하지 않는다.
  *
  * DB에 아무것도 쓰지 않는다(읽기 시점 파생).
  */
@@ -16,7 +15,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { 천원, 삭제된담당자이름 } from '../gongmu/_lib/erp-실적'
-import type { load성과재료, 준공수주Row } from './junggong-seonggwa'
+import type { load성과재료, 준공수주Row } from './성과재료'
 import { build월시공내역, sum월성과내역, type 월시공내역Row } from './monthly-revenue-breakdown'
 import type { 투입원가재료 } from './dashboard-data'
 

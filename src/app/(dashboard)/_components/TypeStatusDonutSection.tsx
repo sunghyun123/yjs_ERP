@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { partsKST } from '@/lib/kst'
 import { 공사행변환, 기본연도 } from '../_lib/type-status'
-import type { load성과재료 } from '../_lib/junggong-seonggwa'
+import type { load성과재료 } from '../_lib/성과재료'
 import { TypeStatusDonut } from './TypeStatusDonut'
 
 export async function TypeStatusDonutSection({

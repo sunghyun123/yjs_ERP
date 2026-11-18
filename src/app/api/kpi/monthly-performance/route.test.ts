@@ -19,8 +19,8 @@ vi.mock('@/app/(dashboard)/_lib/monthly-kpi', async (importOriginal) => ({
   getMonthlyKpiData: m.getMonthlyKpiData,
   load투입원가재료: m.load투입원가재료,
 }))
-vi.mock('@/app/(dashboard)/_lib/junggong-seonggwa', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/app/(dashboard)/_lib/junggong-seonggwa')>()),
+vi.mock('@/app/(dashboard)/_lib/성과재료', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/app/(dashboard)/_lib/성과재료')>()),
   load성과재료: m.load성과재료,
 }))
 vi.mock('@/app/(dashboard)/_lib/monthly-split', async (importOriginal) => ({
