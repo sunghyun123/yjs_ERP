@@ -2,7 +2,7 @@ import type { 수주Row, 공사이력Row } from '@/types/database'
 
 export type 수주목록항목 = Pick<
   수주Row,
-  'id' | '지중no' | '공사명' | '수주금액_공급가' | '보험료율' | '하도전용율' | '준공여부'
+  'id' | '지중no' | '공사명' | '수주금액_공급가' | '보험료율' | '하도전용율' | '준공여부' | '준공일' | '준공액_공급가'
 >
 
 export type 공사이력행 = Pick<공사이력Row, 'id' | '작업일자' | '성과금액' | '수주_id' | '담당공무_id'> & {
@@ -13,5 +13,8 @@ export type 공사이력행 = Pick<공사이력Row, 'id' | '작업일자' | '성
     보험료율: number | null
     하도전용율: number | null
     준공여부: boolean
+    // % 기준(calc입력기준금액)용 — 조인 select가 캐스트라 빠져도 tsc가 못 잡는다(ProgressHistoryTable 주석)
+    준공일: string | null
+    준공액_공급가: number | null
   } | null
 }

@@ -14,6 +14,7 @@ import { todayKST } from '@/lib/kst'
 import { useComboboxKeyboard } from '@/hooks/useComboboxKeyboard'
 import type { 수주목록항목, 공사이력행 } from '../_types'
 import { PerformanceInput } from './성과Input'
+import { calc입력기준금액 } from '../_lib/percent'
 import { 준공Badge } from './준공Badge'
 import { HistoryEditSheet, type 이력레코드 } from './이력수정Sheet'
 import { SelectedHistoryList } from './선택공사이력목록'
@@ -203,12 +204,10 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
 
   const 선택수주 = 수주목록.find((s) => s.id === 선택수주Id) ?? null
 
-  const 하도적용금액 = (() => {
-    if (!선택수주) return null
-    const { 수주금액_공급가: 공급가, 보험료율, 하도전용율 } = 선택수주
-    if (공급가 == null || 보험료율 == null || 하도전용율 == null) return null
-    return 공급가 * (1 - 보험료율) * 하도전용율
-  })()
+  // % 기준(100%가 뜻하는 원): 준공 목표가 있으면 준공액, 없으면 수주금액 — 미입력 탭 목표와 같은 함수(PR-D).
+  // 이름은 하도적용금액 그대로 둔다: 경고·Δ%·달성률이 전부 이 값에서 파생되므로 여기 한 곳만 바꾸면 된다.
+  const 입력기준 = 선택수주 ? calc입력기준금액(선택수주) : null
+  const 하도적용금액 = 입력기준?.금액 ?? null
 
   // 수정/삭제 후 이력만 다시 가져온다. handle공사선택은 담당공무까지 리셋하므로 재사용하지 않고 분리.
   const reload이력목록 = async () => {
@@ -238,6 +237,8 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
         보험료율: 선택수주.보험료율,
         하도전용율: 선택수주.하도전용율,
         준공여부: 선택수주.준공여부,
+        준공일: 선택수주.준공일,
+        준공액_공급가: 선택수주.준공액_공급가,
       },
     })
   }
@@ -502,16 +503,23 @@ export function ProgressInputForm({ 수주목록, 공무담당자목록, default
           </div>
         </div>
 
-        {하도적용금액 != null && (
+        {입력기준 != null && (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs space-y-1.5">
+            {/* 준공을 찍으면 같은 공사의 % 의미가 바뀐다(PR-D) — 어느 금액이 100%인지 늘 보이게 한다 */}
             <div className="flex justify-between text-gray-500">
-              <span>하도적용금액</span>
-              <span className="font-medium">{formatKRW(하도적용금액)}</span>
+              <span>% 기준 금액 ({입력기준.기준} 기준)</span>
+              <span className="font-medium">{formatKRW(입력기준.금액)}</span>
             </div>
-            {선택수주?.수주금액_공급가 && (
+            {선택수주?.수주금액_공급가 != null && (
               <div className="flex justify-between text-gray-400">
                 <span>수주금액</span>
                 <span>{formatKRW(선택수주.수주금액_공급가)}</span>
+              </div>
+            )}
+            {입력기준.기준 === '준공액' && 선택수주?.준공액_공급가 != null && (
+              <div className="flex justify-between text-gray-400">
+                <span>준공액</span>
+                <span>{formatKRW(선택수주.준공액_공급가)}</span>
               </div>
             )}
           </div>

@@ -38,13 +38,14 @@ export default async function Page({
   const [수주결과, 공무담당자결과] = await Promise.all([
     supabase
       .from('수주')
-      .select('id, 지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율, 준공여부')
+      .select('id, 지중no, 공사명, 수주금액_공급가, 보험료율, 하도전용율, 준공여부, 준공일, 준공액_공급가')
       .order('지중no', { ascending: true }),
     supabase
       .from('공무담당자')
       .select('id, 이름')
       .order('이름'),
   ])
+  // ⚠️ 캐스트라 select에서 칸이 빠져도 tsc가 못 잡는다 — 준공일·준공액_공급가가 빠지면 % 기준이 조용히 수주금액으로 돌아간다(PR-D)
   const 수주목록 = (수주결과.data ?? []) as unknown as 수주목록항목[]
   const 공무담당자목록 = (공무담당자결과.data ?? []) as unknown as { id: number; 이름: string }[]
 
