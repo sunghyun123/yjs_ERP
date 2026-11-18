@@ -13,7 +13,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, 공사단가Row } from '@/types/database'
 import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { calc합계, type 투입실적With상세 } from './calc'
-import { load성과재료, type 공사이력Row, type 준공수주Row } from './junggong-seonggwa'
+import { load성과재료, type 공사이력Row, type 준공수주Row } from './성과재료'
 // 타입만 가져온다(빌드 후 사라짐) — 표 컴포넌트가 이 모양을 그대로 받는다
 import type { PivotProjectRow } from '../sales/_components/PivotProjectTable'
 

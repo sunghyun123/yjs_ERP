@@ -13,7 +13,7 @@
  * 두 함수의 차이는 이제 반올림 자리(공사별 한 번 / 행마다)와 담당별 칸뿐이다.
  */
 import { legacyRowTo상세, type 투입실적With상세 } from './calc'
-import type { 공사이력Row as 성과이력Row, 준공수주Row } from './junggong-seonggwa'
+import type { 공사이력Row as 성과이력Row, 준공수주Row } from './성과재료'
 // 반올림 규칙을 공무 페이지와 '같은 함수'로 맞춘다 — 규칙을 복사하면 한쪽만 바뀌는 날 두 화면이 갈라진다
 import { 천원, 삭제된담당자이름 } from '../gongmu/_lib/erp-실적'
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { aggregate공사별손익, type 공사별손익재료 } from './공사별손익'
 import type { 투입실적With상세 } from './calc'
-import type { 준공수주Row } from './junggong-seonggwa'
+import type { 준공수주Row } from './성과재료'
 
 const 수주 = (over: Partial<준공수주Row> & { id: number }): 준공수주Row => ({
   지중no: `JG26-${String(over.id).padStart(3, '0')}`,

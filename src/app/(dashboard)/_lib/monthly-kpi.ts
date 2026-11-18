@@ -5,7 +5,7 @@ import { partsKST } from '@/lib/kst'
 import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { calc합계, type 투입실적With상세 } from './calc'
 import { sumMonthlyRevenue, type RevenueHistoryRow } from './revenue'
-import { load성과재료 } from './junggong-seonggwa'
+import { load성과재료 } from './성과재료'
 import {
   build월성과내역,
   sum월성과내역,

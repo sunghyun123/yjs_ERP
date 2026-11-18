@@ -15,7 +15,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { 천원, 삭제된담당자이름 } from '../gongmu/_lib/erp-실적'
-import type { load성과재료, 준공수주Row } from './junggong-seonggwa'
+import type { load성과재료, 준공수주Row } from './성과재료'
 import { build월시공내역, sum월성과내역, type 월시공내역Row } from './monthly-revenue-breakdown'
 import type { 투입원가재료 } from './dashboard-data'
 

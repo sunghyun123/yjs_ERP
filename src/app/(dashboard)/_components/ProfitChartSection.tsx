@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { calc합계, type 투입실적With상세 } from '../_lib/calc'
-import type { load성과재료 } from '../_lib/junggong-seonggwa'
+import type { load성과재료 } from '../_lib/성과재료'
 import type { load연간투입원가재료 } from '../_lib/dashboard-data'
 import { ProfitChart } from './ProfitChart'
 

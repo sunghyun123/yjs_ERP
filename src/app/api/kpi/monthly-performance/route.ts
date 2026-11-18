@@ -17,7 +17,7 @@ import {
   getMonthlyPeriod,
   load투입원가재료,
 } from '@/app/(dashboard)/_lib/monthly-kpi'
-import { load성과재료 } from '@/app/(dashboard)/_lib/junggong-seonggwa'
+import { load성과재료 } from '@/app/(dashboard)/_lib/성과재료'
 import { getMonthlySplit, loadSplit재료, buildMonthlySplit } from '@/app/(dashboard)/_lib/monthly-split'
 import { 이번달기간, 조회월기간, 연간조회월목록 } from '@/app/(dashboard)/gongmu/_lib/주차'
 import { formatKST } from '@/lib/kst'

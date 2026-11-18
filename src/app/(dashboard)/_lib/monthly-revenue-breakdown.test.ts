@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { build월성과내역, build월시공내역, sum월성과내역 } from './monthly-revenue-breakdown'
-import type { 공사이력Row, 준공수주Row } from './junggong-seonggwa'
+import type { 공사이력Row, 준공수주Row } from './성과재료'
 import type { 투입실적With상세 } from './calc'
 import { build담당자별실적 } from '../gongmu/_lib/erp-실적'
 import { 이번달기간, 달의주목록 } from '../gongmu/_lib/주차'

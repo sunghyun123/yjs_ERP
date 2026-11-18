@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { build월정산내역, sum월정산내역, buildMonthlySplit, type 정산기성Row, type Split재료 } from './monthly-split'
-import type { 준공수주Row } from './junggong-seonggwa'
+import type { 준공수주Row } from './성과재료'
 
 const 수주 = (over: Partial<준공수주Row> & { id: number }): 준공수주Row => ({
   지중no: `JG26-${String(over.id).padStart(3, '0')}`,

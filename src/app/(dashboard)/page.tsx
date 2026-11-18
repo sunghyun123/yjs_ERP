@@ -4,7 +4,7 @@ import { ProfitChartSection, ProfitChartSkeleton } from './_components/ProfitCha
 import { UnregisteredProjects, UnregisteredProjectsSkeleton } from './_components/UnregisteredProjects'
 import { TypeStatusDonutSection, TypeStatusDonutSkeleton } from './_components/TypeStatusDonutSection'
 import { createClient } from '@/lib/supabase/server'
-import { load성과재료 } from './_lib/junggong-seonggwa'
+import { load성과재료 } from './_lib/성과재료'
 import {
   load미입력공사,
   load연간투입원가재료,
