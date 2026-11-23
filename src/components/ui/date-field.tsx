@@ -57,6 +57,9 @@ export function DateField({
       <Input
         ref={setRefs}
         type="date"
+        // max가 없으면 크롬은 연도를 6자리(275760)까지 받아 4자리를 쳐도 월로 안 넘어간다.
+        // 4자리로 묶어 "2026" 입력 즉시 월로 이동하게 한다. 호출부가 max를 주면 그 값이 이긴다.
+        max="9999-12-31"
         aria-invalid={invalid || undefined}
         onBlur={handleBlur}
         onChange={handleChange}

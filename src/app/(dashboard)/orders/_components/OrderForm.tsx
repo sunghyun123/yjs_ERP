@@ -999,8 +999,7 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
             {준공여부Local && (
               <>
                 <Field label="준공일">
-                  <Input
-                    type="date"
+                  <DateField
                     className="h-9 text-sm"
                     value={준공일Local}
                     onChange={(e) => set준공일Local(e.target.value)}
@@ -1140,8 +1139,7 @@ export function OrderForm({ mode, row, 거래처목록, 공무담당자목록, �
               <div className="flex gap-4 items-end flex-wrap">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">기성일</label>
-                  <Input
-                    type="date"
+                  <DateField
                     className="h-9 text-sm w-36"
                     value={기성폼값.기성일}
                     onChange={(e) => set기성폼값((v) => ({ ...v, 기성일: e.target.value }))}
