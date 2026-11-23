@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DateField } from '@/components/ui/date-field'
 import { Separator } from '@/components/ui/separator'
 import {
   Loader2, Pencil, Trash2, X, Save,
@@ -150,6 +151,23 @@ export function HistoryTable({
   function navigate(df: string, dt: string) {
     const safe_dt = dt < df ? df : dt
     router.push(`/input?tab=history&date_from=${df}&date_to=${safe_dt}`)
+  }
+
+  // 날짜 칸은 칸을 벗어날 때(또는 Enter) 한 번만 조회한다. 글자마다 navigate하면
+  // 서버 응답 전까지 controlled 칸이 옛 값으로 되돌아가 버벅이고, 방문 기록도 글자마다 쌓였다.
+  function commitDate(e: React.FocusEvent<HTMLInputElement>, which: 'from' | 'to') {
+    const v = e.currentTarget.value
+    const current = which === 'from' ? date_from : date_to
+    // 비웠거나 무효 날짜(DateField가 ""로 비움)면 조회하지 않고 지금 조회 중인 날짜로 되돌린다 — 표시=조회 범위 유지
+    if (!v) { e.currentTarget.value = current; return }
+    if (v === current) return
+    if (which === 'from') navigate(v, date_to)
+    else navigate(date_from, v)
+  }
+
+  // Enter = 칸 벗어나기와 같은 의미 → onBlur의 commitDate 한 곳에서만 조회
+  function blurOnEnter(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') e.currentTarget.blur()
   }
 
   function prevMonth() {
@@ -386,9 +404,11 @@ export function HistoryTable({
           <span className="sr-only">이전달</span>
         </Button>
         <div className="flex items-center gap-1.5">
-          <input type="date" value={date_from} onChange={(e) => { if (e.target.value) navigate(e.target.value, date_to) }} className="h-8 px-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+          {/* uncontrolled(defaultValue)라 친 글자가 그대로 남는다. 원본은 주소(date_from/date_to) 하나 —
+              이전달·다음달로 주소가 바뀌면 key가 바뀌어 칸이 새 값으로 다시 만들어진다(state 복사본 없음) */}
+          <DateField key={`from-${date_from}`} defaultValue={date_from} onBlur={(e) => commitDate(e, 'from')} onKeyDown={blurOnEnter} className="h-8 px-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
           <span className="text-sm text-gray-400">~</span>
-          <input type="date" value={date_to} onChange={(e) => { if (e.target.value) navigate(date_from, e.target.value) }} className="h-8 px-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+          <DateField key={`to-${date_to}`} defaultValue={date_to} onBlur={(e) => commitDate(e, 'to')} onKeyDown={blurOnEnter} className="h-8 px-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
         </div>
         <Button variant="outline" size="icon-sm" onClick={nextMonth} title="다음달">
           <ChevronRight className="size-4" />
