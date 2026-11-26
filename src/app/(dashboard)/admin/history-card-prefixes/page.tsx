@@ -1,10 +1,13 @@
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { HISTORY_CARD_ENABLED } from '@/app/(dashboard)/history-card/_lib/enabled'
 import type { 이력카드_머리글자Row, 거래처Row } from '@/types/database'
 import { PrefixesClient } from './_components/PrefixesClient'
 
 export const metadata = { title: '이력카드 머리글자 관리 | 영전사 ERP' }
 
 export default async function Page() {
+  if (!HISTORY_CARD_ENABLED) notFound()
   const supabase = await createClient()
   const [{ data: 규칙, error: 규칙오류 }, { data: 거래처, error: 거래처오류 }] = await Promise.all([
     supabase.from('이력카드_머리글자').select().order('정렬').order('id'),

@@ -5,6 +5,7 @@ import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { 추출WireSchema, toKorean, 읽지못함 } from '@/app/(dashboard)/history-card/_lib/extract'
 import { build카드 } from '@/app/(dashboard)/history-card/_lib/card'
 import type { 수주후보 } from '@/app/(dashboard)/history-card/_lib/공사번호'
+import { HISTORY_CARD_ENABLED } from '@/app/(dashboard)/history-card/_lib/enabled'
 import { isPdf, 첫쪽만, PdfError, PDF_최대바이트 } from './pdf'
 import { 통보서읽기, UpstreamError } from './openai'
 
@@ -19,6 +20,8 @@ type 조회결과<T> = { data: T | null; error: { code?: string; message: string
 const 실패 = (status: number, message: string) => NextResponse.json({ error: message }, { status })
 
 export async function POST(req: NextRequest) {
+  // 비활성화: 화면이 없어도 이 주소는 직접 부를 수 있으므로, OpenAI 요금이 나가기 전에 여기서 끝낸다
+  if (!HISTORY_CARD_ENABLED) return 실패(410, '이력 카드 생성 기능은 사용하지 않습니다.')
   // ① 문지기: 이 라우트는 OpenAI 요금을 쓴다. 로그인 + 화이트리스트만 부른다.
   //    service_role(Bearer) 라우트와 섞지 않는다 — 여기서 쓰는 DB 클라이언트는 세션+RLS다.
   const access = await getDashboardAccess()

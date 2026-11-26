@@ -1,10 +1,13 @@
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { HISTORY_CARD_ENABLED } from './_lib/enabled'
 import type { 이력카드_머리글자Row } from '@/types/database'
 import { HistoryCardClient } from './_components/HistoryCardClient'
 
 export const metadata = { title: '이력 카드 생성 | 영전사 ERP' }
 
 export default async function Page() {
+  if (!HISTORY_CARD_ENABLED) notFound()
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('이력카드_머리글자')
